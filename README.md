@@ -8,7 +8,10 @@ en cualquiera de esos mismos formatos.
 
 - **UI**: Electron + React (Vite).
 - **Backend**: Python (pandas, openpyxl, xlrd, odfpy, xlwt) empaquetado con PyInstaller en modo
-  `--onefile`. Se ejecuta como proceso independiente que Electron lanza al arrancar.
+  `--onedir`. Se ejecuta como proceso independiente que Electron lanza al arrancar. Se usa
+  `--onedir` en vez de `--onefile` para evitar que el ejecutable se autoextraiga a una carpeta
+  temporal en cada arranque (eso añadía varios segundos de arranque, sobre todo en la versión
+  portable, que ya de por sí se autoextrae una vez al lanzarse).
 - **Comunicación UI ↔ Backend**: HTTP local. El backend elige un puerto libre en `127.0.0.1`,
   lo imprime por stdout (`PORT:<numero>`) y Electron lo reenvía al renderer vía IPC. El
   renderer hace `fetch` directamente contra `http://127.0.0.1:<puerto>` para iniciar la
@@ -16,7 +19,10 @@ en cualquiera de esos mismos formatos.
 - **Empaquetado**: electron-builder genera instalador NSIS (sin requerir permisos de
   administrador) + versión portable para Windows, `.dmg` para macOS y `.AppImage` para Linux.
   El ejecutable de PyInstaller se incluye como recurso extra (`extraResources`) dentro del
-  paquete de Electron, fuera del asar.
+  paquete de Electron, fuera del asar. El target `portable` de Windows usa `useZip: true`
+  (`electron-builder.yml`) para que la autoextracción a una carpeta temporal, que ocurre en
+  cada arranque de ese formato, use compresión zip (más rápida de descomprimir) en vez de
+  7z/LZMA; el instalador NSIS no se ve afectado porque solo extrae una vez, al instalar.
 
 ```
 ├── electron/           # Proceso principal de Electron (main.js) + preload.js
@@ -91,7 +97,7 @@ Si prefieres ejecutar los pasos por separado:
 ```bash
 # 1) Empaquetar backend
 pip install -r backend/requirements.txt pyinstaller
-pyinstaller backend/server.py --name merger-backend --onefile \
+pyinstaller backend/server.py --name merger-backend --onedir \
   --distpath resources/backend --workpath build/pyi-work --specpath build \
   --collect-submodules odf --noconfirm
 

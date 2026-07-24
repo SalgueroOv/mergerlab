@@ -13,6 +13,7 @@ let backendPort = null;
 let backendStartError = null;
 let mainWindow = null;
 let aboutWindow = null;
+let splashWindow = null;
 
 const INPUT_FORMATS = [
   { name: "Hojas de cálculo soportadas", extensions: ["xlsx", "xls", "csv", "ods"] },
@@ -86,7 +87,9 @@ function resolveBackendCommand() {
     return { command: pythonBin, args: [script] };
   }
 
-  const backendDir = path.join(process.resourcesPath, "backend");
+  // PyInstaller en modo --onedir coloca el ejecutable dentro de una subcarpeta con su
+  // propio nombre (junto a _internal/), en vez de un único binario autoextraible.
+  const backendDir = path.join(process.resourcesPath, "backend", "merger-backend");
   const exeName = process.platform === "win32" ? "merger-backend.exe" : "merger-backend";
   return { command: path.join(backendDir, exeName), args: [] };
 }
@@ -178,6 +181,34 @@ function configureApplicationMenu() {
   }
 }
 
+// Ventana ligera y sin marco que se muestra de inmediato al arrancar, mientras el backend
+// Python arranca y la ventana principal carga su primer frame. Es HTML estático (no pasa por
+// Vite) para poder mostrarla antes de que exista nada más listo.
+function createSplashWindow() {
+  const splash = new BrowserWindow({
+    width: 320,
+    height: 300,
+    frame: false,
+    resizable: false,
+    movable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: true,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#14161a" : "#f4f5f7",
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  splash.loadFile(path.join(__dirname, "splash.html"));
+  splash.on("closed", () => {
+    splashWindow = null;
+  });
+  return splash;
+}
+
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
@@ -186,12 +217,22 @@ async function createWindow() {
     minHeight: 760,
     title: "Merger Lab",
     autoHideMenuBar: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
     },
+  });
+
+  // Hasta que el renderer no pinta su primer frame no cerramos el splash ni mostramos la
+  // ventana principal: evita el parpadeo de una ventana en blanco antes de que React monte.
+  mainWindow.once("ready-to-show", () => {
+    if (splashWindow) {
+      splashWindow.close();
+    }
+    mainWindow.show();
   });
 
   if (isDev) {
@@ -258,20 +299,29 @@ app.whenReady().then(async () => {
   configureApplicationMenu();
   nativeTheme.themeSource = await loadThemePreference();
 
+  splashWindow = createSplashWindow();
+
+  let backendStartFailure = null;
   try {
     await startBackend();
   } catch (err) {
+    backendStartFailure = err;
     console.error("No se pudo iniciar el backend Python:", err);
+  }
+
+  await createWindow();
+
+  // El diálogo se muestra tras crear la ventana principal (y no antes, junto al splash) para
+  // que no quede huérfano sin ninguna ventana de la app detrás.
+  if (backendStartFailure) {
     dialog.showErrorBox(
       "Error al iniciar Merger Lab",
-      `No se pudo iniciar el proceso de combinación de archivos.\n\n${err.message}\n\n` +
+      `No se pudo iniciar el proceso de combinación de archivos.\n\n${backendStartFailure.message}\n\n` +
         (isDev
           ? "Verifica que Python 3 esté instalado y accesible en el PATH, y que backend/requirements.txt esté instalado."
           : "Reinstala la aplicación o contacta con soporte.")
     );
   }
-
-  await createWindow();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

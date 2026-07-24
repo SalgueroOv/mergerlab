@@ -15,14 +15,17 @@ if errorlevel 1 goto :error
 pip install -r backend\requirements.txt
 if errorlevel 1 goto :error
 
-echo ==^> 3/5 Empaquetando backend con PyInstaller (--onefile)
+echo ==^> 3/5 Empaquetando backend con PyInstaller (--onedir)
 if exist resources\backend rmdir /s /q resources\backend
 if exist build\pyi-work rmdir /s /q build\pyi-work
 mkdir resources\backend
 
+rem --onedir en vez de --onefile: el ejecutable arranca directo desde su carpeta, sin
+rem autoextraerse a una carpeta temporal en cada arranque (eso es lo que hacia lento el
+rem arranque de la app empaquetada). Genera resources\backend\merger-backend\merger-backend.exe.
 pyinstaller backend\server.py ^
   --name merger-backend ^
-  --onefile ^
+  --onedir ^
   --distpath resources\backend ^
   --workpath build\pyi-work ^
   --specpath build ^

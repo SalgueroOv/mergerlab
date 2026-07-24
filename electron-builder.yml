@@ -43,6 +43,12 @@ nsis:
 
 portable:
   artifactName: "${productName}-Portable-${version}-${arch}.${ext}"
+  # El .exe portable se autoextrae a una carpeta temporal EN CADA ARRANQUE (a diferencia del
+  # instalador NSIS, que solo extrae una vez). useZip cambia la compresion interna de 7z/LZMA
+  # (mejor ratio, mas lenta de descomprimir) a zip (peor ratio, bastante mas rapida de
+  # descomprimir), lo que reduce el tiempo de esa extraccion repetida a costa de un artefacto
+  # .exe portable algo mas pesado en disco/descarga. No afecta al instalador NSIS.
+  useZip: true
 
 mac:
   target:

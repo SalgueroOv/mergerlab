@@ -10,7 +10,7 @@
   "scripts": {
     "dev:frontend": "vite",
     "dev:electron": "cross-env NODE_ENV=development electron .",
-    "dev": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"npm:dev:frontend\" \"wait-on tcp:5173 && npm:dev:electron\"",
+    "dev": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"npm:dev:frontend\" \"wait-on tcp:5173 && npm run dev:electron\"",
     "build:frontend": "vite build",
     "build:electron": "electron-builder",
     "dist": "npm run build:frontend && electron-builder",

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build completo de Merger Lab para macOS/Linux:
-#   1) Empaqueta el backend Python con PyInstaller (--onefile)
+#   1) Empaqueta el backend Python con PyInstaller (--onedir)
 #   2) Compila el frontend React (Vite)
 #   3) Genera los distribuibles (instalador + portable) con electron-builder
 #
@@ -20,12 +20,15 @@ echo "==> 2/5 Instalando dependencias Python"
 python3 -m pip install --upgrade pip
 pip install -r backend/requirements.txt
 
-echo "==> 3/5 Empaquetando backend con PyInstaller (--onefile)"
+echo "==> 3/5 Empaquetando backend con PyInstaller (--onedir)"
 rm -rf build/pyi-work resources/backend
 mkdir -p resources/backend
+# --onedir en vez de --onefile: el ejecutable arranca directo desde su carpeta, sin
+# autoextraerse a una carpeta temporal en cada arranque (eso hacia lento el arranque de
+# la app empaquetada). Genera resources/backend/merger-backend/merger-backend.
 pyinstaller backend/server.py \
   --name merger-backend \
-  --onefile \
+  --onedir \
   --distpath resources/backend \
   --workpath build/pyi-work \
   --specpath build \

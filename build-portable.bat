@@ -17,14 +17,14 @@ echo ==^> 2/4 Instalando dependencias Python
 pip install -r backend\requirements.txt
 if errorlevel 1 goto :error
 
-echo ==^> 3/4 Empaquetando backend con PyInstaller (--onefile)
+echo ==^> 3/4 Empaquetando backend con PyInstaller (--onedir)
 if exist resources\backend rmdir /s /q resources\backend
 if exist build\pyi-work rmdir /s /q build\pyi-work
 mkdir resources\backend
 
 pyinstaller backend\server.py ^
   --name merger-backend ^
-  --onefile ^
+  --onedir ^
   --distpath resources\backend ^
   --workpath build\pyi-work ^
   --specpath build ^
