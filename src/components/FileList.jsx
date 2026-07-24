@@ -94,7 +94,14 @@ export default function FileList({ files, onAddFiles, onRemove, onReorder, disab
         role="button"
         tabIndex={disabled ? -1 : 0}
       >
-        <svg className="dropzone-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg
+          className="dropzone-icon"
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
           <path
             d="M12 4v11m0-11 4 4m-4-4-4 4M5 17.5V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1.5"
             stroke="currentColor"
@@ -107,9 +114,7 @@ export default function FileList({ files, onAddFiles, onRemove, onReorder, disab
         <p className="dropzone-hint">{t("fileList.supportedFormats")}</p>
       </div>
 
-      {rejected > 0 && (
-        <p className="dropzone-warning">{t("fileList.rejected", { count: rejected })}</p>
-      )}
+      {rejected > 0 && <p className="dropzone-warning">{t("fileList.rejected", { count: rejected })}</p>}
 
       {files.length > 0 && (
         <ol className="file-list">

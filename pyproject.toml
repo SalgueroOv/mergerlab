@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 110
+target-version = "py39"
+src = ["backend"]
+extend-exclude = ["backend/venv", "backend/build", "build"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle
+  "F",   # pyflakes (imports/variables sin usar, etc.)
+  "I",   # isort (orden de imports)
+  "UP",  # pyupgrade (sintaxis moderna acorde a target-version)
+  "B",   # flake8-bugbear (errores comunes)
+]

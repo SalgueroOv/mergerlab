@@ -98,16 +98,23 @@ def merge():
         return _error_response("No se indicó la ruta de guardado.", 400, code="no_output_path")
     if mode not in ("concat", "join"):
         return _error_response(
-            f"Modo de combinación no soportado: '{mode}'.", 400, code="unsupported_mode", params={"mode": mode}
+            f"Modo de combinación no soportado: '{mode}'.",
+            400,
+            code="unsupported_mode",
+            params={"mode": mode},
         )
 
     join_keys = [join_keys_by_path.get(f) for f in files]
 
     if mode == "join":
         if len(files) < 2:
-            return _error_response("Se necesitan al menos dos archivos para hacer un join.", 400, code="join_min_files")
+            return _error_response(
+                "Se necesitan al menos dos archivos para hacer un join.", 400, code="join_min_files"
+            )
         if any(not k for k in join_keys):
-            return _error_response("Debés indicar una columna clave para cada archivo.", 400, code="missing_join_key")
+            return _error_response(
+                "Debés indicar una columna clave para cada archivo.", 400, code="missing_join_key"
+            )
         if join_type not in JOIN_TYPES:
             return _error_response(
                 f"Tipo de join no soportado: '{join_type}'.",
@@ -151,7 +158,9 @@ def columns():
         return _error_response(str(exc), 400, code=exc.code, params=exc.params)
     except Exception:
         traceback.print_exc()
-        return _error_response("No se pudieron leer las columnas de los archivos.", 500, code="columns_read_error")
+        return _error_response(
+            "No se pudieron leer las columnas de los archivos.", 500, code="columns_read_error"
+        )
 
     return jsonify({"columns": result})
 
@@ -165,7 +174,14 @@ def _run_merge_job(job_id, files, output_format, output_path, mode, join_keys, j
         _set_job(job_id, status="running", progress=pct, message=message, code=code, params=params or {})
 
     try:
-        _set_job(job_id, status="running", progress=1, message="Leyendo archivos...", code="reading_files", params={})
+        _set_job(
+            job_id,
+            status="running",
+            progress=1,
+            message="Leyendo archivos...",
+            code="reading_files",
+            params={},
+        )
         if mode == "join":
             combined = join_files(files, join_keys, join_type, progress_callback=progress_callback)
         else:

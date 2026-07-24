@@ -67,6 +67,25 @@ Node, Python y todas las dependencias van embebidas en el paquete.
    npm run dev
    ```
 
+## Calidad de código
+
+- **JS/JSX** (`eslint.config.mjs` + `.prettierrc.json`):
+
+  ```bash
+  npm run lint          # ESLint
+  npm run lint:fix      # ESLint con autofix
+  npm run format        # Prettier, aplica formato
+  npm run format:check  # Prettier, solo verifica
+  ```
+
+- **Python** (`pyproject.toml`, sección `[tool.ruff]`) — con el entorno virtual activado:
+
+  ```bash
+  pip install -r backend/requirements-dev.txt   # instala Ruff (solo la primera vez)
+  ruff check backend/                           # lint
+  ruff format backend/                          # formato
+  ```
+
    Esto arranca Vite en `http://localhost:5173`, espera a que esté listo y luego lanza
    Electron, que a su vez arranca `backend/server.py` como proceso hijo.
 

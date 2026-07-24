@@ -1,0 +1,8 @@
+dist/
+release/
+build/
+resources/
+node_modules/
+backend/venv/
+src/i18n/locales/
+package-lock.json

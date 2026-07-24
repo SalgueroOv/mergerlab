@@ -1,7 +1,15 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-export default function ProgressBar({ state, progress, message, processed, total, resultPath, onOpenFolder }) {
+export default function ProgressBar({
+  state,
+  progress,
+  message,
+  processed,
+  total,
+  resultPath,
+  onOpenFolder,
+}) {
   const { t } = useTranslation();
   if (state === "hidden") return null;
 

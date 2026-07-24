@@ -5,8 +5,24 @@ function MiniTable({ x, y, width, height, rows, emphasis }) {
   const headerHeight = height / (rows + 1);
   return (
     <g>
-      <rect x={x} y={y} width={width} height={height} fill="none" stroke="var(--accent)" strokeWidth="1.4" rx="2" />
-      <rect x={x} y={y} width={width} height={headerHeight} fill="var(--accent)" fillOpacity={emphasis ? 0.75 : 0.35} />
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill="none"
+        stroke="var(--accent)"
+        strokeWidth="1.4"
+        rx="2"
+      />
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={headerHeight}
+        fill="var(--accent)"
+        fillOpacity={emphasis ? 0.75 : 0.35}
+      />
       {Array.from({ length: rows - 1 }).map((_, i) => (
         <line
           key={i}
@@ -44,7 +60,13 @@ function StackDiagram() {
           <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
         </marker>
       </defs>
-      <path d="M61 46 L61 58" stroke="var(--accent)" strokeWidth="1.6" markerEnd="url(#stack-arrow)" fill="none" />
+      <path
+        d="M61 46 L61 58"
+        stroke="var(--accent)"
+        strokeWidth="1.6"
+        markerEnd="url(#stack-arrow)"
+        fill="none"
+      />
 
       <MiniTable x={38} y={62} width={64} height={32} rows={6} emphasis />
       <text x="70" y="100" textAnchor="middle" fontSize="7" fill="var(--text-muted)">
@@ -90,7 +112,12 @@ export default function StackTutorial() {
           >
             <div className="modal-header">
               <h3>{t("stackTutorial.title")}</h3>
-              <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label={t("common.close")}>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setOpen(false)}
+                aria-label={t("common.close")}
+              >
                 ×
               </button>
             </div>
@@ -104,7 +131,8 @@ export default function StackTutorial() {
                   <strong>{t("stackTutorial.headersOnceTerm")}</strong>: {t("stackTutorial.headersOnceNote")}
                 </li>
                 <li>
-                  <strong>{t("stackTutorial.sourceColumnTerm")}</strong>: {t("stackTutorial.sourceColumnNote")}
+                  <strong>{t("stackTutorial.sourceColumnTerm")}</strong>:{" "}
+                  {t("stackTutorial.sourceColumnNote")}
                 </li>
               </ul>
             </div>

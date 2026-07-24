@@ -23,7 +23,8 @@ async function requestJson(url, options) {
   }
 
   if (!response.ok) {
-    const message = body && body.message ? body.message : i18n.t("errors.httpError", { status: response.status });
+    const message =
+      body && body.message ? body.message : i18n.t("errors.httpError", { status: response.status });
     const error = new Error(message);
     // El backend manda `code`/`params` cuando el mensaje es traducible (ver backend/server.py);
     // se propagan en el Error para que la UI pueda traducirlo con i18n/backendMessages.js.

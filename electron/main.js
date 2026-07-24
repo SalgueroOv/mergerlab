@@ -16,9 +16,7 @@ let aboutWindow = null;
 let splashWindow = null;
 let currentLanguage = "es";
 
-const INPUT_FORMATS = [
-  { name: "Hojas de cálculo soportadas", extensions: ["xlsx", "xls", "csv", "ods"] },
-];
+const INPUT_FORMATS = [{ name: "Hojas de cálculo soportadas", extensions: ["xlsx", "xls", "csv", "ods"] }];
 
 const THEME_OPTIONS = ["system", "light", "dark"];
 
@@ -93,43 +91,50 @@ const STARTUP_ERROR_TEXT = {
   es: {
     title: "Error al iniciar Merger Lab",
     intro: "No se pudo iniciar el proceso de combinación de archivos.",
-    devHint: "Verifica que Python 3 esté instalado y accesible en el PATH, y que backend/requirements.txt esté instalado.",
+    devHint:
+      "Verifica que Python 3 esté instalado y accesible en el PATH, y que backend/requirements.txt esté instalado.",
     prodHint: "Reinstala la aplicación o contacta con soporte.",
   },
   en: {
     title: "Error starting Merger Lab",
     intro: "The file-merging process could not be started.",
-    devHint: "Check that Python 3 is installed and available on PATH, and that backend/requirements.txt is installed.",
+    devHint:
+      "Check that Python 3 is installed and available on PATH, and that backend/requirements.txt is installed.",
     prodHint: "Reinstall the application or contact support.",
   },
   de: {
     title: "Fehler beim Starten von Merger Lab",
     intro: "Der Prozess zum Kombinieren der Dateien konnte nicht gestartet werden.",
-    devHint: "Prüfe, ob Python 3 installiert und im PATH verfügbar ist und ob backend/requirements.txt installiert wurde.",
+    devHint:
+      "Prüfe, ob Python 3 installiert und im PATH verfügbar ist und ob backend/requirements.txt installiert wurde.",
     prodHint: "Installiere die Anwendung neu oder wende dich an den Support.",
   },
   fr: {
     title: "Erreur au démarrage de Merger Lab",
     intro: "Le processus de combinaison des fichiers n'a pas pu démarrer.",
-    devHint: "Vérifiez que Python 3 est installé et accessible dans le PATH, et que backend/requirements.txt est installé.",
+    devHint:
+      "Vérifiez que Python 3 est installé et accessible dans le PATH, et que backend/requirements.txt est installé.",
     prodHint: "Réinstallez l'application ou contactez le support.",
   },
   it: {
     title: "Errore durante l'avvio di Merger Lab",
     intro: "Non è stato possibile avviare il processo di combinazione dei file.",
-    devHint: "Verifica che Python 3 sia installato e accessibile nel PATH e che backend/requirements.txt sia installato.",
+    devHint:
+      "Verifica che Python 3 sia installato e accessibile nel PATH e che backend/requirements.txt sia installato.",
     prodHint: "Reinstalla l'applicazione o contatta l'assistenza.",
   },
   pt: {
     title: "Erro ao iniciar o Merger Lab",
     intro: "Não foi possível iniciar o processo de combinação de arquivos.",
-    devHint: "Verifique se o Python 3 está instalado e acessível no PATH, e se backend/requirements.txt está instalado.",
+    devHint:
+      "Verifique se o Python 3 está instalado e acessível no PATH, e se backend/requirements.txt está instalado.",
     prodHint: "Reinstale a aplicação ou entre em contato com o suporte.",
   },
   ru: {
     title: "Ошибка запуска Merger Lab",
     intro: "Не удалось запустить процесс объединения файлов.",
-    devHint: "Убедитесь, что Python 3 установлен и доступен в PATH, и что backend/requirements.txt установлен.",
+    devHint:
+      "Убедитесь, что Python 3 установлен и доступен в PATH, и что backend/requirements.txt установлен.",
     prodHint: "Переустановите приложение или обратитесь в поддержку.",
   },
   zh: {
@@ -530,9 +535,7 @@ ipcMain.handle("get-app-info", () => {
     license: packageJson.license || "",
     year: String(new Date().getFullYear()),
     repository:
-      typeof packageJson.repository === "string"
-        ? packageJson.repository
-        : packageJson.repository?.url || "",
+      typeof packageJson.repository === "string" ? packageJson.repository : packageJson.repository?.url || "",
   };
 });
 

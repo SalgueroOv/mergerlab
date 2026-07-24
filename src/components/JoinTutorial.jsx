@@ -66,7 +66,12 @@ export default function JoinTutorial() {
           >
             <div className="modal-header">
               <h3>{t("joinTutorial.title")}</h3>
-              <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label={t("common.close")}>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setOpen(false)}
+                aria-label={t("common.close")}
+              >
                 ×
               </button>
             </div>

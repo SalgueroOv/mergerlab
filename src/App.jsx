@@ -264,7 +264,10 @@ export default function App() {
       if (loadingColumns) return { key: "blocked.readingColumns" };
       if (columnsError) return { key: null, text: columnsError };
       if (missingJoinKeyFiles.length > 0) {
-        return { key: "blocked.chooseKeyFor", params: { files: missingJoinKeyFiles.map((f) => f.name).join(", ") } };
+        return {
+          key: "blocked.chooseKeyFor",
+          params: { files: missingJoinKeyFiles.map((f) => f.name).join(", ") },
+        };
       }
     }
     return null;
@@ -323,188 +326,218 @@ export default function App() {
 
   return (
     <>
-    <div className="app-shell">
-      <header className="app-header">
-        <div className="brand">
-          <svg className="brand-logo" width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-            <line x1="6" y1="6" x2="16" y2="23" stroke="var(--accent)" strokeWidth="4.4" strokeLinecap="round" />
-            <line x1="26" y1="6" x2="16" y2="23" stroke="var(--accent)" strokeWidth="4.4" strokeLinecap="round" />
-            <path d="M9,21 L23,21 L16,30 Z" fill="var(--accent)" />
-          </svg>
-          <span className="brand-name">{t("header.brand")}</span>
-        </div>
-        <div className="header-actions">
-          <LanguageToggle language={language} onChange={handleLanguageChange} />
-          <ThemeToggle theme={theme} onChange={handleThemeChange} />
-          <AboutDialog />
-        </div>
-      </header>
-
-      {backendError && <ErrorBanner message={backendError} onDismiss={() => setBackendError(null)} />}
-
-      <main className="app-main">
-        <section className="panel panel-input">
-          <h2 className="panel-title">{t("panels.input.title")}</h2>
-          <FileList
-            files={files}
-            onAddFiles={handleAddFiles}
-            onRemove={handleRemove}
-            onReorder={handleReorder}
-            disabled={isProcessing}
-          />
-        </section>
-
-        <section className="panel panel-output">
-          <h2 className="panel-title">{t("panels.output.title")}</h2>
-
-          <div className="field-group">
-            <label className="field-label">{t("mode.label")}</label>
-            <div className="mode-toggle">
-              <button
-                type="button"
-                className={`mode-toggle-btn ${mode === "join" ? "selected" : ""}`}
-                disabled={isProcessing}
-                onClick={() => setMode("join")}
-              >
-                {t("mode.join.label")}
-                <span className="mode-toggle-hint">{t("mode.join.hint")}</span>
-              </button>
-              <button
-                type="button"
-                className={`mode-toggle-btn ${mode === "concat" ? "selected" : ""}`}
-                disabled={isProcessing}
-                onClick={() => setMode("concat")}
-              >
-                {t("mode.concat.label")}
-                <span className="mode-toggle-hint">{t("mode.concat.hint")}</span>
-              </button>
-            </div>
-          </div>
-
-          {mode === "join" && (
-            <div className="field-group">
-              <JoinPicker
-                joinType={joinType}
-                onJoinTypeChange={setJoinType}
-                files={files}
-                columnsByPath={columnsByPath}
-                joinKeys={joinKeys}
-                onJoinKeyChange={(path, value) => setJoinKeys((prev) => ({ ...prev, [path]: value }))}
-                loadingColumns={loadingColumns}
-                columnsError={columnsError}
-                disabled={isProcessing}
-              />
-            </div>
-          )}
-
-          <div className="field-group">
-            <label className="field-label">{t("format.label")}</label>
-            <FormatPicker value={outputFormat} onChange={setOutputFormat} disabled={isProcessing} />
-          </div>
-
-          <div className="field-group">
-            <label className="field-label" htmlFor="output-filename">
-              {t("outputFileName.label")}
-            </label>
-            <div className="destination-row">
-              <input
-                id="output-filename"
-                type="text"
-                className="destination-input"
-                value={outputFileName}
-                disabled={isProcessing}
-                placeholder={t("outputFileName.placeholder")}
-                onChange={(e) => setOutputFileName(e.target.value)}
-              />
-              <span className="filename-extension">.{outputFormat}</span>
-            </div>
-          </div>
-
-          <div className="field-group">
-            <label className="field-label" htmlFor="destination-path">
-              {t("destination.label")}
-            </label>
-            <div className="destination-row">
-              <input
-                id="destination-path"
-                type="text"
-                className="destination-input"
-                readOnly
-                value={destinationFolder}
-                placeholder={t("destination.placeholder")}
-              />
-              <button type="button" className="btn" disabled={isProcessing} onClick={handleBrowseFolder}>
-                {t("destination.browse")}
-              </button>
-            </div>
-          </div>
-
-          {mode === "concat" && (
-            <div className="field-group">
-              <div className="field-row">
-                <span className="field-label field-label--inline">{t("stackOptions.label")}</span>
-                <StackTutorial />
-              </div>
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={includeHeadersOnce}
-                  disabled={isProcessing}
-                  onChange={(e) => setIncludeHeadersOnce(e.target.checked)}
-                />
-                {t("stackOptions.headersOnce")}
-              </label>
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={addSourceColumn}
-                  disabled={isProcessing}
-                  onChange={(e) => setAddSourceColumn(e.target.checked)}
-                />
-                {t("stackOptions.sourceColumn")}
-              </label>
-            </div>
-          )}
-        </section>
-      </main>
-
-      <ProgressBar
-        state={progressState}
-        progress={progress}
-        message={statusMessage}
-        processed={processedCount}
-        total={files.length}
-        resultPath={resultPath}
-        onOpenFolder={(p) => window.electronAPI.openContainingFolder(p)}
-      />
-
-      <footer className="app-footer">
-        {!isProcessing && !canMerge && mergeBlockedReason && (
-          <p className="footer-blocked-hint">
-            {mergeBlockedReason.key ? t(mergeBlockedReason.key, mergeBlockedReason.params) : mergeBlockedReason.text}
-          </p>
-        )}
-        <div className="footer-row">
-          <div className="footer-actions">
-            <button type="button" className="btn primary" disabled={isProcessing || !canMerge} onClick={handleMerge}>
-              {isProcessing ? t("footer.processing") : t("footer.mergeButton")}
-            </button>
-            <button
-              type="button"
-              className="btn subtle"
-              disabled={isProcessing || files.length === 0}
-              onClick={handleClearAll}
+      <div className="app-shell">
+        <header className="app-header">
+          <div className="brand">
+            <svg
+              className="brand-logo"
+              width="26"
+              height="26"
+              viewBox="0 0 32 32"
+              fill="none"
+              aria-hidden="true"
             >
-              {t("footer.clear")}
-            </button>
+              <line
+                x1="6"
+                y1="6"
+                x2="16"
+                y2="23"
+                stroke="var(--accent)"
+                strokeWidth="4.4"
+                strokeLinecap="round"
+              />
+              <line
+                x1="26"
+                y1="6"
+                x2="16"
+                y2="23"
+                stroke="var(--accent)"
+                strokeWidth="4.4"
+                strokeLinecap="round"
+              />
+              <path d="M9,21 L23,21 L16,30 Z" fill="var(--accent)" />
+            </svg>
+            <span className="brand-name">{t("header.brand")}</span>
           </div>
-          <div className="footer-summary">
-            {t("footer.summary", { count: files.length, size: formatBytes(totalSize) })}
+          <div className="header-actions">
+            <LanguageToggle language={language} onChange={handleLanguageChange} />
+            <ThemeToggle theme={theme} onChange={handleThemeChange} />
+            <AboutDialog />
           </div>
-        </div>
-      </footer>
-    </div>
-    <OnboardingTour active={showTour} onFinish={() => setShowTour(false)} />
+        </header>
+
+        {backendError && <ErrorBanner message={backendError} onDismiss={() => setBackendError(null)} />}
+
+        <main className="app-main">
+          <section className="panel panel-input">
+            <h2 className="panel-title">{t("panels.input.title")}</h2>
+            <FileList
+              files={files}
+              onAddFiles={handleAddFiles}
+              onRemove={handleRemove}
+              onReorder={handleReorder}
+              disabled={isProcessing}
+            />
+          </section>
+
+          <section className="panel panel-output">
+            <h2 className="panel-title">{t("panels.output.title")}</h2>
+
+            <div className="field-group">
+              <label className="field-label">{t("mode.label")}</label>
+              <div className="mode-toggle">
+                <button
+                  type="button"
+                  className={`mode-toggle-btn ${mode === "join" ? "selected" : ""}`}
+                  disabled={isProcessing}
+                  onClick={() => setMode("join")}
+                >
+                  {t("mode.join.label")}
+                  <span className="mode-toggle-hint">{t("mode.join.hint")}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mode-toggle-btn ${mode === "concat" ? "selected" : ""}`}
+                  disabled={isProcessing}
+                  onClick={() => setMode("concat")}
+                >
+                  {t("mode.concat.label")}
+                  <span className="mode-toggle-hint">{t("mode.concat.hint")}</span>
+                </button>
+              </div>
+            </div>
+
+            {mode === "join" && (
+              <div className="field-group">
+                <JoinPicker
+                  joinType={joinType}
+                  onJoinTypeChange={setJoinType}
+                  files={files}
+                  columnsByPath={columnsByPath}
+                  joinKeys={joinKeys}
+                  onJoinKeyChange={(path, value) => setJoinKeys((prev) => ({ ...prev, [path]: value }))}
+                  loadingColumns={loadingColumns}
+                  columnsError={columnsError}
+                  disabled={isProcessing}
+                />
+              </div>
+            )}
+
+            <div className="field-group">
+              <label className="field-label">{t("format.label")}</label>
+              <FormatPicker value={outputFormat} onChange={setOutputFormat} disabled={isProcessing} />
+            </div>
+
+            <div className="field-group">
+              <label className="field-label" htmlFor="output-filename">
+                {t("outputFileName.label")}
+              </label>
+              <div className="destination-row">
+                <input
+                  id="output-filename"
+                  type="text"
+                  className="destination-input"
+                  value={outputFileName}
+                  disabled={isProcessing}
+                  placeholder={t("outputFileName.placeholder")}
+                  onChange={(e) => setOutputFileName(e.target.value)}
+                />
+                <span className="filename-extension">.{outputFormat}</span>
+              </div>
+            </div>
+
+            <div className="field-group">
+              <label className="field-label" htmlFor="destination-path">
+                {t("destination.label")}
+              </label>
+              <div className="destination-row">
+                <input
+                  id="destination-path"
+                  type="text"
+                  className="destination-input"
+                  readOnly
+                  value={destinationFolder}
+                  placeholder={t("destination.placeholder")}
+                />
+                <button type="button" className="btn" disabled={isProcessing} onClick={handleBrowseFolder}>
+                  {t("destination.browse")}
+                </button>
+              </div>
+            </div>
+
+            {mode === "concat" && (
+              <div className="field-group">
+                <div className="field-row">
+                  <span className="field-label field-label--inline">{t("stackOptions.label")}</span>
+                  <StackTutorial />
+                </div>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={includeHeadersOnce}
+                    disabled={isProcessing}
+                    onChange={(e) => setIncludeHeadersOnce(e.target.checked)}
+                  />
+                  {t("stackOptions.headersOnce")}
+                </label>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={addSourceColumn}
+                    disabled={isProcessing}
+                    onChange={(e) => setAddSourceColumn(e.target.checked)}
+                  />
+                  {t("stackOptions.sourceColumn")}
+                </label>
+              </div>
+            )}
+          </section>
+        </main>
+
+        <ProgressBar
+          state={progressState}
+          progress={progress}
+          message={statusMessage}
+          processed={processedCount}
+          total={files.length}
+          resultPath={resultPath}
+          onOpenFolder={(p) => window.electronAPI.openContainingFolder(p)}
+        />
+
+        <footer className="app-footer">
+          {!isProcessing && !canMerge && mergeBlockedReason && (
+            <p className="footer-blocked-hint">
+              {mergeBlockedReason.key
+                ? t(mergeBlockedReason.key, mergeBlockedReason.params)
+                : mergeBlockedReason.text}
+            </p>
+          )}
+          <div className="footer-row">
+            <div className="footer-actions">
+              <button
+                type="button"
+                className="btn primary"
+                disabled={isProcessing || !canMerge}
+                onClick={handleMerge}
+              >
+                {isProcessing ? t("footer.processing") : t("footer.mergeButton")}
+              </button>
+              <button
+                type="button"
+                className="btn subtle"
+                disabled={isProcessing || files.length === 0}
+                onClick={handleClearAll}
+              >
+                {t("footer.clear")}
+              </button>
+            </div>
+            <div className="footer-summary">
+              {t("footer.summary", { count: files.length, size: formatBytes(totalSize) })}
+            </div>
+          </div>
+        </footer>
+      </div>
+      <OnboardingTour active={showTour} onFinish={() => setShowTour(false)} />
     </>
   );
 }

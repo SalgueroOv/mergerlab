@@ -209,7 +209,9 @@ def join_files(file_paths, join_keys, join_type="inner", progress_callback=None)
                 result = pd.merge(result, df, on=canonical_key, how=join_type)
             else:
                 result = pd.merge(result, df, left_on=canonical_key, right_on=key, how=join_type)
-                result[canonical_key] = result[canonical_key].where(result[canonical_key].notna(), result[key])
+                result[canonical_key] = result[canonical_key].where(
+                    result[canonical_key].notna(), result[key]
+                )
                 result = result.drop(columns=[key])
 
         if progress_callback:

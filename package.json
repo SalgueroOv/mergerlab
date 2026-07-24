@@ -16,7 +16,11 @@
     "dist": "npm run build:frontend && electron-builder",
     "dist:win": "npm run build:frontend && electron-builder --win nsis portable",
     "dist:mac": "npm run build:frontend && electron-builder --mac dmg",
-    "dist:linux": "npm run build:frontend && electron-builder --linux AppImage"
+    "dist:linux": "npm run build:frontend && electron-builder --linux AppImage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "i18next": "^26.3.6",
@@ -25,11 +29,18 @@
     "react-i18next": "^17.0.11"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.6",
     "vite": "^6.0.7",
     "wait-on": "^8.0.1"
   }

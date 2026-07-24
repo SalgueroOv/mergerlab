@@ -12,9 +12,17 @@ const STORAGE_KEY = "mergerlab.onboarding.completed";
 const STEP_DEFS = [
   { selector: ".brand", titleKey: "tour.steps.welcome.title", bodyKey: "tour.steps.welcome.body" },
   { selector: ".panel-input", titleKey: "tour.steps.loadFiles.title", bodyKey: "tour.steps.loadFiles.body" },
-  { selector: ".mode-toggle", titleKey: "tour.steps.chooseMode.title", bodyKey: "tour.steps.chooseMode.body" },
+  {
+    selector: ".mode-toggle",
+    titleKey: "tour.steps.chooseMode.title",
+    bodyKey: "tour.steps.chooseMode.body",
+  },
   { selector: ".join-picker", titleKey: "tour.steps.joinKey.title", bodyKey: "tour.steps.joinKey.body" },
-  { selector: ".panel-output", titleKey: "tour.steps.configureOutput.title", bodyKey: "tour.steps.configureOutput.body" },
+  {
+    selector: ".panel-output",
+    titleKey: "tour.steps.configureOutput.title",
+    bodyKey: "tour.steps.configureOutput.body",
+  },
   { selector: ".footer-actions", titleKey: "tour.steps.merge.title", bodyKey: "tour.steps.merge.body" },
   { selector: ".theme-toggle", titleKey: "tour.steps.theme.title", bodyKey: "tour.steps.theme.body" },
   { selector: ".about-trigger-btn", titleKey: "tour.steps.help.title", bodyKey: "tour.steps.help.body" },
@@ -49,7 +57,8 @@ function computeTooltipPosition(rect, tooltipRect) {
 
   if (rect) {
     const spaceBelow = window.innerHeight - rect.bottom;
-    const placeBelow = spaceBelow > tooltipRect.height + margin * 2 || rect.top < tooltipRect.height + margin * 2;
+    const placeBelow =
+      spaceBelow > tooltipRect.height + margin * 2 || rect.top < tooltipRect.height + margin * 2;
     top = placeBelow ? rect.bottom + margin : rect.top - margin - tooltipRect.height;
     left = rect.left + rect.width / 2 - tooltipRect.width / 2;
   } else {
@@ -152,7 +161,9 @@ export default function OnboardingTour({ active, onFinish }) {
             : { top: 0, left: 0, visibility: "hidden" }
         }
       >
-        <p className="tour-step-count">{t("tour.stepCount", { current: stepIndex + 1, total: STEP_DEFS.length })}</p>
+        <p className="tour-step-count">
+          {t("tour.stepCount", { current: stepIndex + 1, total: STEP_DEFS.length })}
+        </p>
         <h3>{t(step.titleKey)}</h3>
         <p className="tour-body">{t(step.bodyKey)}</p>
         <p className="tour-hint">{t("tour.hint")}</p>
