@@ -1,0 +1,223 @@
+{
+  "header": {
+    "brand": "Merger Lab"
+  },
+  "panels": {
+    "input": {
+      "title": "Eingabedateien"
+    },
+    "output": {
+      "title": "Ausgabeeinstellungen"
+    }
+  },
+  "fileList": {
+    "dropHint": "Dateien hierher ziehen oder klicken, um auszuwählen",
+    "supportedFormats": ".xls, .xlsx, .csv, .ods",
+    "rejected_one": "{{count}} Datei mit nicht unterstütztem Format wurde ignoriert.",
+    "rejected_other": "{{count}} Dateien mit nicht unterstütztem Format wurden ignoriert.",
+    "removeFile": "Datei entfernen"
+  },
+  "mode": {
+    "label": "Kombinationsmodus",
+    "join": {
+      "label": "Nach Schlüssel kombinieren (Join)",
+      "hint": "verbindet Spalten aus verschiedenen Dateien über eine gemeinsame ID"
+    },
+    "concat": {
+      "label": "Zeilen stapeln",
+      "hint": "fügt Dateien mit denselben Spalten untereinander zusammen"
+    }
+  },
+  "join": {
+    "typeLabel": "Join-Typ",
+    "typeAriaLabel": "Join-Typ",
+    "keyPerFile": "Schlüsselspalte pro Datei",
+    "needTwoFiles": "Füge mindestens zwei Dateien hinzu, um die verbindende Spalte auszuwählen.",
+    "readingColumns": "Spalten der Dateien werden gelesen...",
+    "noColumns": "Keine lesbaren Spalten",
+    "chooseColumn": "Spalte wählen...",
+    "keyAriaLabel": "Schlüsselspalte in {{file}}",
+    "note": "Jede Datei kann eine unterschiedlich benannte Spalte verwenden (z. B. \"ID_Cliente\" in der einen und \"Codigo Cliente\" in der anderen): Die App behandelt sie beim Kombinieren als denselben Schlüssel."
+  },
+  "format": {
+    "label": "Ausgabeformat",
+    "ariaLabel": "Ausgabeformat"
+  },
+  "outputFileName": {
+    "label": "Name der Ausgabedatei",
+    "placeholder": "kombiniert"
+  },
+  "destination": {
+    "label": "Zielpfad",
+    "placeholder": "Zielordner auswählen...",
+    "browse": "Durchsuchen..."
+  },
+  "stackOptions": {
+    "label": "Optionen",
+    "headersOnce": "Überschriften nur einmal einfügen",
+    "sourceColumn": "Spalte mit Name der Quelldatei hinzufügen"
+  },
+  "progress": {
+    "completedPrefix": "Abgeschlossen — Datei gespeichert unter",
+    "openFolder": "Ordner öffnen",
+    "filesCountWithProcessed": "{{processed}} / {{total}} Dateien",
+    "filesCountTotalOnly": "{{total}} Dateien"
+  },
+  "footer": {
+    "mergeButton": "Dateien kombinieren",
+    "processing": "Wird verarbeitet...",
+    "clear": "Leeren",
+    "summary_one": "{{count}} Datei geladen · ~{{size}}",
+    "summary_other": "{{count}} Dateien geladen · ~{{size}}"
+  },
+  "blocked": {
+    "noFiles": "Füge mindestens eine Datei zum Kombinieren hinzu.",
+    "noDestination": "Wähle einen Zielordner, um das Ergebnis zu speichern.",
+    "joinMinFiles": "Für einen Join werden mindestens zwei Dateien benötigt.",
+    "readingColumns": "Spalten der Dateien werden gelesen...",
+    "chooseKeyFor": "Wähle die Schlüsselspalte für: {{files}}."
+  },
+  "status": {
+    "startingMerge": "Kombination wird gestartet...",
+    "processing": "Wird verarbeitet...",
+    "unexpectedError": "Beim Kombinieren der Dateien ist ein unerwarteter Fehler aufgetreten.",
+    "columnsReadGeneric": "Die Spalten der Dateien konnten nicht gelesen werden."
+  },
+  "common": {
+    "close": "Schließen"
+  },
+  "about": {
+    "trigger": "Über",
+    "windowTitle": "Über Merger Lab",
+    "version": "Version {{version}}",
+    "author": "Autor",
+    "license": "Lizenz",
+    "year": "Jahr",
+    "replayTour": "Willkommens-Tour erneut ansehen"
+  },
+  "theme": {
+    "ariaLabel": "Design der Anwendung",
+    "system": "System",
+    "light": "Hell",
+    "dark": "Dunkel"
+  },
+  "language": {
+    "ariaLabel": "Sprache der Anwendung"
+  },
+  "tour": {
+    "stepCount": "Schritt {{current}} von {{total}}",
+    "hint": "Irgendwo klicken, um fortzufahren · Esc zum Beenden",
+    "steps": {
+      "welcome": {
+        "title": "Willkommen bei Merger Lab",
+        "body": "Diese kurze Anleitung führt durch die wichtigsten Teile der App. Klicke irgendwo, um fortzufahren (Esc zum jederzeitigen Beenden)."
+      },
+      "loadFiles": {
+        "title": "1. Dateien laden",
+        "body": "Füge die .xlsx-, .xls-, .csv- oder .ods-Dateien hinzu, die du kombinieren möchtest. Die Reihenfolge in der Liste ist wichtig: Du kannst sie mit den Pfeilen ändern."
+      },
+      "chooseMode": {
+        "title": "2. Wähle, wie sie kombiniert werden",
+        "body": "Join verbindet Dateien über eine Schlüsselspalte; Stapeln fügt sie untereinander zusammen, wenn sie dieselben Spalten haben. Jeder Modus hat sein eigenes Tutorial mit Grafiken (die Schaltfläche \"?\")."
+      },
+      "joinKey": {
+        "title": "3. Schlüsselspalte pro Datei",
+        "body": "Im Join-Modus wählst du für JEDE Datei einzeln aus, welche Spalte jede Zeile identifiziert — sie können unterschiedliche Namen haben, die App behandelt sie beim Kombinieren als denselben Schlüssel."
+      },
+      "configureOutput": {
+        "title": "4. Ausgabe konfigurieren",
+        "body": "Wähle das Format der Ergebnisdatei, ihren Namen und den Ordner, in dem sie gespeichert wird."
+      },
+      "merge": {
+        "title": "5. Kombinieren",
+        "body": "Sobald die Schaltfläche aktiviert ist, kombiniere die Dateien. Ist sie deaktiviert, zeigt der Text darüber genau an, was noch fehlt."
+      },
+      "theme": {
+        "title": "6. Helles oder dunkles Design",
+        "body": "Standardmäßig folgt es dem Design des Betriebssystems; wähle \"Hell\" oder \"Dunkel\", um es manuell festzulegen."
+      },
+      "help": {
+        "title": "7. Hilfe und Version",
+        "body": "Hier findest du die Version, den Autor und einen Link, um diese Tour jederzeit erneut anzusehen."
+      }
+    }
+  },
+  "joinTutorial": {
+    "buttonLabel": "Was jeder Join-Typ bedeutet",
+    "title": "Join-Typen",
+    "chainNote": "Wenn du mehr als zwei Dateien kombinierst, wird der Join verkettet und in der Reihenfolge angewendet, in der sie in der Liste erscheinen: zuerst Datei 1 mit Datei 2, dann dieses Ergebnis mit Datei 3 und so weiter.",
+    "types": {
+      "inner": {
+        "title": "Inner Join (Schnittmenge)",
+        "description": "Es bleiben nur die Zeilen übrig, deren Schlüsselspalte in ALLEN kombinierten Dateien vorhanden ist. Beispiel: Wer hat sowohl eine Krankenversicherung ALS AUCH eine Fitnessstudio-Mitgliedschaft."
+      },
+      "left": {
+        "title": "Left Join (links)",
+        "description": "Alle Zeilen der ersten Datei bleiben erhalten und werden mit Daten der anderen ergänzt, wenn der Schlüssel übereinstimmt (leer, wenn keine Übereinstimmung vorliegt). Beispiel: alle mit Krankenversicherung, unabhängig von einer Fitnessstudio-Mitgliedschaft."
+      },
+      "right": {
+        "title": "Right Join (rechts)",
+        "description": "Das Spiegelbild des Left Joins: Alle Zeilen der anderen Datei bleiben erhalten und werden mit Daten der ersten ergänzt, wenn eine Übereinstimmung vorliegt. Beispiel: alle mit Fitnessstudio-Mitgliedschaft, unabhängig von einer Krankenversicherung."
+      },
+      "outer": {
+        "title": "Outer Join (vollständig)",
+        "description": "Alle Zeilen aller Dateien bleiben erhalten, ob sie übereinstimmen oder nicht. Fehlende Daten bleiben leer. Beispiel: alle mit Krankenversicherung ODER Fitnessstudio-Mitgliedschaft (oder beidem)."
+      }
+    }
+  },
+  "stackTutorial": {
+    "buttonLabel": "So funktioniert das Stapeln von Zeilen",
+    "title": "So funktioniert das Stapeln von Zeilen",
+    "diagram": {
+      "file1": "Datei 1",
+      "file2": "Datei 2",
+      "file3": "Datei 3",
+      "result": "Ergebnis: gleiche Spalten, gestapelte Zeilen"
+    },
+    "body1": "Beim Stapeln werden die Zeilen jeder Datei in der Reihenfolge, in der sie in der Liste erscheinen, untereinander angeordnet. Dabei werden keine Daten zwischen Dateien verknüpft, sie werden nur aneinandergehängt. Spalten werden nach Namen ausgerichtet; fehlt einer Datei eine Spalte, die die anderen haben, bleibt diese Zelle in ihren Zeilen leer.",
+    "body2": "Verwende diesen Modus, wenn die Dateien dieselbe Art von Daten darstellen, die im Zeitverlauf oder stapelweise wiederholt werden (z. B. Verkäufe für Januar, Februar und März mit denselben Spalten) — im Gegensatz zum Join, der unterschiedliche Spalten über einen gemeinsamen Schlüssel verknüpft.",
+    "headersOnceTerm": "Überschriften nur einmal einfügen",
+    "headersOnceNote": "verhindert, dass sich die Spaltennamen für jede hinzugefügte Datei wie eine Datenzeile wiederholen.",
+    "sourceColumnTerm": "Spalte mit Name der Quelldatei hinzufügen",
+    "sourceColumnNote": "fügt eine zusätzliche Spalte hinzu, die angibt, aus welcher Datei jede Zeile stammt — nützlich, um die Herkunft nach dem Stapeln nachzuverfolgen."
+  },
+  "splash": {
+    "loading": "Wird geladen…"
+  },
+  "errors": {
+    "backendUnavailable": "Das Backend ist noch nicht verfügbar.",
+    "backendCrashed": "Der Backend-Prozess wurde unerwartet beendet. Starte die Anwendung neu.",
+    "httpError": "HTTP-Fehler {{status}}",
+    "mergeGenericError": "Beim Kombinieren der Dateien ist ein Fehler aufgetreten."
+  },
+  "backend": {
+    "queued": "In der Warteschlange...",
+    "reading_files": "Dateien werden gelesen...",
+    "read_file_progress": "{{filename}} gelesen ({{index}}/{{total}})",
+    "join_file_progress": "{{filename}} kombiniert ({{index}}/{{total}})",
+    "saving_output": "Kombinierte Datei wird gespeichert...",
+    "merge_done": "Kombination abgeschlossen.",
+    "no_files_selected": "Es wurden keine Dateien ausgewählt.",
+    "unsupported_output_format": "Nicht unterstütztes Ausgabeformat: '{{format}}'.",
+    "no_output_path": "Es wurde kein Speicherpfad angegeben.",
+    "unsupported_mode": "Nicht unterstützter Kombinationsmodus: '{{mode}}'.",
+    "join_min_files": "Für einen Join werden mindestens zwei Dateien benötigt.",
+    "missing_join_key": "Du musst für jede Datei eine Schlüsselspalte angeben.",
+    "unsupported_join_type": "Nicht unterstützter Join-Typ: '{{joinType}}'.",
+    "columns_read_error": "Die Spalten der Dateien konnten nicht gelesen werden.",
+    "job_not_found": "Auftrag nicht gefunden.",
+    "unexpected_merge_error": "Beim Kombinieren der Dateien ist ein unerwarteter Fehler aufgetreten.",
+    "file_not_found": "Die Datei existiert nicht: {{path}}",
+    "file_read_error": "'{{filename}}' konnte nicht gelesen werden. Die Datei ist möglicherweise beschädigt, passwortgeschützt oder defekt. Detail: {{detail}}",
+    "unsupported_input_format": "Nicht unterstütztes Format '{{ext}}' in '{{filename}}'. Erlaubte Formate: {{allowed}}.",
+    "no_data": "Die ausgewählten Dateien enthalten keine Daten zum Kombinieren.",
+    "unsupported_join_type_detail": "Nicht unterstützter Join-Typ: '{{joinType}}'. Erlaubte Typen: {{allowed}}.",
+    "join_key_not_found": "Die Schlüsselspalte '{{key}}' existiert nicht in '{{filename}}'. Verfügbare Spalten: {{columns}}.",
+    "output_dir_missing": "Der Zielordner existiert nicht: {{dir}}",
+    "output_dir_no_permission": "Keine Schreibberechtigung im Zielordner: {{dir}}",
+    "output_file_locked": "Keine Schreibberechtigung für '{{path}}'. Schließe die Datei, falls sie in einem anderen Programm geöffnet ist, oder wähle einen anderen Speicherort.",
+    "output_write_error": "Die Ausgabedatei konnte nicht gespeichert werden: {{detail}}",
+    "xls_library_missing": "Die Bibliothek 'xlwt' ist nicht verfügbar, um .xls-Dateien zu erzeugen.",
+    "xls_row_limit": "Das kombinierte Ergebnis hat {{rows}} Zeilen und überschreitet damit das Limit von {{limit}} Zeilen des klassischen .xls-Formats. Verwende stattdessen .xlsx, .csv oder .ods."
+  }
+}

@@ -1,0 +1,221 @@
+{
+  "header": {
+    "brand": "Merger Lab"
+  },
+  "panels": {
+    "input": {
+      "title": "输入文件"
+    },
+    "output": {
+      "title": "输出设置"
+    }
+  },
+  "fileList": {
+    "dropHint": "将文件拖到此处，或点击选择文件",
+    "supportedFormats": ".xls, .xlsx, .csv, .ods",
+    "rejected_other": "已忽略 {{count}} 个格式不受支持的文件。",
+    "removeFile": "移除文件"
+  },
+  "mode": {
+    "label": "合并模式",
+    "join": {
+      "label": "按键合并（join）",
+      "hint": "使用一个共同的 ID，将不同文件的列关联起来"
+    },
+    "concat": {
+      "label": "堆叠行",
+      "hint": "将列相同的文件依次叠放在一起"
+    }
+  },
+  "join": {
+    "typeLabel": "Join 类型",
+    "typeAriaLabel": "Join 类型",
+    "keyPerFile": "每个文件的关键列",
+    "needTwoFiles": "请至少添加两个文件，以选择用于关联的列。",
+    "readingColumns": "正在读取文件的列...",
+    "noColumns": "没有可读取的列",
+    "chooseColumn": "选择一列...",
+    "keyAriaLabel": "{{file}} 中的关键列",
+    "note": "每个文件可以使用名称不同的列（例如一个文件中的 “ID_Cliente” 和另一个文件中的 “Codigo Cliente”）：合并时应用会将它们视为同一个键。"
+  },
+  "format": {
+    "label": "输出格式",
+    "ariaLabel": "输出格式"
+  },
+  "outputFileName": {
+    "label": "输出文件名",
+    "placeholder": "合并结果"
+  },
+  "destination": {
+    "label": "目标路径",
+    "placeholder": "选择目标文件夹...",
+    "browse": "浏览..."
+  },
+  "stackOptions": {
+    "label": "选项",
+    "headersOnce": "仅包含一次表头",
+    "sourceColumn": "添加一列显示来源文件名"
+  },
+  "progress": {
+    "completedPrefix": "已完成 — 文件已保存到",
+    "openFolder": "打开文件夹",
+    "filesCountWithProcessed": "{{processed}} / {{total}} 个文件",
+    "filesCountTotalOnly": "{{total}} 个文件"
+  },
+  "footer": {
+    "mergeButton": "合并文件",
+    "processing": "处理中...",
+    "clear": "清空",
+    "summary_other": "已加载 {{count}} 个文件 · ~{{size}}"
+  },
+  "blocked": {
+    "noFiles": "请至少添加一个要合并的文件。",
+    "noDestination": "请选择一个用于保存结果的目标文件夹。",
+    "joinMinFiles": "进行 join 至少需要两个文件。",
+    "readingColumns": "正在读取文件的列...",
+    "chooseKeyFor": "请为以下文件选择关键列：{{files}}。"
+  },
+  "status": {
+    "startingMerge": "正在开始合并...",
+    "processing": "处理中...",
+    "unexpectedError": "合并文件时发生意外错误。",
+    "columnsReadGeneric": "无法读取文件的列。"
+  },
+  "common": {
+    "close": "关闭"
+  },
+  "about": {
+    "trigger": "关于",
+    "windowTitle": "关于 Merger Lab",
+    "version": "版本 {{version}}",
+    "author": "作者",
+    "license": "许可证",
+    "year": "年份",
+    "replayTour": "重新观看欢迎导览"
+  },
+  "theme": {
+    "ariaLabel": "应用主题",
+    "system": "跟随系统",
+    "light": "浅色",
+    "dark": "深色"
+  },
+  "language": {
+    "ariaLabel": "应用语言"
+  },
+  "tour": {
+    "stepCount": "第 {{current}} 步，共 {{total}} 步",
+    "hint": "点击任意位置继续 · 按 Esc 退出",
+    "steps": {
+      "welcome": {
+        "title": "欢迎使用 Merger Lab",
+        "body": "这份快速指南将带你了解应用的主要功能。点击任意位置继续（随时按 Esc 退出）。"
+      },
+      "loadFiles": {
+        "title": "1. 加载文件",
+        "body": "添加你要合并的 .xlsx、.xls、.csv 或 .ods 文件。列表中的顺序很重要：可以用箭头调整顺序。"
+      },
+      "chooseMode": {
+        "title": "2. 选择合并方式",
+        "body": "Join 通过关键列关联文件；堆叠则在列相同的情况下将文件依次叠放。每种模式都有配图说明的独立教程（“?” 按钮）。"
+      },
+      "joinKey": {
+        "title": "3. 每个文件的关键列",
+        "body": "在 join 模式下，你需要分别为每个文件选择用于标识每一行的列——不同文件的列名可以不同，合并时应用会将它们视为同一个键。"
+      },
+      "configureOutput": {
+        "title": "4. 配置输出",
+        "body": "选择结果文件的格式、名称以及保存的文件夹。"
+      },
+      "merge": {
+        "title": "5. 合并",
+        "body": "按钮可用时，即可合并文件。如果按钮不可用，上方文字会准确说明还缺少什么。"
+      },
+      "theme": {
+        "title": "6. 浅色或深色主题",
+        "body": "默认跟随操作系统的主题；选择“浅色”或“深色”可手动固定主题。"
+      },
+      "help": {
+        "title": "7. 帮助和版本",
+        "body": "在这里可以查看版本号、作者信息，以及随时重新观看本导览的链接。"
+      }
+    }
+  },
+  "joinTutorial": {
+    "buttonLabel": "各种 join 类型的含义",
+    "title": "Join 类型",
+    "chainNote": "如果合并两个以上的文件，join 会按列表中的顺序依次链式应用：先是文件 1 与文件 2，再将结果与文件 3 合并，依此类推。",
+    "types": {
+      "inner": {
+        "title": "Inner join（交集）",
+        "description": "只保留关键列在所有合并文件中都存在的行。例如：同时拥有医疗保险和健身房会员资格的人。"
+      },
+      "left": {
+        "title": "Left join（左连接）",
+        "description": "保留第一个文件的所有行，并在键匹配时用其他文件的数据补全（不匹配则留空）。例如：所有拥有医疗保险的人，无论是否有健身房会员资格。"
+      },
+      "right": {
+        "title": "Right join（右连接）",
+        "description": "与 left join 相反：保留另一个文件的所有行，并在匹配时用第一个文件的数据补全。例如：所有拥有健身房会员资格的人，无论是否有医疗保险。"
+      },
+      "outer": {
+        "title": "Outer join（全连接）",
+        "description": "保留所有文件的全部行，无论是否匹配。缺失的数据留空。例如：拥有医疗保险或健身房会员资格（或两者都有）的所有人。"
+      }
+    }
+  },
+  "stackTutorial": {
+    "buttonLabel": "行堆叠的工作原理",
+    "title": "行堆叠的工作原理",
+    "diagram": {
+      "file1": "文件 1",
+      "file2": "文件 2",
+      "file3": "文件 3",
+      "result": "结果：列相同，行依次堆叠"
+    },
+    "body1": "堆叠会按照列表中的顺序，将每个文件的行依次叠放在一起。它不会在文件之间关联数据，只是简单地拼接起来。列按名称对齐；如果某个文件缺少其他文件拥有的列，对应单元格会留空。",
+    "body2": "当文件表示随时间或批次重复出现的同类数据时（例如列相同的一月、二月和三月销售数据），可使用此模式；这与通过共同键关联不同列的 join 不同。",
+    "headersOnceTerm": "仅包含一次表头",
+    "headersOnceNote": "避免每添加一个文件，列名就像数据行一样重复出现。",
+    "sourceColumnTerm": "添加一列显示来源文件名",
+    "sourceColumnNote": "添加一个额外的列，标明每一行来自哪个文件，便于在堆叠后追溯数据来源。"
+  },
+  "splash": {
+    "loading": "正在加载…"
+  },
+  "errors": {
+    "backendUnavailable": "后端尚不可用。",
+    "backendCrashed": "后端进程意外停止，请重启应用。",
+    "httpError": "HTTP 错误 {{status}}",
+    "mergeGenericError": "合并文件时发生错误。"
+  },
+  "backend": {
+    "queued": "排队中...",
+    "reading_files": "正在读取文件...",
+    "read_file_progress": "已读取 {{filename}}（{{index}}/{{total}}）",
+    "join_file_progress": "已合并 {{filename}}（{{index}}/{{total}}）",
+    "saving_output": "正在保存合并后的文件...",
+    "merge_done": "合并已完成。",
+    "no_files_selected": "未选择任何文件。",
+    "unsupported_output_format": "不支持的输出格式：“{{format}}”。",
+    "no_output_path": "未指定保存路径。",
+    "unsupported_mode": "不支持的合并模式：“{{mode}}”。",
+    "join_min_files": "进行 join 至少需要两个文件。",
+    "missing_join_key": "必须为每个文件指定一个关键列。",
+    "unsupported_join_type": "不支持的 join 类型：“{{joinType}}”。",
+    "columns_read_error": "无法读取文件的列。",
+    "job_not_found": "未找到该任务。",
+    "unexpected_merge_error": "合并文件时发生意外错误。",
+    "file_not_found": "文件不存在：{{path}}",
+    "file_read_error": "无法读取“{{filename}}”。该文件可能已损坏、受密码保护或已被破坏。详情：{{detail}}",
+    "unsupported_input_format": "“{{filename}}” 中存在不支持的格式 “{{ext}}”。允许的格式：{{allowed}}。",
+    "no_data": "所选文件不包含可合并的数据。",
+    "unsupported_join_type_detail": "不支持的合并类型：“{{joinType}}”。允许的类型：{{allowed}}。",
+    "join_key_not_found": "关键列 “{{key}}” 在 “{{filename}}” 中不存在。可用的列：{{columns}}。",
+    "output_dir_missing": "目标文件夹不存在：{{dir}}",
+    "output_dir_no_permission": "对目标文件夹没有写入权限：{{dir}}",
+    "output_file_locked": "对 “{{path}}” 没有写入权限。如果该文件已在其他程序中打开，请先关闭，或选择其他位置。",
+    "output_write_error": "无法保存输出文件：{{detail}}",
+    "xls_library_missing": "缺少用于生成 .xls 文件的 “xlwt” 库。",
+    "xls_row_limit": "合并结果共有 {{rows}} 行，超出经典 .xls 格式 {{limit}} 行的限制。请改用 .xlsx、.csv 或 .ods。"
+  }
+}

@@ -1,9 +1,11 @@
 import React, { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { extensionOf, formatMetaFor } from "../formatMeta.js";
 
 const ACCEPTED_EXTENSIONS = new Set(["xls", "xlsx", "csv", "ods"]);
 
 export default function FileList({ files, onAddFiles, onRemove, onReorder, disabled }) {
+  const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = useState(false);
   const [rejected, setRejected] = useState(0);
   const [dragIndex, setDragIndex] = useState(null);
@@ -101,14 +103,12 @@ export default function FileList({ files, onAddFiles, onRemove, onReorder, disab
             strokeLinejoin="round"
           />
         </svg>
-        <p>Arrastra archivos aquí o haz clic para seleccionar</p>
-        <p className="dropzone-hint">.xls, .xlsx, .csv, .ods</p>
+        <p>{t("fileList.dropHint")}</p>
+        <p className="dropzone-hint">{t("fileList.supportedFormats")}</p>
       </div>
 
       {rejected > 0 && (
-        <p className="dropzone-warning">
-          Se ignoraron {rejected} archivo{rejected === 1 ? "" : "s"} con formato no soportado.
-        </p>
+        <p className="dropzone-warning">{t("fileList.rejected", { count: rejected })}</p>
       )}
 
       {files.length > 0 && (
@@ -141,8 +141,8 @@ export default function FileList({ files, onAddFiles, onRemove, onReorder, disab
                   className="icon-btn danger"
                   disabled={disabled}
                   onClick={() => onRemove(index)}
-                  aria-label="Quitar archivo"
-                  title="Quitar archivo"
+                  aria-label={t("fileList.removeFile")}
+                  title={t("fileList.removeFile")}
                 >
                   ×
                 </button>

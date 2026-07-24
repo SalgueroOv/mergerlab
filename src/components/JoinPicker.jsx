@@ -1,6 +1,10 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import JoinTutorial from "./JoinTutorial.jsx";
 
+// Los nombres de los tipos de join (Inner/Left/Right/Outer) se mantienen sin traducir en todos
+// los idiomas, igual que en el texto original: son terminología técnica universal, solo se
+// traduce su explicación (ver joinTutorial.types.* en los locales).
 const JOIN_TYPES = [
   { value: "inner", label: "Inner" },
   { value: "left", label: "Left" },
@@ -19,13 +23,14 @@ export default function JoinPicker({
   columnsError,
   disabled,
 }) {
+  const { t } = useTranslation();
   return (
     <div className="join-picker">
       <div className="field-row">
-        <span className="field-label field-label--inline">Tipo de join</span>
+        <span className="field-label field-label--inline">{t("join.typeLabel")}</span>
         <JoinTutorial />
       </div>
-      <div className="format-picker" role="radiogroup" aria-label="Tipo de join">
+      <div className="format-picker" role="radiogroup" aria-label={t("join.typeAriaLabel")}>
         {JOIN_TYPES.map((type) => {
           const selected = joinType === type.value;
           return (
@@ -45,14 +50,12 @@ export default function JoinPicker({
       </div>
 
       <div className="field-group join-key-group">
-        <label className="field-label">Columna clave por archivo</label>
+        <label className="field-label">{t("join.keyPerFile")}</label>
 
         {files.length < 2 ? (
-          <p className="join-key-hint">
-            Añade al menos dos archivos para elegir la columna que los une.
-          </p>
+          <p className="join-key-hint">{t("join.needTwoFiles")}</p>
         ) : loadingColumns ? (
-          <p className="join-key-hint">Leyendo columnas de los archivos...</p>
+          <p className="join-key-hint">{t("join.readingColumns")}</p>
         ) : columnsError ? (
           <p className="join-key-hint join-key-hint--error">{columnsError}</p>
         ) : (
@@ -66,17 +69,17 @@ export default function JoinPicker({
                       {file.name}
                     </span>
                     {cols.length === 0 ? (
-                      <span className="join-key-hint join-key-hint--error">Sin columnas legibles</span>
+                      <span className="join-key-hint join-key-hint--error">{t("join.noColumns")}</span>
                     ) : (
                       <select
                         className="destination-input"
-                        aria-label={`Columna clave en ${file.name}`}
+                        aria-label={t("join.keyAriaLabel", { file: file.name })}
                         value={joinKeys[file.path] || ""}
                         disabled={disabled}
                         onChange={(e) => onJoinKeyChange(file.path, e.target.value)}
                       >
                         <option value="" disabled>
-                          Elige una columna...
+                          {t("join.chooseColumn")}
                         </option>
                         {cols.map((col) => (
                           <option key={col} value={col}>
@@ -89,10 +92,7 @@ export default function JoinPicker({
                 );
               })}
             </div>
-            <p className="join-key-note">
-              Cada archivo puede usar una columna con nombre distinto (por ejemplo "ID_Cliente" en
-              uno y "Codigo Cliente" en otro): la app las trata como la misma clave al combinar.
-            </p>
+            <p className="join-key-note">{t("join.note")}</p>
           </>
         )}
       </div>

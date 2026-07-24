@@ -1,0 +1,223 @@
+{
+  "header": {
+    "brand": "Merger Lab"
+  },
+  "panels": {
+    "input": {
+      "title": "File di input"
+    },
+    "output": {
+      "title": "Impostazioni di output"
+    }
+  },
+  "fileList": {
+    "dropHint": "Trascina i file qui o fai clic per selezionarli",
+    "supportedFormats": ".xls, .xlsx, .csv, .ods",
+    "rejected_one": "{{count}} file con formato non supportato è stato ignorato.",
+    "rejected_other": "{{count}} file con formato non supportato sono stati ignorati.",
+    "removeFile": "Rimuovi file"
+  },
+  "mode": {
+    "label": "Modalità di combinazione",
+    "join": {
+      "label": "Combina per chiave (join)",
+      "hint": "unisce colonne di file diversi usando un ID comune"
+    },
+    "concat": {
+      "label": "Impila righe",
+      "hint": "unisce file con le stesse colonne, uno sotto l'altro"
+    }
+  },
+  "join": {
+    "typeLabel": "Tipo di join",
+    "typeAriaLabel": "Tipo di join",
+    "keyPerFile": "Colonna chiave per file",
+    "needTwoFiles": "Aggiungi almeno due file per scegliere la colonna che li unisce.",
+    "readingColumns": "Lettura delle colonne dei file...",
+    "noColumns": "Nessuna colonna leggibile",
+    "chooseColumn": "Scegli una colonna...",
+    "keyAriaLabel": "Colonna chiave in {{file}}",
+    "note": "Ogni file può usare una colonna con un nome diverso (ad esempio \"ID_Cliente\" in uno e \"Codigo Cliente\" nell'altro): l'app le tratta come la stessa chiave durante la combinazione."
+  },
+  "format": {
+    "label": "Formato di output",
+    "ariaLabel": "Formato di output"
+  },
+  "outputFileName": {
+    "label": "Nome del file di output",
+    "placeholder": "combinato"
+  },
+  "destination": {
+    "label": "Percorso di destinazione",
+    "placeholder": "Seleziona una cartella di destinazione...",
+    "browse": "Sfoglia..."
+  },
+  "stackOptions": {
+    "label": "Opzioni",
+    "headersOnce": "Includi le intestazioni una sola volta",
+    "sourceColumn": "Aggiungi una colonna con il nome del file di origine"
+  },
+  "progress": {
+    "completedPrefix": "Completato — file salvato in",
+    "openFolder": "Apri cartella",
+    "filesCountWithProcessed": "{{processed}} / {{total}} file",
+    "filesCountTotalOnly": "{{total}} file"
+  },
+  "footer": {
+    "mergeButton": "Combina file",
+    "processing": "Elaborazione in corso...",
+    "clear": "Pulisci",
+    "summary_one": "{{count}} file caricato · ~{{size}}",
+    "summary_other": "{{count}} file caricati · ~{{size}}"
+  },
+  "blocked": {
+    "noFiles": "Aggiungi almeno un file da combinare.",
+    "noDestination": "Scegli una cartella di destinazione per salvare il risultato.",
+    "joinMinFiles": "Servono almeno due file per fare un join.",
+    "readingColumns": "Lettura delle colonne dei file...",
+    "chooseKeyFor": "Scegli la colonna chiave per: {{files}}."
+  },
+  "status": {
+    "startingMerge": "Avvio della combinazione...",
+    "processing": "Elaborazione in corso...",
+    "unexpectedError": "Si è verificato un errore imprevisto durante la combinazione dei file.",
+    "columnsReadGeneric": "Impossibile leggere le colonne dei file."
+  },
+  "common": {
+    "close": "Chiudi"
+  },
+  "about": {
+    "trigger": "Informazioni",
+    "windowTitle": "Informazioni su Merger Lab",
+    "version": "Versione {{version}}",
+    "author": "Autore",
+    "license": "Licenza",
+    "year": "Anno",
+    "replayTour": "Rivedi il tour di benvenuto"
+  },
+  "theme": {
+    "ariaLabel": "Tema dell'applicazione",
+    "system": "Sistema",
+    "light": "Chiaro",
+    "dark": "Scuro"
+  },
+  "language": {
+    "ariaLabel": "Lingua dell'applicazione"
+  },
+  "tour": {
+    "stepCount": "Passo {{current}} di {{total}}",
+    "hint": "Clicca ovunque per continuare · Esc per uscire",
+    "steps": {
+      "welcome": {
+        "title": "Benvenuto in Merger Lab",
+        "body": "Questa guida rapida illustra le parti principali dell'app. Clicca ovunque per proseguire (Esc per uscire in qualsiasi momento)."
+      },
+      "loadFiles": {
+        "title": "1. Carica i tuoi file",
+        "body": "Aggiungi i file .xlsx, .xls, .csv o .ods che vuoi combinare. L'ordine nell'elenco è importante: puoi riordinarli con le frecce."
+      },
+      "chooseMode": {
+        "title": "2. Scegli come combinarli",
+        "body": "Join incrocia i file tramite una colonna chiave; Impila li unisce uno sotto l'altro quando condividono le stesse colonne. Ogni modalità ha il proprio tutorial con disegni (il pulsante \"?\")."
+      },
+      "joinKey": {
+        "title": "3. Colonna chiave per file",
+        "body": "In modalità join scegli quale colonna identifica ogni riga in CIASCUN file separatamente — possono avere nomi diversi, l'app li tratta come la stessa chiave durante la combinazione."
+      },
+      "configureOutput": {
+        "title": "4. Configura l'output",
+        "body": "Scegli il formato del file risultante, il suo nome e la cartella in cui salvarlo."
+      },
+      "merge": {
+        "title": "5. Combina",
+        "body": "Quando il pulsante è abilitato, combina i file. Se è disabilitato, il testo sopra indicherà esattamente cosa manca."
+      },
+      "theme": {
+        "title": "6. Tema chiaro o scuro",
+        "body": "Per impostazione predefinita segue il tema del sistema operativo; scegli \"Chiaro\" o \"Scuro\" per impostarlo manualmente."
+      },
+      "help": {
+        "title": "7. Aiuto e versione",
+        "body": "Qui trovi la versione, l'autore e un link per rivedere questo tour quando vuoi."
+      }
+    }
+  },
+  "joinTutorial": {
+    "buttonLabel": "Cosa significa ogni tipo di join",
+    "title": "Tipi di join",
+    "chainNote": "Se combini più di due file, il join viene applicato in catena, nell'ordine in cui appaiono nell'elenco: prima il file 1 con il 2, poi quel risultato con il 3, e così via.",
+    "types": {
+      "inner": {
+        "title": "Inner join (intersezione)",
+        "description": "Rimangono solo le righe la cui colonna chiave esiste in TUTTI i file combinati. Esempio: chi ha sia l'assicurazione sanitaria SIA l'abbonamento in palestra."
+      },
+      "left": {
+        "title": "Left join (sinistra)",
+        "description": "Rimangono tutte le righe del primo file, completate con i dati degli altri quando la chiave corrisponde (vuoto se non c'è corrispondenza). Esempio: tutti quelli con assicurazione sanitaria, che abbiano o no l'abbonamento in palestra."
+      },
+      "right": {
+        "title": "Right join (destra)",
+        "description": "È lo specchio del left join: rimangono tutte le righe dell'altro file, completate con i dati del primo quando corrisponde. Esempio: tutti quelli con l'abbonamento in palestra, che abbiano o no l'assicurazione sanitaria."
+      },
+      "outer": {
+        "title": "Outer join (completo)",
+        "description": "Rimangono tutte le righe di tutti i file, corrispondano o no. I dati mancanti restano vuoti. Esempio: tutti quelli con assicurazione sanitaria O abbonamento in palestra (o entrambi)."
+      }
+    }
+  },
+  "stackTutorial": {
+    "buttonLabel": "Come funziona impilare le righe",
+    "title": "Come funziona impilare le righe",
+    "diagram": {
+      "file1": "File 1",
+      "file2": "File 2",
+      "file3": "File 3",
+      "result": "Risultato: stesse colonne, righe impilate"
+    },
+    "body1": "Impilare prende ogni file e mette le sue righe una sotto l'altra, nell'ordine in cui appaiono nell'elenco. Non incrocia i dati tra i file: si limita a concatenarli. Le colonne vengono allineate per nome; se un file non ha una colonna presente negli altri, quella cella resta vuota nelle sue righe.",
+    "body2": "Usa questa modalità quando i file rappresentano lo stesso tipo di dati ripetuto nel tempo o per lotti (ad esempio, vendite di gennaio, febbraio e marzo con le stesse colonne), a differenza del join, che incrocia colonne diverse usando una chiave comune.",
+    "headersOnceTerm": "Includi le intestazioni una sola volta",
+    "headersOnceNote": "evita che il nome delle colonne si ripeta come se fosse una riga di dati per ogni file aggiunto.",
+    "sourceColumnTerm": "Aggiungi una colonna con il nome del file di origine",
+    "sourceColumnNote": "aggiunge una colonna extra che indica da quale file proviene ogni riga, utile per rintracciarne l'origine dopo l'impilamento."
+  },
+  "splash": {
+    "loading": "Caricamento…"
+  },
+  "errors": {
+    "backendUnavailable": "Il backend non è ancora disponibile.",
+    "backendCrashed": "Il processo backend si è interrotto inaspettatamente. Riavvia l'applicazione.",
+    "httpError": "Errore HTTP {{status}}",
+    "mergeGenericError": "Si è verificato un errore durante la combinazione dei file."
+  },
+  "backend": {
+    "queued": "In coda...",
+    "reading_files": "Lettura dei file...",
+    "read_file_progress": "Letto {{filename}} ({{index}}/{{total}})",
+    "join_file_progress": "Combinato {{filename}} ({{index}}/{{total}})",
+    "saving_output": "Salvataggio del file combinato...",
+    "merge_done": "Combinazione completata.",
+    "no_files_selected": "Non è stato selezionato alcun file.",
+    "unsupported_output_format": "Formato di output non supportato: '{{format}}'.",
+    "no_output_path": "Non è stato indicato alcun percorso di salvataggio.",
+    "unsupported_mode": "Modalità di combinazione non supportata: '{{mode}}'.",
+    "join_min_files": "Servono almeno due file per fare un join.",
+    "missing_join_key": "Devi indicare una colonna chiave per ogni file.",
+    "unsupported_join_type": "Tipo di join non supportato: '{{joinType}}'.",
+    "columns_read_error": "Impossibile leggere le colonne dei file.",
+    "job_not_found": "Attività non trovata.",
+    "unexpected_merge_error": "Si è verificato un errore imprevisto durante la combinazione dei file.",
+    "file_not_found": "Il file non esiste: {{path}}",
+    "file_read_error": "Impossibile leggere '{{filename}}'. Il file potrebbe essere corrotto, protetto da password o danneggiato. Dettaglio: {{detail}}",
+    "unsupported_input_format": "Formato non supportato '{{ext}}' in '{{filename}}'. Formati consentiti: {{allowed}}.",
+    "no_data": "I file selezionati non contengono dati da combinare.",
+    "unsupported_join_type_detail": "Tipo di combinazione non supportato: '{{joinType}}'. Tipi consentiti: {{allowed}}.",
+    "join_key_not_found": "La colonna chiave '{{key}}' non esiste in '{{filename}}'. Colonne disponibili: {{columns}}.",
+    "output_dir_missing": "La cartella di destinazione non esiste: {{dir}}",
+    "output_dir_no_permission": "Nessun permesso di scrittura nella cartella di destinazione: {{dir}}",
+    "output_file_locked": "Nessun permesso di scrittura per '{{path}}'. Chiudi il file se è aperto in un altro programma, oppure scegli un'altra posizione.",
+    "output_write_error": "Impossibile salvare il file di output: {{detail}}",
+    "xls_library_missing": "La libreria 'xlwt' non è disponibile per generare file .xls.",
+    "xls_row_limit": "Il risultato combinato ha {{rows}} righe, che supera il limite di {{limit}} righe del formato .xls classico. Usa invece .xlsx, .csv o .ods."
+  }
+}

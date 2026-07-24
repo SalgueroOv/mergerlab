@@ -13,16 +13,40 @@ XLS_MAX_ROWS = 65536 - 1
 
 
 class MergeError(Exception):
-    """Error esperado durante la combinación, con un mensaje apto para mostrar al usuario."""
+    """Error esperado durante la combinación, con un mensaje apto para mostrar al usuario.
+
+    Además del mensaje en español (`str(exc)`, usado como respaldo si el frontend no reconoce
+    `code`, o si `code` es `None` porque el mensaje incluye texto de terceros no traducible —
+    ver `detail` en `_read_spreadsheet`), lleva un `code` opcional que el frontend traduce vía
+    i18next (namespace `backend.*`, ver `src/i18n/backendMessages.js`) usando `params`.
+    """
+
+    def __init__(self, message, code=None, params=None):
+        super().__init__(message)
+        self.code = code
+        self.params = params or {}
 
 
 def _extension_of(path):
     return os.path.splitext(path)[1].lower()
 
 
+def _unsupported_format_error(ext, path):
+    return MergeError(
+        f"Formato no soportado '{ext}' en '{os.path.basename(path)}'. "
+        f"Formatos permitidos: {', '.join(sorted(SUPPORTED_INPUT_EXTENSIONS))}.",
+        code="unsupported_input_format",
+        params={
+            "ext": ext,
+            "filename": os.path.basename(path),
+            "allowed": ", ".join(sorted(SUPPORTED_INPUT_EXTENSIONS)),
+        },
+    )
+
+
 def _read_spreadsheet(path):
     if not os.path.exists(path):
-        raise MergeError(f"El archivo no existe: {path}")
+        raise MergeError(f"El archivo no existe: {path}", code="file_not_found", params={"path": path})
 
     ext = _extension_of(path)
 
@@ -39,15 +63,16 @@ def _read_spreadsheet(path):
             sheets = pd.read_excel(path, sheet_name=None, engine="odf")
             return list(sheets.values())
     except Exception as exc:
+        # `detail` es el texto crudo de una excepción de pandas/openpyxl/xlrd/odfpy — casi
+        # siempre en inglés y no traducible, pero útil para diagnosticar el problema real.
         raise MergeError(
             f"No se pudo leer '{os.path.basename(path)}'. El archivo puede estar corrupto, "
-            f"protegido con contraseña o dañado. Detalle: {exc}"
+            f"protegido con contraseña o dañado. Detalle: {exc}",
+            code="file_read_error",
+            params={"filename": os.path.basename(path), "detail": str(exc)},
         ) from exc
 
-    raise MergeError(
-        f"Formato no soportado '{ext}' en '{os.path.basename(path)}'. "
-        f"Formatos permitidos: {', '.join(sorted(SUPPORTED_INPUT_EXTENSIONS))}."
-    )
+    raise _unsupported_format_error(ext, path)
 
 
 def merge_files(file_paths, progress_callback=None):
@@ -57,7 +82,7 @@ def merge_files(file_paths, progress_callback=None):
     Si un archivo tiene varias hojas, se combinan todas sus hojas también.
     """
     if not file_paths:
-        raise MergeError("No se proporcionaron archivos para combinar.")
+        raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
 
     frames = []
     total = len(file_paths)
@@ -65,20 +90,24 @@ def merge_files(file_paths, progress_callback=None):
     for index, path in enumerate(file_paths, start=1):
         ext = _extension_of(path)
         if ext not in SUPPORTED_INPUT_EXTENSIONS:
-            raise MergeError(
-                f"Formato no soportado '{ext}' en '{os.path.basename(path)}'. "
-                f"Formatos permitidos: {', '.join(sorted(SUPPORTED_INPUT_EXTENSIONS))}."
-            )
+            raise _unsupported_format_error(ext, path)
 
         for sheet_df in _read_spreadsheet(path):
             if sheet_df.shape[1] > 0:
                 frames.append(sheet_df)
 
         if progress_callback:
-            progress_callback(index, total, f"Leído {os.path.basename(path)} ({index}/{total})")
+            filename = os.path.basename(path)
+            progress_callback(
+                index,
+                total,
+                f"Leído {filename} ({index}/{total})",
+                code="read_file_progress",
+                params={"filename": filename, "index": index, "total": total},
+            )
 
     if not frames:
-        raise MergeError("Los archivos seleccionados no contienen datos para combinar.")
+        raise MergeError("Los archivos seleccionados no contienen datos para combinar.", code="no_data")
 
     return pd.concat(frames, ignore_index=True, sort=False)
 
@@ -128,16 +157,18 @@ def join_files(file_paths, join_keys, join_type="inner", progress_callback=None)
     distinguen agregando el nombre del archivo de origen entre paréntesis.
     """
     if not file_paths:
-        raise MergeError("No se proporcionaron archivos para combinar.")
+        raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
     if len(file_paths) < 2:
-        raise MergeError("Se necesitan al menos dos archivos para hacer un join.")
+        raise MergeError("Se necesitan al menos dos archivos para hacer un join.", code="join_min_files")
     if join_type not in JOIN_TYPES:
         raise MergeError(
             f"Tipo de combinación no soportado: '{join_type}'. "
-            f"Tipos permitidos: {', '.join(sorted(JOIN_TYPES))}."
+            f"Tipos permitidos: {', '.join(sorted(JOIN_TYPES))}.",
+            code="unsupported_join_type_detail",
+            params={"joinType": join_type, "allowed": ", ".join(sorted(JOIN_TYPES))},
         )
     if not join_keys or len(join_keys) != len(file_paths) or any(not k for k in join_keys):
-        raise MergeError("Debés indicar una columna clave para cada archivo.")
+        raise MergeError("Debés indicar una columna clave para cada archivo.", code="missing_join_key")
 
     total = len(file_paths)
     result = None
@@ -146,17 +177,20 @@ def join_files(file_paths, join_keys, join_type="inner", progress_callback=None)
     for index, (path, key) in enumerate(zip(file_paths, join_keys), start=1):
         ext = _extension_of(path)
         if ext not in SUPPORTED_INPUT_EXTENSIONS:
-            raise MergeError(
-                f"Formato no soportado '{ext}' en '{os.path.basename(path)}'. "
-                f"Formatos permitidos: {', '.join(sorted(SUPPORTED_INPUT_EXTENSIONS))}."
-            )
+            raise _unsupported_format_error(ext, path)
 
         df = _read_single_dataframe(path)
 
         if key not in df.columns:
             raise MergeError(
                 f"La columna clave '{key}' no existe en '{os.path.basename(path)}'. "
-                f"Columnas disponibles: {', '.join(str(c) for c in df.columns)}."
+                f"Columnas disponibles: {', '.join(str(c) for c in df.columns)}.",
+                code="join_key_not_found",
+                params={
+                    "key": key,
+                    "filename": os.path.basename(path),
+                    "columns": ", ".join(str(c) for c in df.columns),
+                },
             )
 
         df = df.copy()
@@ -179,10 +213,17 @@ def join_files(file_paths, join_keys, join_type="inner", progress_callback=None)
                 result = result.drop(columns=[key])
 
         if progress_callback:
-            progress_callback(index, total, f"Combinado {os.path.basename(path)} ({index}/{total})")
+            filename = os.path.basename(path)
+            progress_callback(
+                index,
+                total,
+                f"Combinado {filename} ({index}/{total})",
+                code="join_file_progress",
+                params={"filename": filename, "index": index, "total": total},
+            )
 
     if result is None or result.shape[1] == 0:
-        raise MergeError("Los archivos seleccionados no contienen datos para combinar.")
+        raise MergeError("Los archivos seleccionados no contienen datos para combinar.", code="no_data")
 
     return result
 
@@ -192,15 +233,25 @@ def write_output(df, output_path, output_format):
     if output_format not in SUPPORTED_OUTPUT_FORMATS:
         raise MergeError(
             f"Formato de salida no soportado: '{output_format}'. "
-            f"Formatos permitidos: {', '.join(sorted(SUPPORTED_OUTPUT_FORMATS))}."
+            f"Formatos permitidos: {', '.join(sorted(SUPPORTED_OUTPUT_FORMATS))}.",
+            code="unsupported_output_format",
+            params={"format": output_format},
         )
 
     output_dir = os.path.dirname(output_path) or "."
     if not os.path.isdir(output_dir):
-        raise MergeError(f"La carpeta de destino no existe: {output_dir}")
+        raise MergeError(
+            f"La carpeta de destino no existe: {output_dir}",
+            code="output_dir_missing",
+            params={"dir": output_dir},
+        )
 
     if not os.access(output_dir, os.W_OK):
-        raise MergeError(f"Sin permisos de escritura en la carpeta de destino: {output_dir}")
+        raise MergeError(
+            f"Sin permisos de escritura en la carpeta de destino: {output_dir}",
+            code="output_dir_no_permission",
+            params={"dir": output_dir},
+        )
 
     try:
         if output_format == "csv":
@@ -216,10 +267,16 @@ def write_output(df, output_path, output_format):
     except PermissionError as exc:
         raise MergeError(
             f"Sin permisos de escritura en '{output_path}'. Cierra el archivo si está abierto "
-            f"en otro programa o elige otra ubicación."
+            f"en otro programa o elige otra ubicación.",
+            code="output_file_locked",
+            params={"path": output_path},
         ) from exc
     except Exception as exc:
-        raise MergeError(f"No se pudo guardar el archivo de salida: {exc}") from exc
+        raise MergeError(
+            f"No se pudo guardar el archivo de salida: {exc}",
+            code="output_write_error",
+            params={"detail": str(exc)},
+        ) from exc
 
     return output_path
 
@@ -228,12 +285,17 @@ def _write_xls(df, output_path):
     try:
         import xlwt
     except ImportError as exc:
-        raise MergeError("La librería 'xlwt' no está disponible para generar archivos .xls.") from exc
+        raise MergeError(
+            "La librería 'xlwt' no está disponible para generar archivos .xls.",
+            code="xls_library_missing",
+        ) from exc
 
     if len(df) > XLS_MAX_ROWS:
         raise MergeError(
             f"El resultado combinado tiene {len(df)} filas, que supera el límite de "
-            f"{XLS_MAX_ROWS} filas del formato .xls clásico. Usa .xlsx, .csv u .ods en su lugar."
+            f"{XLS_MAX_ROWS} filas del formato .xls clásico. Usa .xlsx, .csv u .ods en su lugar.",
+            code="xls_row_limit",
+            params={"rows": len(df), "limit": XLS_MAX_ROWS},
         )
 
     workbook = xlwt.Workbook()

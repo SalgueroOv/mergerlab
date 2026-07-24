@@ -105,6 +105,21 @@ body {
   color: white;
 }
 
+.language-select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  color: var(--text-muted);
+  padding: 6px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.language-select:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .brand-name {
   font-size: 16px;
   font-weight: 700;

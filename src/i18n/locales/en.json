@@ -1,0 +1,223 @@
+{
+  "header": {
+    "brand": "Merger Lab"
+  },
+  "panels": {
+    "input": {
+      "title": "Input files"
+    },
+    "output": {
+      "title": "Output settings"
+    }
+  },
+  "fileList": {
+    "dropHint": "Drag files here or click to select",
+    "supportedFormats": ".xls, .xlsx, .csv, .ods",
+    "rejected_one": "{{count}} file with an unsupported format was ignored.",
+    "rejected_other": "{{count}} files with an unsupported format were ignored.",
+    "removeFile": "Remove file"
+  },
+  "mode": {
+    "label": "Combination mode",
+    "join": {
+      "label": "Combine by key (join)",
+      "hint": "joins columns from different files using a common ID"
+    },
+    "concat": {
+      "label": "Stack rows",
+      "hint": "joins files with the same columns, one below the other"
+    }
+  },
+  "join": {
+    "typeLabel": "Join type",
+    "typeAriaLabel": "Join type",
+    "keyPerFile": "Key column per file",
+    "needTwoFiles": "Add at least two files to choose the column that joins them.",
+    "readingColumns": "Reading file columns...",
+    "noColumns": "No readable columns",
+    "chooseColumn": "Choose a column...",
+    "keyAriaLabel": "Key column in {{file}}",
+    "note": "Each file can use a differently named column (for example \"ID_Cliente\" in one and \"Codigo Cliente\" in another): the app treats them as the same key when combining."
+  },
+  "format": {
+    "label": "Output format",
+    "ariaLabel": "Output format"
+  },
+  "outputFileName": {
+    "label": "Output file name",
+    "placeholder": "combined"
+  },
+  "destination": {
+    "label": "Destination path",
+    "placeholder": "Select a destination folder...",
+    "browse": "Browse..."
+  },
+  "stackOptions": {
+    "label": "Options",
+    "headersOnce": "Include headers only once",
+    "sourceColumn": "Add a column with the source file name"
+  },
+  "progress": {
+    "completedPrefix": "Done — file saved to",
+    "openFolder": "Open folder",
+    "filesCountWithProcessed": "{{processed}} / {{total}} files",
+    "filesCountTotalOnly": "{{total}} files"
+  },
+  "footer": {
+    "mergeButton": "Combine files",
+    "processing": "Processing...",
+    "clear": "Clear",
+    "summary_one": "{{count}} file loaded · ~{{size}}",
+    "summary_other": "{{count}} files loaded · ~{{size}}"
+  },
+  "blocked": {
+    "noFiles": "Add at least one file to combine.",
+    "noDestination": "Choose a destination folder to save the result.",
+    "joinMinFiles": "You need at least two files to do a join.",
+    "readingColumns": "Reading file columns...",
+    "chooseKeyFor": "Choose the key column for: {{files}}."
+  },
+  "status": {
+    "startingMerge": "Starting combination...",
+    "processing": "Processing...",
+    "unexpectedError": "An unexpected error occurred while combining the files.",
+    "columnsReadGeneric": "Could not read the columns of the files."
+  },
+  "common": {
+    "close": "Close"
+  },
+  "about": {
+    "trigger": "About",
+    "windowTitle": "About Merger Lab",
+    "version": "Version {{version}}",
+    "author": "Author",
+    "license": "License",
+    "year": "Year",
+    "replayTour": "Watch the welcome tour again"
+  },
+  "theme": {
+    "ariaLabel": "Application theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "language": {
+    "ariaLabel": "Application language"
+  },
+  "tour": {
+    "stepCount": "Step {{current}} of {{total}}",
+    "hint": "Click anywhere to continue · Esc to exit",
+    "steps": {
+      "welcome": {
+        "title": "Welcome to Merger Lab",
+        "body": "This quick guide walks through the app's main parts. Click anywhere to move on (Esc to exit at any time)."
+      },
+      "loadFiles": {
+        "title": "1. Load your files",
+        "body": "Add the .xlsx, .xls, .csv or .ods files you want to combine. The order in the list matters: you can reorder them with the arrows."
+      },
+      "chooseMode": {
+        "title": "2. Choose how to combine them",
+        "body": "Join matches files by a key column; Stack joins them one below the other when they share the same columns. Each mode has its own tutorial with diagrams (the \"?\" button)."
+      },
+      "joinKey": {
+        "title": "3. Key column per file",
+        "body": "In join mode you choose which column identifies each row in EACH file separately — they can have different names, the app treats them as the same key when combining."
+      },
+      "configureOutput": {
+        "title": "4. Configure the output",
+        "body": "Choose the resulting file's format, its name and the folder where it will be saved."
+      },
+      "merge": {
+        "title": "5. Combine",
+        "body": "Once the button is enabled, combine the files. If it's disabled, the text above will tell you exactly what's missing."
+      },
+      "theme": {
+        "title": "6. Light or dark theme",
+        "body": "By default it follows the operating system's theme; choose \"Light\" or \"Dark\" to set it manually."
+      },
+      "help": {
+        "title": "7. Help and version",
+        "body": "Here you'll find the version, the author, and a link to watch this tour again whenever you want."
+      }
+    }
+  },
+  "joinTutorial": {
+    "buttonLabel": "What each join type means",
+    "title": "Join types",
+    "chainNote": "If you combine more than two files, the join is applied in a chain, in the order they appear in the list: first file 1 with file 2, then that result with file 3, and so on.",
+    "types": {
+      "inner": {
+        "title": "Inner join (intersection)",
+        "description": "Only rows whose key column exists in ALL combined files are kept. Example: who has both health insurance AND a gym membership."
+      },
+      "left": {
+        "title": "Left join",
+        "description": "All rows from the first file are kept, filled in with data from the others when the key matches (blank if there's no match). Example: everyone with health insurance, whether or not they have a gym membership."
+      },
+      "right": {
+        "title": "Right join",
+        "description": "The mirror of a left join: all rows from the other file are kept, filled in with data from the first when it matches. Example: everyone with a gym membership, whether or not they have health insurance."
+      },
+      "outer": {
+        "title": "Outer join (full)",
+        "description": "All rows from every file are kept, whether they match or not. Missing data is left blank. Example: everyone with health insurance OR a gym membership (or both)."
+      }
+    }
+  },
+  "stackTutorial": {
+    "buttonLabel": "How stacking rows works",
+    "title": "How stacking rows works",
+    "diagram": {
+      "file1": "File 1",
+      "file2": "File 2",
+      "file3": "File 3",
+      "result": "Result: same columns, stacked rows"
+    },
+    "body1": "Stacking takes each file and places its rows one below the other, in the order they appear in the list. It doesn't cross data between files: it just concatenates them. Columns are aligned by name; if a file is missing a column the others have, that cell is left blank in its rows.",
+    "body2": "Use this mode when the files represent the same kind of data repeated over time or in batches (for example, sales for January, February and March with the same columns), unlike a join, which crosses different columns using a shared key.",
+    "headersOnceTerm": "Include headers only once",
+    "headersOnceNote": "prevents the column names from repeating as if they were a data row for each added file.",
+    "sourceColumnTerm": "Add a column with the source file name",
+    "sourceColumnNote": "adds an extra column indicating which file each row came from, useful for tracing its origin after stacking."
+  },
+  "splash": {
+    "loading": "Loading…"
+  },
+  "errors": {
+    "backendUnavailable": "The backend isn't available yet.",
+    "backendCrashed": "The backend process stopped unexpectedly. Please restart the application.",
+    "httpError": "HTTP error {{status}}",
+    "mergeGenericError": "An error occurred while combining the files."
+  },
+  "backend": {
+    "queued": "Queued...",
+    "reading_files": "Reading files...",
+    "read_file_progress": "Read {{filename}} ({{index}}/{{total}})",
+    "join_file_progress": "Combined {{filename}} ({{index}}/{{total}})",
+    "saving_output": "Saving combined file...",
+    "merge_done": "Combination completed.",
+    "no_files_selected": "No files were selected.",
+    "unsupported_output_format": "Unsupported output format: '{{format}}'.",
+    "no_output_path": "No save path was specified.",
+    "unsupported_mode": "Unsupported combination mode: '{{mode}}'.",
+    "join_min_files": "You need at least two files to do a join.",
+    "missing_join_key": "You must specify a key column for each file.",
+    "unsupported_join_type": "Unsupported join type: '{{joinType}}'.",
+    "columns_read_error": "Could not read the columns of the files.",
+    "job_not_found": "Job not found.",
+    "unexpected_merge_error": "An unexpected error occurred while combining the files.",
+    "file_not_found": "The file does not exist: {{path}}",
+    "file_read_error": "Could not read '{{filename}}'. The file may be corrupted, password-protected or damaged. Detail: {{detail}}",
+    "unsupported_input_format": "Unsupported format '{{ext}}' in '{{filename}}'. Allowed formats: {{allowed}}.",
+    "no_data": "The selected files don't contain any data to combine.",
+    "unsupported_join_type_detail": "Unsupported join type: '{{joinType}}'. Allowed types: {{allowed}}.",
+    "join_key_not_found": "The key column '{{key}}' does not exist in '{{filename}}'. Available columns: {{columns}}.",
+    "output_dir_missing": "The destination folder does not exist: {{dir}}",
+    "output_dir_no_permission": "No write permission in the destination folder: {{dir}}",
+    "output_file_locked": "No write permission for '{{path}}'. Close the file if it's open in another program, or choose a different location.",
+    "output_write_error": "Could not save the output file: {{detail}}",
+    "xls_library_missing": "The 'xlwt' library is not available to generate .xls files.",
+    "xls_row_limit": "The combined result has {{rows}} rows, which exceeds the classic .xls format's limit of {{limit}} rows. Use .xlsx, .csv or .ods instead."
+  }
+}

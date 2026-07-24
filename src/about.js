@@ -1,8 +1,17 @@
+import { initAboutI18n } from "./aboutI18n.js";
+
 async function init() {
+  const t = (await initAboutI18n()).t;
   const info = await window.aboutAPI.getAppInfo();
 
+  document.getElementById("page-title").textContent = t("about.windowTitle");
+  document.getElementById("label-author").textContent = t("about.author");
+  document.getElementById("label-license").textContent = t("about.license");
+  document.getElementById("label-year").textContent = t("about.year");
+  document.getElementById("replay-tour-btn").textContent = t("about.replayTour");
+
   document.getElementById("app-name").textContent = info.name;
-  document.getElementById("app-version").textContent = `Versión ${info.version}`;
+  document.getElementById("app-version").textContent = t("about.version", { version: info.version });
 
   const tagline = document.getElementById("app-tagline");
   if (info.description) {

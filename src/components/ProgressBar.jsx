@@ -1,6 +1,8 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export default function ProgressBar({ state, progress, message, processed, total, resultPath, onOpenFolder }) {
+  const { t } = useTranslation();
   if (state === "hidden") return null;
 
   const pct = state === "error" ? 100 : Math.min(100, Math.max(0, progress));
@@ -14,10 +16,10 @@ export default function ProgressBar({ state, progress, message, processed, total
         <span className="progress-message">
           {state === "success" && resultPath ? (
             <>
-              Completado — archivo guardado en <strong>{resultPath}</strong>
+              {t("progress.completedPrefix")} <strong>{resultPath}</strong>
               {onOpenFolder && (
                 <button type="button" className="link-btn" onClick={() => onOpenFolder(resultPath)}>
-                  Abrir carpeta
+                  {t("progress.openFolder")}
                 </button>
               )}
             </>
@@ -27,7 +29,9 @@ export default function ProgressBar({ state, progress, message, processed, total
         </span>
         {state === "running" && (
           <span className="progress-count">
-            {processed != null ? `${processed} / ${total} archivos` : `${total} archivos`}
+            {processed != null
+              ? t("progress.filesCountWithProcessed", { processed, total })
+              : t("progress.filesCountTotalOnly", { total })}
           </span>
         )}
       </div>

@@ -14,6 +14,7 @@ let backendStartError = null;
 let mainWindow = null;
 let aboutWindow = null;
 let splashWindow = null;
+let currentLanguage = "es";
 
 const INPUT_FORMATS = [
   { name: "Hojas de cálculo soportadas", extensions: ["xlsx", "xls", "csv", "ods"] },
@@ -48,6 +49,101 @@ async function saveThemePreference(theme) {
   } catch (err) {
     console.error("No se pudo guardar la preferencia de tema:", err);
   }
+}
+
+// Mismo patrón que el tema (ver arriba): se persiste en un archivo propio dentro de userData
+// porque Electron no guarda esto entre reinicios. El renderer (i18next) es la única fuente de
+// verdad de las traducciones; acá solo se guarda el código de idioma elegido.
+const SUPPORTED_LANGUAGES = ["es", "en", "de", "fr", "it", "pt", "ru", "zh"];
+
+function languageConfigPath() {
+  return path.join(app.getPath("userData"), "language.json");
+}
+
+// Si el usuario nunca eligió un idioma, se propone el de su sistema operativo (si está entre los
+// soportados) en vez de forzar español siempre.
+function detectSystemLanguage() {
+  const prefix = app.getLocale().split("-")[0].toLowerCase();
+  return SUPPORTED_LANGUAGES.includes(prefix) ? prefix : "es";
+}
+
+async function loadLanguagePreference() {
+  try {
+    const raw = await fs.readFile(languageConfigPath(), "utf-8");
+    const parsed = JSON.parse(raw);
+    if (SUPPORTED_LANGUAGES.includes(parsed.language)) return parsed.language;
+  } catch {
+    // Primer arranque, o archivo inexistente/corrupto: se detecta a partir del sistema.
+  }
+  return detectSystemLanguage();
+}
+
+async function saveLanguagePreference(language) {
+  try {
+    await fs.writeFile(languageConfigPath(), JSON.stringify({ language }), "utf-8");
+  } catch (err) {
+    console.error("No se pudo guardar la preferencia de idioma:", err);
+  }
+}
+
+// Textos del único diálogo nativo que muestra el proceso principal (fallo al arrancar el
+// backend Python). Es el único texto de main.js que necesita traducción: todo lo demás vive en
+// el renderer, donde ya está disponible el motor de i18n completo (i18next).
+const STARTUP_ERROR_TEXT = {
+  es: {
+    title: "Error al iniciar Merger Lab",
+    intro: "No se pudo iniciar el proceso de combinación de archivos.",
+    devHint: "Verifica que Python 3 esté instalado y accesible en el PATH, y que backend/requirements.txt esté instalado.",
+    prodHint: "Reinstala la aplicación o contacta con soporte.",
+  },
+  en: {
+    title: "Error starting Merger Lab",
+    intro: "The file-merging process could not be started.",
+    devHint: "Check that Python 3 is installed and available on PATH, and that backend/requirements.txt is installed.",
+    prodHint: "Reinstall the application or contact support.",
+  },
+  de: {
+    title: "Fehler beim Starten von Merger Lab",
+    intro: "Der Prozess zum Kombinieren der Dateien konnte nicht gestartet werden.",
+    devHint: "Prüfe, ob Python 3 installiert und im PATH verfügbar ist und ob backend/requirements.txt installiert wurde.",
+    prodHint: "Installiere die Anwendung neu oder wende dich an den Support.",
+  },
+  fr: {
+    title: "Erreur au démarrage de Merger Lab",
+    intro: "Le processus de combinaison des fichiers n'a pas pu démarrer.",
+    devHint: "Vérifiez que Python 3 est installé et accessible dans le PATH, et que backend/requirements.txt est installé.",
+    prodHint: "Réinstallez l'application ou contactez le support.",
+  },
+  it: {
+    title: "Errore durante l'avvio di Merger Lab",
+    intro: "Non è stato possibile avviare il processo di combinazione dei file.",
+    devHint: "Verifica che Python 3 sia installato e accessibile nel PATH e che backend/requirements.txt sia installato.",
+    prodHint: "Reinstalla l'applicazione o contatta l'assistenza.",
+  },
+  pt: {
+    title: "Erro ao iniciar o Merger Lab",
+    intro: "Não foi possível iniciar o processo de combinação de arquivos.",
+    devHint: "Verifique se o Python 3 está instalado e acessível no PATH, e se backend/requirements.txt está instalado.",
+    prodHint: "Reinstale a aplicação ou entre em contato com o suporte.",
+  },
+  ru: {
+    title: "Ошибка запуска Merger Lab",
+    intro: "Не удалось запустить процесс объединения файлов.",
+    devHint: "Убедитесь, что Python 3 установлен и доступен в PATH, и что backend/requirements.txt установлен.",
+    prodHint: "Переустановите приложение или обратитесь в поддержку.",
+  },
+  zh: {
+    title: "启动 Merger Lab 时出错",
+    intro: "无法启动文件合并进程。",
+    devHint: "请检查是否已安装 Python 3 并在 PATH 中可用，以及是否已安装 backend/requirements.txt。",
+    prodHint: "请重新安装应用程序，或联系支持人员。",
+  },
+};
+
+function showBackendStartupError(language, err) {
+  const text = STARTUP_ERROR_TEXT[language] || STARTUP_ERROR_TEXT.es;
+  const hint = isDev ? text.devHint : text.prodHint;
+  dialog.showErrorBox(text.title, `${text.intro}\n\n${err.message}\n\n${hint}`);
 }
 
 // En dev, el servidor de Vite inyecta un script inline (React Fast Refresh) y usa un
@@ -142,10 +238,9 @@ function startBackend() {
         settled = true;
         reject(new Error(`El backend terminó antes de iniciar (code=${code})`));
       } else if (mainWindow && !app.isQuitting) {
-        mainWindow.webContents.send(
-          "backend-error",
-          "El proceso de backend se detuvo inesperadamente. Reinicia la aplicación."
-        );
+        // Se envía un código, no un texto: el renderer ya tiene el motor de i18n completo
+        // (i18next) y sabe traducirlo; acá solo hace falta identificar de qué error se trata.
+        mainWindow.webContents.send("backend-error", "backend_crashed");
       }
     });
 
@@ -184,7 +279,7 @@ function configureApplicationMenu() {
 // Ventana ligera y sin marco que se muestra de inmediato al arrancar, mientras el backend
 // Python arranca y la ventana principal carga su primer frame. Es HTML estático (no pasa por
 // Vite) para poder mostrarla antes de que exista nada más listo.
-function createSplashWindow() {
+function createSplashWindow(language) {
   const splash = new BrowserWindow({
     width: 320,
     height: 300,
@@ -202,7 +297,9 @@ function createSplashWindow() {
     },
   });
 
-  splash.loadFile(path.join(__dirname, "splash.html"));
+  // splash.html es HTML estático (no pasa por Vite/i18next); recibe el idioma por query string
+  // y trae su propio diccionario mínimo embebido para el único texto que muestra.
+  splash.loadFile(path.join(__dirname, "splash.html"), { query: { lang: language } });
   splash.on("closed", () => {
     splashWindow = null;
   });
@@ -298,8 +395,9 @@ app.whenReady().then(async () => {
   applyContentSecurityPolicy();
   configureApplicationMenu();
   nativeTheme.themeSource = await loadThemePreference();
+  currentLanguage = await loadLanguagePreference();
 
-  splashWindow = createSplashWindow();
+  splashWindow = createSplashWindow(currentLanguage);
 
   let backendStartFailure = null;
   try {
@@ -314,13 +412,7 @@ app.whenReady().then(async () => {
   // El diálogo se muestra tras crear la ventana principal (y no antes, junto al splash) para
   // que no quede huérfano sin ninguna ventana de la app detrás.
   if (backendStartFailure) {
-    dialog.showErrorBox(
-      "Error al iniciar Merger Lab",
-      `No se pudo iniciar el proceso de combinación de archivos.\n\n${backendStartFailure.message}\n\n` +
-        (isDev
-          ? "Verifica que Python 3 esté instalado y accesible en el PATH, y que backend/requirements.txt esté instalado."
-          : "Reinstala la aplicación o contacta con soporte.")
-    );
+    showBackendStartupError(currentLanguage, backendStartFailure);
   }
 
   app.on("activate", () => {
@@ -408,6 +500,15 @@ ipcMain.handle("set-theme", async (_event, theme) => {
   nativeTheme.themeSource = theme;
   await saveThemePreference(theme);
   return nativeTheme.themeSource;
+});
+
+ipcMain.handle("get-language", () => currentLanguage);
+
+ipcMain.handle("set-language", async (_event, language) => {
+  if (!SUPPORTED_LANGUAGES.includes(language)) return currentLanguage;
+  currentLanguage = language;
+  await saveLanguagePreference(language);
+  return currentLanguage;
 });
 
 ipcMain.handle("replay-onboarding", () => {

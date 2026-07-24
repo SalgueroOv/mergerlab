@@ -1,4 +1,5 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import FileList from "./components/FileList.jsx";
 import FormatPicker from "./components/FormatPicker.jsx";
 import JoinPicker from "./components/JoinPicker.jsx";
@@ -7,8 +8,10 @@ import ProgressBar from "./components/ProgressBar.jsx";
 import ErrorBanner from "./components/ErrorBanner.jsx";
 import AboutDialog from "./components/AboutDialog.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
+import LanguageToggle from "./components/LanguageToggle.jsx";
 import OnboardingTour, { hasSeenOnboarding } from "./components/OnboardingTour.jsx";
 import { startMerge, pollMergeStatus, getColumns } from "./api.js";
+import { backendText } from "./i18n/backendMessages.js";
 
 function pathName(fullPath) {
   const normalized = fullPath.replace(/\\/g, "/");
@@ -37,8 +40,11 @@ function formatBytes(bytes) {
   return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
-function parseProcessed(message) {
-  const match = /\((\d+)\/(\d+)\)/.exec(message || "");
+function parseProcessed(status) {
+  if (status && status.params && typeof status.params.index === "number") {
+    return status.params.index;
+  }
+  const match = /\((\d+)\/(\d+)\)/.exec((status && status.message) || "");
   return match ? Number(match[1]) : null;
 }
 
@@ -57,6 +63,7 @@ function normalizeColumnName(name) {
 }
 
 export default function App() {
+  const { t, i18n } = useTranslation();
   const [files, setFiles] = useState([]);
   const [mode, setMode] = useState("join");
   const [outputFormat, setOutputFormat] = useState("xlsx");
@@ -82,12 +89,16 @@ export default function App() {
   const [backendError, setBackendError] = useState(null);
   const [showTour, setShowTour] = useState(false);
   const [theme, setTheme] = useState("system");
+  const [language, setLanguage] = useState(i18n.language);
 
   useEffect(() => {
-    const unsubscribe = window.electronAPI.onBackendError((message) => {
-      setBackendError(message);
+    const unsubscribe = window.electronAPI.onBackendError((code) => {
+      setBackendError(code === "backend_crashed" ? t("errors.backendCrashed") : code);
     });
     return unsubscribe;
+    // Solo se suscribe una vez: si cambia el idioma mientras hay un backendError visible, ese
+    // mensaje puntual queda en el idioma en que ocurrió (no vale la pena re-suscribirse por eso).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -98,6 +109,15 @@ export default function App() {
     setTheme(value);
     window.electronAPI.setTheme(value);
   }, []);
+
+  const handleLanguageChange = useCallback(
+    (value) => {
+      setLanguage(value);
+      i18n.changeLanguage(value);
+      window.electronAPI.setLanguage(value);
+    },
+    [i18n]
+  );
 
   useEffect(() => {
     if (!hasSeenOnboarding()) setShowTour(true);
@@ -127,7 +147,7 @@ export default function App() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setColumnsError(err.message || "No se pudieron leer las columnas de los archivos.");
+          setColumnsError(backendText(err, t, t("status.columnsReadGeneric")));
         }
       })
       .finally(() => {
@@ -137,7 +157,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [mode, files]);
+  }, [mode, files, t]);
 
   // Sugiere por defecto, para cada archivo, la columna cuyo nombre normalizado coincide en
   // TODOS los archivos (ver normalizeColumnName). Conserva cualquier elección manual ya hecha
@@ -234,15 +254,17 @@ export default function App() {
     !!destinationFolder &&
     (mode === "concat" || (files.length >= 2 && missingJoinKeyFiles.length === 0));
 
+  // Devuelve { key, params } en vez de texto ya traducido, para que siga siendo correcto si el
+  // usuario cambia de idioma mientras el botón de combinar está deshabilitado.
   const mergeBlockedReason = useMemo(() => {
-    if (files.length === 0) return "Añade al menos un archivo para combinar.";
-    if (!destinationFolder) return "Elige una carpeta de destino para guardar el resultado.";
+    if (files.length === 0) return { key: "blocked.noFiles" };
+    if (!destinationFolder) return { key: "blocked.noDestination" };
     if (mode === "join") {
-      if (files.length < 2) return "Se necesitan al menos dos archivos para hacer un join.";
-      if (loadingColumns) return "Leyendo columnas de los archivos...";
-      if (columnsError) return columnsError;
+      if (files.length < 2) return { key: "blocked.joinMinFiles" };
+      if (loadingColumns) return { key: "blocked.readingColumns" };
+      if (columnsError) return { key: null, text: columnsError };
       if (missingJoinKeyFiles.length > 0) {
-        return `Elige la columna clave para: ${missingJoinKeyFiles.map((f) => f.name).join(", ")}.`;
+        return { key: "blocked.chooseKeyFor", params: { files: missingJoinKeyFiles.map((f) => f.name).join(", ") } };
       }
     }
     return null;
@@ -256,7 +278,7 @@ export default function App() {
     setProgress(0);
     setProcessedCount(null);
     setResultPath(null);
-    setStatusMessage("Iniciando combinación...");
+    setStatusMessage(t("status.startingMerge"));
 
     const safeName = sanitizeFileName(outputFileName) || "combinado";
     const outputPath = joinPath(destinationFolder, `${safeName}.${outputFormat}`);
@@ -272,15 +294,15 @@ export default function App() {
 
       const finalStatus = await pollMergeStatus(jobId, (status) => {
         setProgress(status.progress || 0);
-        setStatusMessage(status.message || "Procesando...");
-        setProcessedCount(parseProcessed(status.message));
+        setStatusMessage(backendText(status, t, t("status.processing")));
+        setProcessedCount(parseProcessed(status));
       });
 
       setProgress(100);
       setResultPath(finalStatus.result_path || outputPath);
       setProgressState("success");
     } catch (err) {
-      setStatusMessage(err.message || "Ocurrió un error inesperado al combinar los archivos.");
+      setStatusMessage(backendText(err, t, t("status.unexpectedError")));
       setProgressState("error");
     } finally {
       setIsProcessing(false);
@@ -296,6 +318,7 @@ export default function App() {
     mode,
     joinKeys,
     joinType,
+    t,
   ]);
 
   return (
@@ -308,9 +331,10 @@ export default function App() {
             <line x1="26" y1="6" x2="16" y2="23" stroke="var(--accent)" strokeWidth="4.4" strokeLinecap="round" />
             <path d="M9,21 L23,21 L16,30 Z" fill="var(--accent)" />
           </svg>
-          <span className="brand-name">Merger Lab</span>
+          <span className="brand-name">{t("header.brand")}</span>
         </div>
         <div className="header-actions">
+          <LanguageToggle language={language} onChange={handleLanguageChange} />
           <ThemeToggle theme={theme} onChange={handleThemeChange} />
           <AboutDialog />
         </div>
@@ -320,7 +344,7 @@ export default function App() {
 
       <main className="app-main">
         <section className="panel panel-input">
-          <h2 className="panel-title">Archivos de entrada</h2>
+          <h2 className="panel-title">{t("panels.input.title")}</h2>
           <FileList
             files={files}
             onAddFiles={handleAddFiles}
@@ -331,10 +355,10 @@ export default function App() {
         </section>
 
         <section className="panel panel-output">
-          <h2 className="panel-title">Configuración de salida</h2>
+          <h2 className="panel-title">{t("panels.output.title")}</h2>
 
           <div className="field-group">
-            <label className="field-label">Modo de combinación</label>
+            <label className="field-label">{t("mode.label")}</label>
             <div className="mode-toggle">
               <button
                 type="button"
@@ -342,8 +366,8 @@ export default function App() {
                 disabled={isProcessing}
                 onClick={() => setMode("join")}
               >
-                Combinar por clave (join)
-                <span className="mode-toggle-hint">une columnas de distintos archivos usando un ID en común</span>
+                {t("mode.join.label")}
+                <span className="mode-toggle-hint">{t("mode.join.hint")}</span>
               </button>
               <button
                 type="button"
@@ -351,8 +375,8 @@ export default function App() {
                 disabled={isProcessing}
                 onClick={() => setMode("concat")}
               >
-                Apilar filas
-                <span className="mode-toggle-hint">une archivos con las mismas columnas, uno debajo del otro</span>
+                {t("mode.concat.label")}
+                <span className="mode-toggle-hint">{t("mode.concat.hint")}</span>
               </button>
             </div>
           </div>
@@ -374,13 +398,13 @@ export default function App() {
           )}
 
           <div className="field-group">
-            <label className="field-label">Formato de salida</label>
+            <label className="field-label">{t("format.label")}</label>
             <FormatPicker value={outputFormat} onChange={setOutputFormat} disabled={isProcessing} />
           </div>
 
           <div className="field-group">
             <label className="field-label" htmlFor="output-filename">
-              Nombre del archivo de salida
+              {t("outputFileName.label")}
             </label>
             <div className="destination-row">
               <input
@@ -389,7 +413,7 @@ export default function App() {
                 className="destination-input"
                 value={outputFileName}
                 disabled={isProcessing}
-                placeholder="combinado"
+                placeholder={t("outputFileName.placeholder")}
                 onChange={(e) => setOutputFileName(e.target.value)}
               />
               <span className="filename-extension">.{outputFormat}</span>
@@ -398,7 +422,7 @@ export default function App() {
 
           <div className="field-group">
             <label className="field-label" htmlFor="destination-path">
-              Ruta de destino
+              {t("destination.label")}
             </label>
             <div className="destination-row">
               <input
@@ -407,10 +431,10 @@ export default function App() {
                 className="destination-input"
                 readOnly
                 value={destinationFolder}
-                placeholder="Selecciona una carpeta de destino..."
+                placeholder={t("destination.placeholder")}
               />
               <button type="button" className="btn" disabled={isProcessing} onClick={handleBrowseFolder}>
-                Examinar...
+                {t("destination.browse")}
               </button>
             </div>
           </div>
@@ -418,7 +442,7 @@ export default function App() {
           {mode === "concat" && (
             <div className="field-group">
               <div className="field-row">
-                <span className="field-label field-label--inline">Opciones</span>
+                <span className="field-label field-label--inline">{t("stackOptions.label")}</span>
                 <StackTutorial />
               </div>
               <label className="checkbox-row">
@@ -428,7 +452,7 @@ export default function App() {
                   disabled={isProcessing}
                   onChange={(e) => setIncludeHeadersOnce(e.target.checked)}
                 />
-                Incluir encabezados solo una vez
+                {t("stackOptions.headersOnce")}
               </label>
               <label className="checkbox-row">
                 <input
@@ -437,7 +461,7 @@ export default function App() {
                   disabled={isProcessing}
                   onChange={(e) => setAddSourceColumn(e.target.checked)}
                 />
-                Añadir columna con nombre de archivo origen
+                {t("stackOptions.sourceColumn")}
               </label>
             </div>
           )}
@@ -456,12 +480,14 @@ export default function App() {
 
       <footer className="app-footer">
         {!isProcessing && !canMerge && mergeBlockedReason && (
-          <p className="footer-blocked-hint">{mergeBlockedReason}</p>
+          <p className="footer-blocked-hint">
+            {mergeBlockedReason.key ? t(mergeBlockedReason.key, mergeBlockedReason.params) : mergeBlockedReason.text}
+          </p>
         )}
         <div className="footer-row">
           <div className="footer-actions">
             <button type="button" className="btn primary" disabled={isProcessing || !canMerge} onClick={handleMerge}>
-              {isProcessing ? "Procesando..." : "Combinar archivos"}
+              {isProcessing ? t("footer.processing") : t("footer.mergeButton")}
             </button>
             <button
               type="button"
@@ -469,12 +495,11 @@ export default function App() {
               disabled={isProcessing || files.length === 0}
               onClick={handleClearAll}
             >
-              Limpiar
+              {t("footer.clear")}
             </button>
           </div>
           <div className="footer-summary">
-            {files.length} archivo{files.length === 1 ? "" : "s"} cargado{files.length === 1 ? "" : "s"} · ~
-            {formatBytes(totalSize)}
+            {t("footer.summary", { count: files.length, size: formatBytes(totalSize) })}
           </div>
         </div>
       </footer>

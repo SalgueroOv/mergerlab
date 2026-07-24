@@ -1,3 +1,5 @@
+import i18n from "./i18n/index.js";
+
 let cachedBase = null;
 
 async function getApiBase() {
@@ -5,7 +7,7 @@ async function getApiBase() {
 
   const { port, error } = await window.electronAPI.getBackendPort();
   if (error || !port) {
-    throw new Error(error || "El backend no está disponible todavía.");
+    throw new Error(error || i18n.t("errors.backendUnavailable"));
   }
   cachedBase = `http://127.0.0.1:${port}`;
   return cachedBase;
@@ -21,8 +23,13 @@ async function requestJson(url, options) {
   }
 
   if (!response.ok) {
-    const message = body && body.message ? body.message : `Error HTTP ${response.status}`;
-    throw new Error(message);
+    const message = body && body.message ? body.message : i18n.t("errors.httpError", { status: response.status });
+    const error = new Error(message);
+    // El backend manda `code`/`params` cuando el mensaje es traducible (ver backend/server.py);
+    // se propagan en el Error para que la UI pueda traducirlo con i18n/backendMessages.js.
+    error.code = body && body.code;
+    error.params = body && body.params;
+    throw error;
   }
 
   return body;
@@ -77,7 +84,10 @@ export async function pollMergeStatus(jobId, onProgress) {
         if (status.status === "done") {
           resolve(status);
         } else if (status.status === "error") {
-          reject(new Error(status.message || "Ocurrió un error al combinar los archivos."));
+          const error = new Error(status.message || i18n.t("errors.mergeGenericError"));
+          error.code = status.code;
+          error.params = status.params;
+          reject(error);
         } else {
           setTimeout(tick, 350);
         }

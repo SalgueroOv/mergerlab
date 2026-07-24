@@ -1,35 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
-const JOIN_INFO = [
-  {
-    type: "inner",
-    title: "Inner join (intersección)",
-    description:
-      "Solo quedan las filas cuya columna clave existe en TODOS los archivos combinados. " +
-      "Ejemplo: quiénes tienen seguro médico Y gimnasio.",
-  },
-  {
-    type: "left",
-    title: "Left join (izquierda)",
-    description:
-      "Quedan todas las filas del primer archivo, completando con datos de los demás cuando la clave coincide " +
-      "(vacío si no hay coincidencia). Ejemplo: todos los que tienen seguro médico, tengan o no gimnasio.",
-  },
-  {
-    type: "right",
-    title: "Right join (derecha)",
-    description:
-      "Es el espejo del left join: quedan todas las filas del otro archivo, completando con datos del primero " +
-      "cuando coincide. Ejemplo: todos los que tienen gimnasio, tengan o no seguro médico.",
-  },
-  {
-    type: "outer",
-    title: "Outer join (completo)",
-    description:
-      "Quedan todas las filas de todos los archivos, coincidan o no. Los datos que faltan quedan en blanco. " +
-      "Ejemplo: todos los que tienen seguro médico O gimnasio (o ambos).",
-  },
-];
+const JOIN_TYPES = ["inner", "left", "right", "outer"];
 
 function VennDiagram({ type }) {
   const highlightA = type === "left" || type === "outer";
@@ -59,6 +31,7 @@ function VennDiagram({ type }) {
 }
 
 export default function JoinTutorial() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -76,8 +49,8 @@ export default function JoinTutorial() {
         type="button"
         className="join-help-btn"
         onClick={() => setOpen(true)}
-        aria-label="Qué significa cada tipo de join"
-        title="Qué significa cada tipo de join"
+        aria-label={t("joinTutorial.buttonLabel")}
+        title={t("joinTutorial.buttonLabel")}
       >
         ?
       </button>
@@ -88,31 +61,27 @@ export default function JoinTutorial() {
             className="modal-panel"
             role="dialog"
             aria-modal="true"
-            aria-label="Tipos de join"
+            aria-label={t("joinTutorial.title")}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header">
-              <h3>Tipos de join</h3>
-              <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label="Cerrar">
+              <h3>{t("joinTutorial.title")}</h3>
+              <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label={t("common.close")}>
                 ×
               </button>
             </div>
 
             <div className="join-tutorial-grid">
-              {JOIN_INFO.map((info) => (
-                <div className="join-tutorial-card" key={info.type}>
-                  <VennDiagram type={info.type} />
-                  <h4>{info.title}</h4>
-                  <p>{info.description}</p>
+              {JOIN_TYPES.map((type) => (
+                <div className="join-tutorial-card" key={type}>
+                  <VennDiagram type={type} />
+                  <h4>{t(`joinTutorial.types.${type}.title`)}</h4>
+                  <p>{t(`joinTutorial.types.${type}.description`)}</p>
                 </div>
               ))}
             </div>
 
-            <p className="join-tutorial-note">
-              Si combinas más de dos archivos, el join se aplica en cadena y en el orden en que
-              aparecen en la lista: primero el archivo 1 con el 2, ese resultado con el 3, y así
-              sucesivamente.
-            </p>
+            <p className="join-tutorial-note">{t("joinTutorial.chainNote")}</p>
           </div>
         </div>
       )}

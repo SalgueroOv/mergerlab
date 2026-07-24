@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const STORAGE_KEY = "mergerlab.onboarding.completed";
 
@@ -6,47 +7,17 @@ const STORAGE_KEY = "mergerlab.onboarding.completed";
 // (por className/id) en vez de usar refs de React: los pasos solo necesitan leer la posición
 // de elementos estructurales estables (paneles, botones), así que un querySelector evaluado en
 // cada paso es más simple que encadenar refs a través de FileList/JoinPicker/etc. sin ganar nada.
-const STEPS = [
-  {
-    selector: ".brand",
-    title: "Bienvenido a Merger Lab",
-    body: "Esta guía rápida recorre las partes principales de la app. Haz clic en cualquier lugar para avanzar (Esc para salir en cualquier momento).",
-  },
-  {
-    selector: ".panel-input",
-    title: "1. Carga tus archivos",
-    body: "Añade los .xlsx, .xls, .csv u .ods que quieres combinar. El orden de la lista importa: puedes reordenarlos con las flechas.",
-  },
-  {
-    selector: ".mode-toggle",
-    title: "2. Elige cómo combinarlos",
-    body: 'Join cruza archivos por una columna clave; Apilar los une uno debajo del otro cuando comparten las mismas columnas. Cada modo tiene su propio tutorial con dibujos (el botón "?").',
-  },
-  {
-    selector: ".join-picker",
-    title: "3. Columna clave por archivo",
-    body: "En modo join eliges qué columna identifica a cada fila en CADA archivo por separado — pueden tener nombres distintos, la app las trata como la misma clave al combinar.",
-  },
-  {
-    selector: ".panel-output",
-    title: "4. Configura la salida",
-    body: "Elige el formato del archivo resultante, su nombre y la carpeta donde guardarlo.",
-  },
-  {
-    selector: ".footer-actions",
-    title: "5. Combinar",
-    body: "Cuando el botón esté habilitado, combina los archivos. Si está deshabilitado, arriba te va a decir exactamente qué falta.",
-  },
-  {
-    selector: ".theme-toggle",
-    title: "6. Tema claro u oscuro",
-    body: 'Por defecto sigue el tema del sistema operativo; elige "Claro" u "Oscuro" para fijarlo manualmente.',
-  },
-  {
-    selector: ".about-trigger-btn",
-    title: "7. Ayuda y versión",
-    body: "Aquí encuentras la versión, el autor y un enlace para volver a ver este recorrido cuando quieras.",
-  },
+// title/body son claves de traducción (no el texto en sí): se resuelven con t() dentro del
+// componente, para que el recorrido se actualice si el usuario cambia de idioma a mitad de paso.
+const STEP_DEFS = [
+  { selector: ".brand", titleKey: "tour.steps.welcome.title", bodyKey: "tour.steps.welcome.body" },
+  { selector: ".panel-input", titleKey: "tour.steps.loadFiles.title", bodyKey: "tour.steps.loadFiles.body" },
+  { selector: ".mode-toggle", titleKey: "tour.steps.chooseMode.title", bodyKey: "tour.steps.chooseMode.body" },
+  { selector: ".join-picker", titleKey: "tour.steps.joinKey.title", bodyKey: "tour.steps.joinKey.body" },
+  { selector: ".panel-output", titleKey: "tour.steps.configureOutput.title", bodyKey: "tour.steps.configureOutput.body" },
+  { selector: ".footer-actions", titleKey: "tour.steps.merge.title", bodyKey: "tour.steps.merge.body" },
+  { selector: ".theme-toggle", titleKey: "tour.steps.theme.title", bodyKey: "tour.steps.theme.body" },
+  { selector: ".about-trigger-btn", titleKey: "tour.steps.help.title", bodyKey: "tour.steps.help.body" },
 ];
 
 export function hasSeenOnboarding() {
@@ -93,13 +64,14 @@ function computeTooltipPosition(rect, tooltipRect) {
 }
 
 export default function OnboardingTour({ active, onFinish }) {
+  const { t } = useTranslation();
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState(null);
   const [tooltipPos, setTooltipPos] = useState(null);
   const tooltipRef = useRef(null);
 
   const measure = useCallback(() => {
-    const step = STEPS[stepIndex];
+    const step = STEP_DEFS[stepIndex];
     const el = step ? document.querySelector(step.selector) : null;
     setRect(el ? el.getBoundingClientRect() : null);
   }, [stepIndex]);
@@ -130,7 +102,7 @@ export default function OnboardingTour({ active, onFinish }) {
 
   const advance = useCallback(() => {
     setStepIndex((current) => {
-      if (current + 1 >= STEPS.length) {
+      if (current + 1 >= STEP_DEFS.length) {
         finish();
         return current;
       }
@@ -154,7 +126,7 @@ export default function OnboardingTour({ active, onFinish }) {
 
   if (!active) return null;
 
-  const step = STEPS[stepIndex];
+  const step = STEP_DEFS[stepIndex];
 
   // El overlay cubre toda la ventana con position:fixed y un z-index alto, así que es siempre
   // el elemento que recibe el click (nunca llega al botón/input real debajo). Por eso alcanza
@@ -180,12 +152,10 @@ export default function OnboardingTour({ active, onFinish }) {
             : { top: 0, left: 0, visibility: "hidden" }
         }
       >
-        <p className="tour-step-count">
-          Paso {stepIndex + 1} de {STEPS.length}
-        </p>
-        <h3>{step.title}</h3>
-        <p className="tour-body">{step.body}</p>
-        <p className="tour-hint">Clic en cualquier parte para continuar · Esc para salir</p>
+        <p className="tour-step-count">{t("tour.stepCount", { current: stepIndex + 1, total: STEP_DEFS.length })}</p>
+        <h3>{t(step.titleKey)}</h3>
+        <p className="tour-body">{t(step.bodyKey)}</p>
+        <p className="tour-hint">{t("tour.hint")}</p>
       </div>
     </div>
   );

@@ -1,14 +1,16 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const OPTIONS = [
-  { value: "system", label: "Sistema" },
-  { value: "light", label: "Claro" },
-  { value: "dark", label: "Oscuro" },
+  { value: "system", labelKey: "theme.system" },
+  { value: "light", labelKey: "theme.light" },
+  { value: "dark", labelKey: "theme.dark" },
 ];
 
 export default function ThemeToggle({ theme, onChange }) {
+  const { t } = useTranslation();
   return (
-    <div className="theme-toggle" role="radiogroup" aria-label="Tema de la aplicación">
+    <div className="theme-toggle" role="radiogroup" aria-label={t("theme.ariaLabel")}>
       {OPTIONS.map((option) => {
         const selected = theme === option.value;
         return (
@@ -20,7 +22,7 @@ export default function ThemeToggle({ theme, onChange }) {
             className={`theme-toggle-btn ${selected ? "selected" : ""}`}
             onClick={() => onChange(option.value)}
           >
-            {option.label}
+            {t(option.labelKey)}
           </button>
         );
       })}

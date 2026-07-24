@@ -147,9 +147,42 @@ Ver el docstring de `join_files` en `backend/merger.py` para el detalle del algo
   secuencia los controles principales con un overlay tipo spotlight. Cualquier click dentro de
   la ventana avanza al siguiente paso (no hay botón "Siguiente"); Esc lo cierra. Se puede volver
   a ver desde "Acerca de" → "Ver tutorial de bienvenida".
-  - Para agregar/editar pasos: modificar el arreglo `STEPS` en `src/components/OnboardingTour.jsx`
-    (cada paso es `{ selector, title, body }`, donde `selector` es cualquier selector CSS de un
-    elemento ya presente en el DOM).
+  - Para agregar/editar pasos: modificar el arreglo `STEP_DEFS` en
+    `src/components/OnboardingTour.jsx` (cada paso es `{ selector, titleKey, bodyKey }`, donde
+    `selector` es cualquier selector CSS de un elemento ya presente en el DOM y
+    `titleKey`/`bodyKey` son claves de `tour.steps.*` en `src/i18n/locales/*.json` — ver
+    "Idiomas" más abajo).
+
+## Idiomas
+
+La app está traducida a español, inglés, alemán, francés, italiano, portugués, ruso y chino
+simplificado (`src/i18n/locales/*.json`, usando [i18next](https://www.i18next.com) +
+`react-i18next`). El selector de idioma está en el header (`LanguageToggle.jsx`); la elección se
+persiste igual que el tema, en `app.getPath("userData")/language.json` (ver
+`loadLanguagePreference`/`saveLanguagePreference` en `electron/main.js`). La primera vez que se
+abre la app se propone el idioma del sistema operativo si está entre los soportados
+(`detectSystemLanguage`), y si no, español.
+
+- **Añadir un idioma nuevo**: crear `src/i18n/locales/<código>.json` con las mismas claves que
+  `es.json` (es la referencia canónica), añadirlo a `resources` en `src/i18n/index.js` y a
+  `SUPPORTED_LANGUAGES` ahí mismo — y también a `SUPPORTED_LANGUAGES` en `electron/main.js`
+  (son dos listas independientes a propósito: una la usa el proceso principal de Electron, que
+  no puede importar módulos del renderer). También hay que añadir su nombre nativo a
+  `LANGUAGE_NAMES` (`src/i18n/index.js`) y su texto de carga a `LOADING_TEXT`
+  (`electron/splash.js`, la pantalla de carga es HTML estático y no pasa por i18next).
+- **Mensajes del backend Python** (errores y progreso de la combinación): `backend/merger.py` y
+  `backend/server.py` mandan cada mensaje como `{ message, code, params }` — `message` es el
+  texto en español de siempre (respaldo si el código no se reconoce, o si no es traducible
+  porque incluye texto crudo de una excepción de terceros), y `code`/`params` se traducen en el
+  frontend contra el namespace `backend.*` de los locales (`src/i18n/backendMessages.js`). Todo
+  código nuevo en el backend necesita su traducción correspondiente en las 8 traducciones.
+- **Ventana "Acerca de"** (`src/about.html`/`about.js`) y la **pantalla de carga**
+  (`electron/splash.html`/`splash.js`) son procesos de renderer separados de la ventana
+  principal: no comparten memoria ni la instancia de i18next, por eso `about.js` inicializa la
+  suya propia (`src/aboutI18n.js`) y `splash.js` usa un diccionario mínimo aparte.
+- Las traducciones a inglés/alemán/francés/italiano/portugués/ruso/chino se hicieron con
+  asistencia de IA y no fueron revisadas por hablantes nativos; conviene una revisión antes de
+  usarlas en un contexto profesional o legal.
 
 ## Tema claro/oscuro
 
