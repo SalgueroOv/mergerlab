@@ -1,0 +1,13 @@
+id_consulta,id_paciente,fecha_consulta,diagnostico,medico,costo,nombre,edad,sexo,ciudad,grupo_sanguineo
+,1,,,,,Sofía Gutiérrez,34.0,F,Buenos Aires,O+
+,2,,,,,Mateo Bruno,45.0,M,Córdoba,A+
+1001.0,3,2026-06-02,Faringitis aguda,Dr. Iglesias,15000.0,Emilia Castro,29.0,F,Rosario,B-
+1002.0,4,2026-06-03,Hipertensión arterial,Dra. Funes,18000.0,Thiago Molina,61.0,M,Mendoza,AB+
+1003.0,5,2026-06-05,Diabetes tipo 2,Dr. Correa,22000.0,Renata Acosta,52.0,F,La Plata,O-
+1004.0,6,2026-06-06,Asma bronquial,Dra. Paz,17000.0,Bautista Herrera,8.0,M,Salta,A-
+1005.0,7,2026-06-08,Artrosis de rodilla,Dr. Ibáñez,25000.0,Alma Vega,77.0,F,Tucumán,O+
+1006.0,8,2026-06-10,Gastritis,Dra. Lucero,14000.0,Benicio Suárez,40.0,M,Mar del Plata,B+
+1007.0,9,2026-06-11,Migraña,Dr. Navarro,16000.0,Delfina Romero,23.0,F,San Juan,A+
+1008.0,10,2026-06-12,Lumbalgia,Dra. Ríos,19000.0,Ignacio Peralta,66.0,M,Neuquén,O+
+1009.0,11,2026-06-13,Bronquitis,Dr. Salas,15500.0,,,,,
+1010.0,12,2026-06-15,Dermatitis,Dra. Ortega,13000.0,,,,,

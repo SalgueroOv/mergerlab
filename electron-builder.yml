@@ -1,0 +1,67 @@
+appId: com.mergerlab.app
+productName: Merger Lab
+copyright: Copyright © 2026 Alejandro Salguero Oviedo
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - "!**/*.map"
+
+# El ejecutable de PyInstaller (backend Python empaquetado en modo --onefile)
+# se coloca en resources/backend antes de invocar electron-builder (ver build.sh / build.bat).
+# Queda fuera del asar para poder ejecutarse como proceso independiente.
+extraResources:
+  - from: resources/backend
+    to: backend
+    filter:
+      - "**/*"
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  icon: resources/icons/icon.ico
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  artifactName: "${productName}-Setup-${version}-${arch}.${ext}"
+
+portable:
+  artifactName: "${productName}-Portable-${version}-${arch}.${ext}"
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: resources/icons/icon.icns
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+dmg:
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: resources/icons/icon.png
+  category: Office
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+
+publish: null

@@ -1,0 +1,22 @@
+# Node
+node_modules/
+dist/
+release/
+
+# Python
+backend/__pycache__/
+backend/**/__pycache__/
+backend/venv/
+backend/.venv/
+*.pyc
+
+# PyInstaller
+build/
+resources/backend/*
+!resources/backend/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log

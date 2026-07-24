@@ -1,0 +1,9 @@
+id_consulta,id_paciente,fecha_consulta,diagnostico,medico,costo,nombre,edad,sexo,ciudad,grupo_sanguineo
+1001,3,2026-06-02,Faringitis aguda,Dr. Iglesias,15000,Emilia Castro,29,F,Rosario,B-
+1002,4,2026-06-03,Hipertensión arterial,Dra. Funes,18000,Thiago Molina,61,M,Mendoza,AB+
+1003,5,2026-06-05,Diabetes tipo 2,Dr. Correa,22000,Renata Acosta,52,F,La Plata,O-
+1004,6,2026-06-06,Asma bronquial,Dra. Paz,17000,Bautista Herrera,8,M,Salta,A-
+1005,7,2026-06-08,Artrosis de rodilla,Dr. Ibáñez,25000,Alma Vega,77,F,Tucumán,O+
+1006,8,2026-06-10,Gastritis,Dra. Lucero,14000,Benicio Suárez,40,M,Mar del Plata,B+
+1007,9,2026-06-11,Migraña,Dr. Navarro,16000,Delfina Romero,23,F,San Juan,A+
+1008,10,2026-06-12,Lumbalgia,Dra. Ríos,19000,Ignacio Peralta,66,M,Neuquén,O+

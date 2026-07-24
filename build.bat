@@ -1,0 +1,55 @@
+@echo off
+setlocal enabledelayedexpansion
+cd /d "%~dp0"
+
+echo ==^> 1/5 Creando entorno virtual de Python (si no existe)
+if not exist backend\venv (
+    python -m venv backend\venv
+    if errorlevel 1 goto :error
+)
+call backend\venv\Scripts\activate.bat
+
+echo ==^> 2/5 Instalando dependencias Python
+python -m pip install --upgrade pip
+if errorlevel 1 goto :error
+pip install -r backend\requirements.txt
+if errorlevel 1 goto :error
+
+echo ==^> 3/5 Empaquetando backend con PyInstaller (--onefile)
+if exist resources\backend rmdir /s /q resources\backend
+if exist build\pyi-work rmdir /s /q build\pyi-work
+mkdir resources\backend
+
+pyinstaller backend\server.py ^
+  --name merger-backend ^
+  --onefile ^
+  --distpath resources\backend ^
+  --workpath build\pyi-work ^
+  --specpath build ^
+  --hidden-import odf.opendocument ^
+  --hidden-import odf.table ^
+  --hidden-import odf.text ^
+  --collect-submodules odf ^
+  --noconfirm
+if errorlevel 1 goto :error
+
+call backend\venv\Scripts\deactivate.bat
+
+echo ==^> 4/5 Instalando dependencias Node e integrando el frontend
+call npm install
+if errorlevel 1 goto :error
+call npm run build:frontend
+if errorlevel 1 goto :error
+
+echo ==^> 5/5 Generando distribuibles con electron-builder (instalador NSIS + portable)
+call npx electron-builder --win nsis portable
+if errorlevel 1 goto :error
+
+echo.
+echo Listo. Los instaladores/portables estan en la carpeta 'release\'.
+goto :eof
+
+:error
+echo.
+echo ERROR: el proceso de build se detuvo. Revisa el mensaje anterior.
+exit /b 1

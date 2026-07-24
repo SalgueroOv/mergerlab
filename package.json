@@ -1,0 +1,34 @@
+{
+  "name": "merger-lab",
+  "productName": "Merger Lab",
+  "version": "0.8.2",
+  "description": "Combina múltiples archivos de hoja de cálculo (xls, xlsx, csv, ods) en un único archivo de salida.",
+  "author": "Alejandro Salguero Oviedo",
+  "license": "MIT",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "dev:frontend": "vite",
+    "dev:electron": "cross-env NODE_ENV=development electron .",
+    "dev": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"npm:dev:frontend\" \"wait-on tcp:5173 && npm:dev:electron\"",
+    "build:frontend": "vite build",
+    "build:electron": "electron-builder",
+    "dist": "npm run build:frontend && electron-builder",
+    "dist:win": "npm run build:frontend && electron-builder --win nsis portable",
+    "dist:mac": "npm run build:frontend && electron-builder --mac dmg",
+    "dist:linux": "npm run build:frontend && electron-builder --linux AppImage"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "vite": "^6.0.7",
+    "wait-on": "^8.0.1"
+  }
+}

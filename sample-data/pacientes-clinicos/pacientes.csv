@@ -1,0 +1,11 @@
+id_paciente,nombre,edad,sexo,ciudad,grupo_sanguineo
+1,Sofía Gutiérrez,34,F,Buenos Aires,O+
+2,Mateo Bruno,45,M,Córdoba,A+
+3,Emilia Castro,29,F,Rosario,B-
+4,Thiago Molina,61,M,Mendoza,AB+
+5,Renata Acosta,52,F,La Plata,O-
+6,Bautista Herrera,8,M,Salta,A-
+7,Alma Vega,77,F,Tucumán,O+
+8,Benicio Suárez,40,M,Mar del Plata,B+
+9,Delfina Romero,23,F,San Juan,A+
+10,Ignacio Peralta,66,M,Neuquén,O+

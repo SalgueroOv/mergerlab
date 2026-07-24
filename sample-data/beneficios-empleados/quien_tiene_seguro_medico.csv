@@ -1,0 +1,6 @@
+id_empleado,nombre,area,seguro_medico,plan
+101,Camila Ibarra,Ventas,Sí,Plan Oro
+102,Joaquín Peralta,Sistemas,Sí,Plan Plata
+103,Abril Domínguez,Marketing,Sí,Plan Oro
+104,Mateo Ríos,Sistemas,No,-
+105,Sofía Aranda,RRHH,Sí,Plan Plata

@@ -1,0 +1,119 @@
+MERGER LAB propio
+
+################################################################################################
+PROMPT DE CREACION DEL PROYECTO
+################################################################################################
+
+> **Contexto del proyecto:**
+> Quiero crear una aplicación de escritorio multiplataforma (Windows, macOS, Linux) que permita unir/combinar múltiples archivos de hoja de cálculo en un único archivo de salida.
+>
+> **Stack tecnológico decidido:**
+> - UI: Electron + React
+> - Backend: Python 3.x (proceso separado empaquetado con PyInstaller)
+> - Comunicación UI↔Backend: IPC local (stdin/stdout o HTTP local)
+> - Librerías Python: pandas, openpyxl, xlrd, odfpy
+> - Empaquetado y distribución: Electron Builder (genera instalador .exe Y portable .exe para Windows, .dmg para macOS, .AppImage para Linux)
+> - Control de versiones: Git
+>
+> **Requisito crítico de distribución:**
+> El usuario final NO debe necesitar instalar Python, Node.js ni ninguna dependencia externa. Todo debe ir embebido. Debe generarse tanto un instalador como una versión portable que funcione sin permisos de administrador.
+>
+> **Funcionalidad de la aplicación:**
+> 1. El usuario selecciona múltiples archivos de entrada (`.xls`, `.xlsx`, `.csv`, `.ods`)
+> 2. La app los combina/une en un único archivo
+> 3. El usuario elige el formato de salida (`.xlsx`, `.xls`, `.csv`, `.ods`)
+> 4. El usuario elige dónde guardar el archivo resultante
+>
+> **Lo que necesito que hagas:**
+> 1. Crea la estructura completa de carpetas del proyecto
+> 2. Configura `package.json` con todas las dependencias de Electron y React necesarias
+> 3. Configura `electron-builder.yml` para generar instalador y portable en los tres sistemas operativos
+> 4. Crea el proceso principal de Electron (`main.js`) que lanza el backend Python y gestiona la ventana
+> 5. Crea el frontend React con una UI funcional: selector de archivos, selector de formato de salida, botón de combinar, barra de progreso y mensajes de error
+> 6. Crea el script Python (`merger.py`) que recibe la lista de archivos y el formato de salida, combina los datos con pandas y devuelve el archivo resultante
+> 7. Crea `requirements.txt` con todas las dependencias Python
+> 8. Crea un script de build (`build.sh` / `build.bat`) que ejecute PyInstaller sobre el backend y luego Electron Builder para generar los distribuibles finales
+> 9. Añade un `README.md` con instrucciones de desarrollo y build
+>
+> **Restricciones y decisiones de diseño:**
+> - El backend Python debe funcionar como un proceso independiente que Electron lanza al arrancar la app
+> - PyInstaller debe empaquetar el backend en modo `--onefile`
+> - Electron Builder debe incluir el ejecutable de PyInstaller dentro del paquete de Electron
+> - La comunicación entre Electron y Python puede ser vía HTTP local (puerto aleatorio) o stdin/stdout, elige la opción más robusta
+> - El frontend debe mostrar claramente qué archivos están seleccionados y en qué orden se combinarán
+> - Maneja errores de forma explícita: archivo corrupto, formato no soportado, sin permisos de escritura
+>
+> Empieza creando la estructura de carpetas y los archivos de configuración base, luego avanza componente a componente.
+
+
+################################################################################################
+PROMPT DE CREACION DE LA UI
+################################################################################################
+
+Aquí tienes el prompt:
+
+---
+
+> **Contexto:**
+> Estoy construyendo una app de escritorio con Electron + React llamada **SheetMerger**. Necesito implementar la interfaz de usuario completa.
+>
+> **Layout general — una sola pantalla, sin navegación entre vistas:**
+> La ventana tiene cuatro zonas verticales:
+> 1. **Header** — barra superior con logo + nombre de la app a la izquierda, y un botón "Acerca de" a la derecha
+> 2. **Main** — área central dividida en dos columnas iguales: panel izquierdo (archivos de entrada) y panel derecho (configuración de salida)
+> 3. **Progress bar** — barra de progreso fina justo encima del footer, con texto de estado a la izquierda y contador de archivos a la derecha
+> 4. **Footer** — barra inferior con botón primario "Combinar archivos", botón secundario "Limpiar", y a la derecha un texto con el conteo de archivos cargados y tamaño estimado
+>
+> **Header:**
+> - Izquierda: icono/logo de la app (SVG simple que represente unión de hojas) + nombre "SheetMerger" en texto
+> - Derecha: botón "Acerca de" que al hacer clic abre un diálogo modal nativo de Electron (`dialog` o ventana secundaria `BrowserWindow`) con: nombre de la app, versión, autor, año y enlace al repositorio de GitHub. Este diálogo debe tener su propio HTML minimalista y abrirse centrado sobre la ventana principal.
+> - El nombre del autor NO debe aparecer en ningún lugar de la pantalla principal
+>
+> **Panel izquierdo — archivos de entrada:**
+> - Zona de drag & drop con icono y texto "Arrastra archivos aquí o haz clic para seleccionar"
+> - Acepta: `.xls`, `.xlsx`, `.csv`, `.ods`
+> - Al soltar o seleccionar, cada archivo aparece como un item en lista con: badge de color con el formato (XLSX verde, CSV azul, XLS naranja, ODS amarillo), nombre del archivo truncado si es largo, y botón × para eliminarlo individualmente
+> - Los archivos se pueden reordenar arrastrando (drag to reorder)
+>
+> **Panel derecho — configuración de salida:**
+> - Selector de formato de salida como pills/botones: XLSX, XLS, CSV, ODS (solo uno activo a la vez)
+> - Campo de ruta de destino + botón "Examinar..." que abre el diálogo nativo de selección de carpeta de Electron (`dialog.showOpenDialog`)
+> - Sección de opciones con dos checkboxes: "Incluir encabezados solo una vez" (marcado por defecto) y "Añadir columna con nombre de archivo origen" (desmarcado por defecto)
+>
+> **Barra de progreso:**
+> - Oculta cuando no hay proceso en curso
+> - Visible durante el merge, muestra progreso real por archivo procesado
+> - Al terminar con éxito: se vuelve verde y el texto cambia a "Completado — archivo guardado en [ruta]" con un enlace/botón para abrir la carpeta destino
+> - Al terminar con error: se vuelve roja y muestra el mensaje de error concreto
+>
+> **Estilo visual:**
+> - Diseño flat, limpio, sin sombras decorativas
+> - Fondo general gris muy claro, paneles en blanco con borde sutil
+> - Color de acento principal: índigo (#4a47d4) para botón primario, pills activas y barra de progreso
+> - Compatible con modo claro y oscuro del sistema (usar `prefers-color-scheme` o la API de Electron para detectarlo)
+> - Tipografía del sistema (`-apple-system, Segoe UI, sans-serif`)
+>
+> **Comunicación con el backend Python:**
+> - El botón "Combinar archivos" llama vía IPC (`ipcRenderer.invoke`) al proceso principal de Electron, que a su vez lanza una petición HTTP al servidor Python local
+> - Mientras procesa, el botón debe desactivarse y mostrar texto "Procesando..."
+> - La lista de archivos y la ruta de destino se pasan como JSON al backend
+>
+> **Lo que necesito que implementes:**
+> 1. `src/renderer/App.jsx` — componente React principal con todo el layout descrito
+> 2. `src/renderer/components/FileList.jsx` — lista de archivos con drag to reorder
+> 3. `src/renderer/components/FormatPicker.jsx` — selector de formato como pills
+> 4. `src/renderer/components/ProgressBar.jsx` — barra de progreso con sus tres estados (oculta, en curso, completado/error)
+> 5. `src/renderer/components/AboutDialog.jsx` — lógica del botón que dispara la apertura del diálogo "Acerca de" vía IPC
+> 6. `src/about.html` — ventana secundaria de Electron para el diálogo "Acerca de", con diseño minimalista: logo, nombre, versión, autor, año, enlace a GitHub
+> 7. `src/main.js` — añadir el manejador IPC para abrir la ventana "Acerca de" centrada sobre la ventana principal, y el manejador para `dialog.showOpenDialog`
+>
+> Empieza por `App.jsx` con el layout completo y los componentes en orden. Usa CSS modules o estilos en línea, sin librerías de componentes externas.
+
+---
+
+Un detalle importante: he especificado que el "Acerca de" sea una **ventana secundaria de Electron** (`BrowserWindow`) con su propio `about.html`, que es exactamente como lo hacen apps nativas como VSCode o Slack. Es más profesional que un modal React porque se comporta como un diálogo del sistema operativo, aparece centrado sobre la ventana principal y se puede cerrar con Escape o la X nativa.
+
+################################################################################################
+PROMPT DE CREACION DE LA UI
+################################################################################################
+

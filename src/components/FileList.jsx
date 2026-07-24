@@ -1,0 +1,156 @@
+import React, { useCallback, useRef, useState } from "react";
+import { extensionOf, formatMetaFor } from "../formatMeta.js";
+
+const ACCEPTED_EXTENSIONS = new Set(["xls", "xlsx", "csv", "ods"]);
+
+export default function FileList({ files, onAddFiles, onRemove, onReorder, disabled }) {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [rejected, setRejected] = useState(0);
+  const [dragIndex, setDragIndex] = useState(null);
+  const [overIndex, setOverIndex] = useState(null);
+  const rejectTimer = useRef(null);
+
+  const flashRejected = useCallback((count) => {
+    setRejected(count);
+    clearTimeout(rejectTimer.current);
+    rejectTimer.current = setTimeout(() => setRejected(0), 3500);
+  }, []);
+
+  const handleZoneDragOver = useCallback(
+    (event) => {
+      if (disabled || !event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+      setIsDragOver(true);
+    },
+    [disabled]
+  );
+
+  const handleZoneDragLeave = useCallback(() => setIsDragOver(false), []);
+
+  const handleZoneDrop = useCallback(
+    async (event) => {
+      if (disabled || !event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+      setIsDragOver(false);
+
+      const droppedFiles = Array.from(event.dataTransfer.files);
+      const paths = droppedFiles.map((file) => window.electronAPI.getPathForFile(file));
+      const accepted = paths.filter((p) => ACCEPTED_EXTENSIONS.has(extensionOf(p)));
+
+      if (accepted.length > 0) onAddFiles(accepted);
+      if (accepted.length < paths.length) flashRejected(paths.length - accepted.length);
+    },
+    [disabled, onAddFiles, flashRejected]
+  );
+
+  const handleZoneClick = useCallback(() => {
+    if (!disabled) onAddFiles();
+  }, [disabled, onAddFiles]);
+
+  const handleItemDragStart = useCallback(
+    (index) => (event) => {
+      setDragIndex(index);
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", String(index));
+    },
+    []
+  );
+
+  const handleItemDragOver = useCallback(
+    (index) => (event) => {
+      if (dragIndex === null) return;
+      event.preventDefault();
+      setOverIndex(index);
+    },
+    [dragIndex]
+  );
+
+  const handleItemDrop = useCallback(
+    (index) => (event) => {
+      if (dragIndex === null) return;
+      event.preventDefault();
+      if (dragIndex !== index) onReorder(dragIndex, index);
+      setDragIndex(null);
+      setOverIndex(null);
+    },
+    [dragIndex, onReorder]
+  );
+
+  const handleItemDragEnd = useCallback(() => {
+    setDragIndex(null);
+    setOverIndex(null);
+  }, []);
+
+  return (
+    <div className="file-list-wrap">
+      <div
+        className={`dropzone ${isDragOver ? "drag-over" : ""} ${disabled ? "disabled" : ""}`}
+        onDragOver={handleZoneDragOver}
+        onDragLeave={handleZoneDragLeave}
+        onDrop={handleZoneDrop}
+        onClick={handleZoneClick}
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+      >
+        <svg className="dropzone-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M12 4v11m0-11 4 4m-4-4-4 4M5 17.5V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1.5"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <p>Arrastra archivos aquí o haz clic para seleccionar</p>
+        <p className="dropzone-hint">.xls, .xlsx, .csv, .ods</p>
+      </div>
+
+      {rejected > 0 && (
+        <p className="dropzone-warning">
+          Se ignoraron {rejected} archivo{rejected === 1 ? "" : "s"} con formato no soportado.
+        </p>
+      )}
+
+      {files.length > 0 && (
+        <ol className="file-list">
+          {files.map((file, index) => {
+            const meta = formatMetaFor(extensionOf(file.name));
+            return (
+              <li
+                key={file.path}
+                className={`file-list-item ${dragIndex === index ? "dragging" : ""} ${
+                  overIndex === index && dragIndex !== null && dragIndex !== index ? "drag-over" : ""
+                }`}
+                draggable={!disabled}
+                onDragStart={handleItemDragStart(index)}
+                onDragOver={handleItemDragOver(index)}
+                onDrop={handleItemDrop(index)}
+                onDragEnd={handleItemDragEnd}
+              >
+                <span className="drag-handle" aria-hidden="true">
+                  ⠿
+                </span>
+                <span className="file-badge" style={{ "--badge-color": meta.color }}>
+                  {meta.label}
+                </span>
+                <span className="file-name" title={file.path}>
+                  {file.name}
+                </span>
+                <button
+                  type="button"
+                  className="icon-btn danger"
+                  disabled={disabled}
+                  onClick={() => onRemove(index)}
+                  aria-label="Quitar archivo"
+                  title="Quitar archivo"
+                >
+                  ×
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
