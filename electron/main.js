@@ -1,3 +1,10 @@
+/**
+ * Proceso principal de Electron: crea las ventanas (principal, "Acerca de" y splash), arranca y
+ * detiene el backend Python como proceso hijo, y expone al renderer —a través de los handlers
+ * IPC del final del archivo, consumidos desde `preload.js`/`about-preload.js`— todo lo que
+ * necesita pero no puede hacer por sí mismo dentro del sandbox del renderer (diálogos nativos de
+ * archivo, preferencias persistidas en disco, etc.).
+ */
 const { app, BrowserWindow, ipcMain, dialog, shell, session, Menu, nativeTheme } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs/promises");
@@ -30,6 +37,7 @@ function themeConfigPath() {
   return path.join(app.getPath("userData"), "theme.json");
 }
 
+/** @returns {Promise<"system"|"light"|"dark">} el tema guardado, o `"system"` si no hay ninguno. */
 async function loadThemePreference() {
   try {
     const raw = await fs.readFile(themeConfigPath(), "utf-8");
@@ -41,6 +49,7 @@ async function loadThemePreference() {
   return "system";
 }
 
+/** @param {"system"|"light"|"dark"} theme */
 async function saveThemePreference(theme) {
   try {
     await fs.writeFile(themeConfigPath(), JSON.stringify({ theme }), "utf-8");
@@ -51,20 +60,24 @@ async function saveThemePreference(theme) {
 
 // Mismo patrón que el tema (ver arriba): se persiste en un archivo propio dentro de userData
 // porque Electron no guarda esto entre reinicios. El renderer (i18next) es la única fuente de
-// verdad de las traducciones; acá solo se guarda el código de idioma elegido.
+// verdad de las traducciones; aquí solo se guarda el código de idioma elegido.
 const SUPPORTED_LANGUAGES = ["es", "en", "de", "fr", "it", "pt", "ru", "zh"];
 
 function languageConfigPath() {
   return path.join(app.getPath("userData"), "language.json");
 }
 
-// Si el usuario nunca eligió un idioma, se propone el de su sistema operativo (si está entre los
-// soportados) en vez de forzar español siempre.
+/**
+ * Si el usuario nunca eligió un idioma, se propone el de su sistema operativo (si está entre
+ * los soportados) en vez de forzar español siempre.
+ * @returns {string} código de idioma de dos letras (p. ej. `"en"`)
+ */
 function detectSystemLanguage() {
   const prefix = app.getLocale().split("-")[0].toLowerCase();
   return SUPPORTED_LANGUAGES.includes(prefix) ? prefix : "es";
 }
 
+/** @returns {Promise<string>} el idioma guardado, o el detectado del sistema si es la primera vez. */
 async function loadLanguagePreference() {
   try {
     const raw = await fs.readFile(languageConfigPath(), "utf-8");
@@ -76,6 +89,7 @@ async function loadLanguagePreference() {
   return detectSystemLanguage();
 }
 
+/** @param {string} language uno de `SUPPORTED_LANGUAGES` */
 async function saveLanguagePreference(language) {
   try {
     await fs.writeFile(languageConfigPath(), JSON.stringify({ language }), "utf-8");
@@ -145,6 +159,13 @@ const STARTUP_ERROR_TEXT = {
   },
 };
 
+/**
+ * Muestra el diálogo nativo de error cuando el backend Python no llegó a arrancar, en el idioma
+ * indicado (con `err.message`, que no se traduce: suele ser un error de sistema operativo o de
+ * `child_process`, no un mensaje de `MergeError`).
+ * @param {string} language
+ * @param {Error} err
+ */
 function showBackendStartupError(language, err) {
   const text = STARTUP_ERROR_TEXT[language] || STARTUP_ERROR_TEXT.es;
   const hint = isDev ? text.devHint : text.prodHint;
@@ -169,6 +190,7 @@ const PROD_CSP =
   "connect-src 'self' http://127.0.0.1:*; " +
   "img-src 'self' data:;";
 
+/** Instala la Content-Security-Policy adecuada al entorno en todas las respuestas del renderer. */
 function applyContentSecurityPolicy() {
   const csp = isDev ? DEV_CSP : PROD_CSP;
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -181,6 +203,12 @@ function applyContentSecurityPolicy() {
   });
 }
 
+/**
+ * Determina el comando para lanzar el backend: en desarrollo, el intérprete de Python sobre
+ * `backend/server.py`; en producción, el ejecutable de PyInstaller empaquetado como recurso
+ * extra (ver `extraResources` en `electron-builder.yml`).
+ * @returns {{command: string, args: string[]}}
+ */
 function resolveBackendCommand() {
   if (isDev) {
     const script = path.join(__dirname, "..", "backend", "server.py");
@@ -195,6 +223,10 @@ function resolveBackendCommand() {
   return { command: path.join(backendDir, exeName), args: [] };
 }
 
+/**
+ * Lanza el proceso backend y espera a que anuncie su puerto por stdout (línea `PORT:<numero>`).
+ * @returns {Promise<number>} el puerto en el que quedó escuchando el backend
+ */
 function startBackend() {
   return new Promise((resolve, reject) => {
     const { command, args } = resolveBackendCommand();
@@ -244,7 +276,7 @@ function startBackend() {
         reject(new Error(`El backend terminó antes de iniciar (code=${code})`));
       } else if (mainWindow && !app.isQuitting) {
         // Se envía un código, no un texto: el renderer ya tiene el motor de i18n completo
-        // (i18next) y sabe traducirlo; acá solo hace falta identificar de qué error se trata.
+        // (i18next) y sabe traducirlo; aquí solo hace falta identificar de qué error se trata.
         mainWindow.webContents.send("backend-error", "backend_crashed");
       }
     });
@@ -258,6 +290,7 @@ function startBackend() {
   });
 }
 
+/** Mata el proceso backend si sigue vivo (se llama al cerrar la app, ver `before-quit`). */
 function stopBackend() {
   if (backendProcess) {
     try {
@@ -284,6 +317,10 @@ function configureApplicationMenu() {
 // Ventana ligera y sin marco que se muestra de inmediato al arrancar, mientras el backend
 // Python arranca y la ventana principal carga su primer frame. Es HTML estático (no pasa por
 // Vite) para poder mostrarla antes de que exista nada más listo.
+/**
+ * @param {string} language idioma ya resuelto (persistido o detectado del sistema)
+ * @returns {BrowserWindow}
+ */
 function createSplashWindow(language) {
   const splash = new BrowserWindow({
     width: 320,
@@ -311,6 +348,7 @@ function createSplashWindow(language) {
   return splash;
 }
 
+/** Crea la ventana principal y espera a que termine de cargar (React montado y visible). */
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
@@ -349,6 +387,7 @@ async function createWindow() {
   });
 }
 
+/** Abre la ventana modal "Acerca de" (o la enfoca si ya está abierta). No hace nada sin `mainWindow`. */
 function openAboutWindow() {
   if (aboutWindow) {
     aboutWindow.focus();
@@ -439,11 +478,16 @@ app.on("before-quit", () => {
 });
 
 // ---- IPC handlers ----
+// Cada uno corresponde a un método de `window.electronAPI` (ver electron/preload.js) que llama
+// el renderer. Los que abren diálogos nativos reciben `mainWindow` implícitamente para que el
+// diálogo quede anclado a la ventana principal (modal respecto a ella).
 
+/** Puerto del backend y, si no llegó a arrancar, el motivo (ver `src/api.js::getApiBase`). */
 ipcMain.handle("get-backend-port", () => {
   return { port: backendPort, error: backendStartError ? backendStartError.message : null };
 });
 
+/** Diálogo nativo para elegir uno o varios archivos de entrada. */
 ipcMain.handle("select-input-files", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: "Seleccionar archivos a combinar",
@@ -458,6 +502,7 @@ ipcMain.handle("select-input-files", async () => {
   return { canceled: false, files: result.filePaths };
 });
 
+/** Diálogo nativo para elegir la carpeta de destino del archivo combinado. */
 ipcMain.handle("select-output-folder", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: "Seleccionar carpeta de destino",
@@ -471,6 +516,11 @@ ipcMain.handle("select-output-folder", async () => {
   return { canceled: false, path: result.filePaths[0] };
 });
 
+/**
+ * Tamaño en bytes de cada ruta (el renderer no puede leer el sistema de archivos directamente,
+ * `nodeIntegration` está desactivado). Si una ruta falla (p. ej. se borró el archivo), devuelve
+ * tamaño 0 para esa entrada en vez de cortar la petición entera.
+ */
 ipcMain.handle("stat-files", async (_event, filePaths) => {
   const entries = await Promise.all(
     (filePaths || []).map(async (filePath) => {
@@ -485,6 +535,7 @@ ipcMain.handle("stat-files", async (_event, filePaths) => {
   return entries;
 });
 
+/** Abre el explorador de archivos del SO con `filePath` seleccionado (botón "Abrir carpeta"). */
 ipcMain.handle("open-containing-folder", async (_event, filePath) => {
   shell.showItemInFolder(filePath);
 });
@@ -493,6 +544,7 @@ ipcMain.handle("open-about-window", () => {
   openAboutWindow();
 });
 
+/** Cierra la ventana que invoca este canal (lo usa la propia ventana "Acerca de" sobre sí misma). */
 ipcMain.handle("close-about-window", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   win?.close();
@@ -500,6 +552,7 @@ ipcMain.handle("close-about-window", (event) => {
 
 ipcMain.handle("get-theme", () => nativeTheme.themeSource);
 
+/** Cambia y persiste el tema; ignora valores fuera de `THEME_OPTIONS`. */
 ipcMain.handle("set-theme", async (_event, theme) => {
   if (!THEME_OPTIONS.includes(theme)) return nativeTheme.themeSource;
   nativeTheme.themeSource = theme;
@@ -509,6 +562,7 @@ ipcMain.handle("set-theme", async (_event, theme) => {
 
 ipcMain.handle("get-language", () => currentLanguage);
 
+/** Cambia y persiste el idioma; ignora valores fuera de `SUPPORTED_LANGUAGES`. */
 ipcMain.handle("set-language", async (_event, language) => {
   if (!SUPPORTED_LANGUAGES.includes(language)) return currentLanguage;
   currentLanguage = language;
@@ -524,6 +578,7 @@ ipcMain.handle("replay-onboarding", () => {
   mainWindow?.focus();
 });
 
+/** Datos de `package.json` que muestra la ventana "Acerca de" (nombre, versión, autor, etc.). */
 ipcMain.handle("get-app-info", () => {
   const author = packageJson.author;
   return {
@@ -539,6 +594,7 @@ ipcMain.handle("get-app-info", () => {
   };
 });
 
+/** Abre `url` en el navegador del SO, solo si es `https://` (evita `file://`/`javascript:` desde el renderer). */
 ipcMain.handle("open-external", (_event, url) => {
   if (typeof url === "string" && /^https:\/\//.test(url)) {
     shell.openExternal(url);

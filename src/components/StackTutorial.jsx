@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+/** Rectángulo con cabecera resaltada y líneas de fila, usado como "tabla" esquemática en el diagrama. */
 function MiniTable({ x, y, width, height, rows, emphasis }) {
   const headerHeight = height / (rows + 1);
   return (
@@ -38,6 +39,7 @@ function MiniTable({ x, y, width, height, rows, emphasis }) {
   );
 }
 
+/** Diagrama de tres archivos apilándose en un único resultado, para el tutorial de "Apilar filas". */
 function StackDiagram() {
   const { t } = useTranslation();
   return (
@@ -76,6 +78,10 @@ function StackDiagram() {
   );
 }
 
+/**
+ * Botón "?" junto a "Opciones" (modo apilar) que abre un modal explicando cómo funciona apilar
+ * filas y qué hace cada casilla (`includeHeadersOnce`, `addSourceColumn`). Sin props.
+ */
 export default function StackTutorial() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);

@@ -67,6 +67,9 @@ Node, Python y todas las dependencias van embebidas en el paquete.
    npm run dev
    ```
 
+   Esto arranca Vite en `http://localhost:5173`, espera a que esté listo y luego lanza
+   Electron, que a su vez arranca `backend/server.py` como proceso hijo.
+
 ## Calidad de código
 
 - **JS/JSX** (`eslint.config.mjs` + `.prettierrc.json`):
@@ -85,9 +88,6 @@ Node, Python y todas las dependencias van embebidas en el paquete.
   ruff check backend/                           # lint
   ruff format backend/                          # formato
   ```
-
-   Esto arranca Vite en `http://localhost:5173`, espera a que esté listo y luego lanza
-   Electron, que a su vez arranca `backend/server.py` como proceso hijo.
 
 ## Build de distribución (instalador + portable)
 

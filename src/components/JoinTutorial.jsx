@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 const JOIN_TYPES = ["inner", "left", "right", "outer"];
 
+/** Diagrama de Venn de dos círculos, resaltando la zona que corresponde a cada tipo de join. */
 function VennDiagram({ type }) {
   const highlightA = type === "left" || type === "outer";
   const highlightB = type === "right" || type === "outer";
@@ -30,6 +31,11 @@ function VennDiagram({ type }) {
   );
 }
 
+/**
+ * Botón "?" junto a "Tipo de join" que abre un modal explicando los cuatro tipos de join
+ * (inner/left/right/outer) con un diagrama de Venn y un ejemplo por cada uno. Sin props: solo
+ * gestiona su propio estado de abierto/cerrado.
+ */
 export default function JoinTutorial() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);

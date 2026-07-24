@@ -50,12 +50,18 @@ def _error_response(message, status_code, code=None, params=None):
 
 
 def _set_job(job_id, **fields):
+    """Actualiza (parcialmente) el estado del trabajo `job_id` en `jobs`, bajo `jobs_lock`.
+
+    `fields` son los campos del diccionario de estado a sobrescribir (`status`, `progress`,
+    `message`, `code`, `params`, `result_path`); los que no se indiquen quedan como estaban.
+    """
     with jobs_lock:
         jobs[job_id].update(fields)
 
 
 @app.before_request
 def handle_preflight():
+    """Responde 204 sin cuerpo a las peticiones OPTIONS (preflight de CORS del navegador)."""
     if request.method == "OPTIONS":
         return "", 204
 
@@ -72,11 +78,21 @@ def add_cors_headers(response):
 
 @app.route("/api/health", methods=["GET"])
 def health():
+    """Comprobación básica de que el backend está arriba y respondiendo."""
     return jsonify({"status": "ok"})
 
 
 @app.route("/api/merge", methods=["POST"])
 def merge():
+    """Valida la petición de combinación y lanza el trabajo en un hilo aparte.
+
+    Cuerpo esperado (JSON): `files` (lista de rutas), `output_format`, `output_path`, `mode`
+    (`"concat"` o `"join"`), y si `mode` es `"join"` también `join_keys` (objeto
+    `{ruta: columna}`) y `join_type`. Devuelve `{"job_id": ...}` con 202 si todo es válido; el
+    progreso y el resultado se consultan después con `GET /api/status/<job_id>`. El trabajo en
+    sí (lectura, combinación y escritura) lo hace `_run_merge_job` en background para no
+    bloquear la petición HTTP mientras se procesan archivos grandes.
+    """
     payload = request.get_json(silent=True) or {}
     files = payload.get("files") or []
     output_format = (payload.get("output_format") or "").lower()
@@ -146,6 +162,12 @@ def merge():
 
 @app.route("/api/columns", methods=["POST"])
 def columns():
+    """Devuelve las columnas de cada archivo indicado, para poblar el selector de clave del modo join.
+
+    Cuerpo esperado: `{"files": [ruta, ...]}`. Devuelve `{"columns": {ruta: [columna, ...]}}`.
+    A diferencia de `/api/merge`, esto se resuelve de forma síncrona (leer solo los encabezados/
+    columnas es rápido) y no crea un trabajo en background.
+    """
     payload = request.get_json(silent=True) or {}
     files = payload.get("files") or []
 
@@ -166,7 +188,13 @@ def columns():
 
 
 def _run_merge_job(job_id, files, output_format, output_path, mode, join_keys, join_type):
-    # La lectura ocupa el 80% del progreso reportado; la escritura, el 20% restante.
+    """Ejecuta la combinación completa (lectura + join/concat + escritura) y actualiza `jobs[job_id]`.
+
+    Pensada para correr en un hilo aparte (ver `merge`, que la lanza con `threading.Thread`), no
+    devuelve nada: todo el resultado (progreso, estado final, `result_path` o error) se comunica
+    escribiendo en `jobs` a través de `_set_job`, que es lo que lee `GET /api/status/<job_id>`.
+    La lectura ocupa el 80% del progreso reportado; la escritura, el 20% restante.
+    """
     total_steps = len(files) + 1
 
     def progress_callback(index, total, message, code=None, params=None):
@@ -222,6 +250,12 @@ def _run_merge_job(job_id, files, output_format, output_path, mode, join_keys, j
 
 @app.route("/api/status/<job_id>", methods=["GET"])
 def status(job_id):
+    """Devuelve el estado actual del trabajo `job_id` (sondeado por el frontend cada 350 ms).
+
+    Forma de la respuesta: `{job_id, status, progress, message, code, params, result_path}`,
+    donde `status` es `"pending" | "running" | "done" | "error"`. `result_path` solo tiene valor
+    cuando `status` es `"done"`.
+    """
     with jobs_lock:
         job = jobs.get(job_id)
     if not job:
@@ -230,12 +264,19 @@ def status(job_id):
 
 
 def _find_free_port():
+    """Pide al sistema operativo un puerto TCP libre en 127.0.0.1 (puerto 0 = "elige uno tú")."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
 
 
 def main():
+    """Punto de entrada del proceso backend: elige puerto, lo anuncia por stdout y sirve la API.
+
+    `waitress` (servidor WSGI de producción) se importa aquí dentro, no arriba del módulo, para
+    que el puerto se imprima y quede disponible para Electron lo antes posible, sin esperar a
+    que se resuelva el import.
+    """
     port = _find_free_port()
     # Electron lee esta línea de stdout para saber a qué puerto conectarse.
     print(f"PORT:{port}", flush=True)

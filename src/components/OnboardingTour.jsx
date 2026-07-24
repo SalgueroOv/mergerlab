@@ -28,6 +28,11 @@ const STEP_DEFS = [
   { selector: ".about-trigger-btn", titleKey: "tour.steps.help.title", bodyKey: "tour.steps.help.body" },
 ];
 
+/**
+ * Indica si el usuario ya completó (o cerró) el recorrido de bienvenida en esta máquina.
+ * La usa `App.jsx` para decidir si mostrarlo automáticamente al abrir la app.
+ * @returns {boolean}
+ */
 export function hasSeenOnboarding() {
   try {
     return localStorage.getItem(STORAGE_KEY) === "1";
@@ -49,6 +54,12 @@ function markOnboardingSeen() {
 // tamaño YA RENDERIZADO (tooltipRect), no de un alto supuesto: el texto traducido o una ventana
 // chica pueden hacerlo más alto/ancho de lo esperado, y solo midiendo el tamaño real se puede
 // garantizar que el clamp final lo deje siempre dentro del viewport.
+/**
+ * @param {DOMRect | null} rect posición del elemento resaltado en este paso (`null` en el paso
+ *   de bienvenida, que no resalta nada y centra el tooltip en la ventana)
+ * @param {DOMRect} tooltipRect tamaño ya renderizado del tooltip
+ * @returns {{top: number, left: number}}
+ */
 function computeTooltipPosition(rect, tooltipRect) {
   const margin = 16;
 
@@ -72,6 +83,14 @@ function computeTooltipPosition(rect, tooltipRect) {
   return { top, left };
 }
 
+/**
+ * Recorrido de bienvenida tipo spotlight: resalta en secuencia los controles principales de la
+ * app (ver `STEP_DEFS`) con un overlay a pantalla completa. Cualquier click avanza al siguiente
+ * paso (no hay botón "Siguiente"); Esc lo cierra. Se marca como visto en `localStorage` al
+ * terminar o cerrar, y se puede volver a lanzar desde "Acerca de" → "Ver tutorial de bienvenida"
+ * (`replay-onboarding`, ver `App.jsx`).
+ * @param {{active: boolean, onFinish: () => void}} props
+ */
 export default function OnboardingTour({ active, onFinish }) {
   const { t } = useTranslation();
   const [stepIndex, setStepIndex] = useState(0);

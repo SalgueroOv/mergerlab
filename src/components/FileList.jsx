@@ -4,6 +4,18 @@ import { extensionOf, formatMetaFor } from "../formatMeta.js";
 
 const ACCEPTED_EXTENSIONS = new Set(["xls", "xlsx", "csv", "ods"]);
 
+/**
+ * Zona de carga (clic o arrastrar-y-soltar) y lista reordenable de los archivos de entrada.
+ * El propio componente no guarda la lista de archivos: solo dispara los callbacks (`onAddFiles`,
+ * `onRemove`, `onReorder`) y `App.jsx` es quien mantiene el estado real en `files`.
+ * @param {{
+ *   files: {path: string, name: string, size: number|null}[],
+ *   onAddFiles: (paths?: string[]) => void,
+ *   onRemove: (index: number) => void,
+ *   onReorder: (fromIndex: number, toIndex: number) => void,
+ *   disabled: boolean,
+ * }} props
+ */
 export default function FileList({ files, onAddFiles, onRemove, onReorder, disabled }) {
   const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = useState(false);
@@ -36,6 +48,8 @@ export default function FileList({ files, onAddFiles, onRemove, onReorder, disab
       setIsDragOver(false);
 
       const droppedFiles = Array.from(event.dataTransfer.files);
+      // Los objetos File del navegador no exponen la ruta absoluta en disco; getPathForFile
+      // usa webUtils de Electron (ver preload.js) para recuperarla.
       const paths = droppedFiles.map((file) => window.electronAPI.getPathForFile(file));
       const accepted = paths.filter((p) => ACCEPTED_EXTENSIONS.has(extensionOf(p)));
 

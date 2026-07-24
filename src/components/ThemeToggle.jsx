@@ -7,6 +7,12 @@ const OPTIONS = [
   { value: "dark", labelKey: "theme.dark" },
 ];
 
+/**
+ * Selector de tema (Sistema/Claro/Oscuro). El tema en sí lo aplica
+ * `nativeTheme.themeSource` en `electron/main.js`, no CSS local: este componente solo refleja
+ * el valor actual y avisa del cambio, la persistencia también la gestiona el proceso principal.
+ * @param {{theme: "system"|"light"|"dark", onChange: (theme: string) => void}} props
+ */
 export default function ThemeToggle({ theme, onChange }) {
   const { t } = useTranslation();
   return (

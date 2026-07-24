@@ -12,6 +12,22 @@ const JOIN_TYPES = [
   { value: "outer", label: "Outer" },
 ];
 
+/**
+ * Configuración del modo "join": tipo de combinación (inner/left/right/outer) y, por cada
+ * archivo, la columna que actúa de clave. `columnsByPath` lo calcula `App.jsx` (efecto que llama
+ * a `getColumns` de `src/api.js` cada vez que cambian los archivos), no este componente.
+ * @param {{
+ *   joinType: string,
+ *   onJoinTypeChange: (type: string) => void,
+ *   files: {path: string, name: string}[],
+ *   columnsByPath: Record<string, string[]>,
+ *   joinKeys: Record<string, string>,
+ *   onJoinKeyChange: (path: string, column: string) => void,
+ *   loadingColumns: boolean,
+ *   columnsError: string | null,
+ *   disabled: boolean,
+ * }} props
+ */
 export default function JoinPicker({
   joinType,
   onJoinTypeChange,

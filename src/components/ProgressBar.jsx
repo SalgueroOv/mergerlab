@@ -1,6 +1,20 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+/**
+ * Barra de progreso de la combinación en curso, con el mensaje de estado del backend
+ * (ya traducido por `App.jsx` vía `src/i18n/backendMessages.js`) y, al terminar con éxito, la
+ * ruta del resultado con un botón para abrir su carpeta.
+ * @param {{
+ *   state: "hidden"|"running"|"success"|"error",
+ *   progress: number,
+ *   message: string,
+ *   processed: number|null,
+ *   total: number,
+ *   resultPath: string|null,
+ *   onOpenFolder?: (path: string) => void,
+ * }} props
+ */
 export default function ProgressBar({
   state,
   progress,

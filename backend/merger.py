@@ -28,10 +28,17 @@ class MergeError(Exception):
 
 
 def _extension_of(path):
+    """Devuelve la extensión de `path` en minúsculas, incluyendo el punto (p. ej. `.xlsx`)."""
     return os.path.splitext(path)[1].lower()
 
 
 def _unsupported_format_error(ext, path):
+    """Construye (sin lanzarlo) el `MergeError` de formato de entrada no soportado.
+
+    Es una función aparte porque el mismo caso se comprueba en tres sitios distintos
+    (`merge_files`, `join_files` y `_read_spreadsheet`) y así se evita repetir el mensaje y los
+    `code`/`params` en cada uno.
+    """
     return MergeError(
         f"Formato no soportado '{ext}' en '{os.path.basename(path)}'. "
         f"Formatos permitidos: {', '.join(sorted(SUPPORTED_INPUT_EXTENSIONS))}.",
@@ -45,6 +52,13 @@ def _unsupported_format_error(ext, path):
 
 
 def _read_spreadsheet(path):
+    """Lee `path` y devuelve una lista de DataFrames, una por cada hoja del archivo.
+
+    Para `.csv` (que no tiene hojas) la lista siempre tiene un único elemento. El motor de
+    lectura de pandas se elige según la extensión: `openpyxl` para `.xlsx`, `xlrd` para `.xls`
+    y `odf` para `.ods`. Lanza `MergeError` si el archivo no existe, tiene un formato no
+    soportado o pandas no consigue leerlo (corrupto, protegido con contraseña, etc.).
+    """
     if not os.path.exists(path):
         raise MergeError(f"El archivo no existe: {path}", code="file_not_found", params={"path": path})
 
@@ -80,6 +94,11 @@ def merge_files(file_paths, progress_callback=None):
 
     Las columnas se alinean por nombre (unión); las celdas sin correspondencia quedan vacías.
     Si un archivo tiene varias hojas, se combinan todas sus hojas también.
+
+    Si se indica, `progress_callback` se invoca tras leer cada archivo con la firma
+    `(index, total, message, code, params)`, donde `index` va de 1 a `total` (número de
+    archivos), `message` es el texto en español ya formado y `code`/`params` son la versión
+    traducible del mismo mensaje (ver `MergeError` para el contrato `code`/`params`).
     """
     if not file_paths:
         raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
@@ -155,6 +174,9 @@ def join_files(file_paths, join_keys, join_type="inner", progress_callback=None)
 
     Las columnas con el mismo nombre en más de un archivo (aparte de su propia columna clave) se
     distinguen agregando el nombre del archivo de origen entre paréntesis.
+
+    `progress_callback`, si se indica, se invoca tras combinar cada archivo con la misma firma
+    que en `merge_files`: `(index, total, message, code, params)`.
     """
     if not file_paths:
         raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
@@ -231,6 +253,13 @@ def join_files(file_paths, join_keys, join_type="inner", progress_callback=None)
 
 
 def write_output(df, output_path, output_format):
+    """Guarda `df` en `output_path` con el formato `output_format` (`xlsx`, `xls`, `csv` u `ods`).
+
+    Valida antes de escribir que el formato esté soportado, que la carpeta de destino exista y
+    que haya permisos de escritura, y traduce `PermissionError` (p. ej. archivo abierto en otro
+    programa) a un `MergeError` con un mensaje apto para el usuario. Devuelve `output_path` tal
+    cual, para poder encadenar la llamada.
+    """
     output_format = output_format.lower()
     if output_format not in SUPPORTED_OUTPUT_FORMATS:
         raise MergeError(
@@ -284,6 +313,13 @@ def write_output(df, output_path, output_format):
 
 
 def _write_xls(df, output_path):
+    """Escribe `df` como `.xls` clásico (formato BIFF) con `xlwt`, hoja "Combinado".
+
+    A diferencia de `.xlsx`/`.ods` (que usa `DataFrame.to_excel`), `.xls` no tiene un motor de
+    escritura compatible con pandas moderno, así que se escribe celda a celda. Lanza
+    `MergeError` si el resultado supera `XLS_MAX_ROWS` (límite propio del formato) o si `xlwt`
+    no está disponible.
+    """
     try:
         import xlwt
     except ImportError as exc:

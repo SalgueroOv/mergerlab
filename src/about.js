@@ -1,5 +1,11 @@
+/**
+ * Script de la ventana "Acerca de" (`src/about.html`). No es un componente React — es JS plano
+ * que rellena el DOM a mano — porque es una ventana pequeña y estática; no justifica el peso de
+ * montar React ahí. `window.aboutAPI` lo expone `electron/about-preload.js`.
+ */
 import { initAboutI18n } from "./aboutI18n.js";
 
+/** Traduce los textos fijos, pide los datos de la app a Electron y los vuelca en el DOM. */
 async function init() {
   const t = (await initAboutI18n()).t;
   const info = await window.aboutAPI.getAppInfo();

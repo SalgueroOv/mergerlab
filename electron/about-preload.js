@@ -1,3 +1,7 @@
+/**
+ * Preload de la ventana "Acerca de": expone `window.aboutAPI`, el equivalente de
+ * `electron/preload.js` pero acotado a lo que necesita esa ventana (ver `src/about.js`).
+ */
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("aboutAPI", {
