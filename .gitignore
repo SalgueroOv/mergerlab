@@ -9,6 +9,7 @@ backend/**/__pycache__/
 backend/venv/
 backend/.venv/
 *.pyc
+.pytest_cache/
 
 # PyInstaller
 build/

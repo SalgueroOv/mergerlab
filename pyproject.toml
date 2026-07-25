@@ -12,3 +12,9 @@ select = [
   "UP",  # pyupgrade (sintaxis moderna acorde a target-version)
   "B",   # flake8-bugbear (errores comunes)
 ]
+
+[tool.pytest.ini_options]
+# Permite "import merger" desde backend/tests/ sin __init__.py ni tocar sys.path a mano
+# (merger.py no depende de nada del paquete backend, así que no hace falta más).
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]

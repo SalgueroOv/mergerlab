@@ -84,10 +84,23 @@ Node, Python y todas las dependencias van embebidas en el paquete.
 - **Python** (`pyproject.toml`, sección `[tool.ruff]`) — con el entorno virtual activado:
 
   ```bash
-  pip install -r backend/requirements-dev.txt   # instala Ruff (solo la primera vez)
+  pip install -r backend/requirements-dev.txt   # instala Ruff y pytest (solo la primera vez)
   ruff check backend/                           # lint
   ruff format backend/                          # formato
   ```
+
+## Tests
+
+Por ahora solo hay tests del backend (`backend/tests/test_merger.py`, con `pytest`): cubren
+`merge_files`/`join_files`/`write_output` y sobre todo los casos límite del join (columnas
+duplicadas entre archivos, clave con nombres distintos, tipos mixtos en la columna clave) y que
+cada error lance el `code` correcto (de eso depende que el frontend lo traduzca bien — ver
+`src/i18n/backendMessages.js`). No hay tests del frontend ni de Electron todavía.
+
+```bash
+# con el entorno virtual activado y backend/requirements-dev.txt instalado
+pytest backend/tests
+```
 
 ## Build de distribución (instalador + portable)
 
