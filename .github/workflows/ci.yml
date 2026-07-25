@@ -1,0 +1,40 @@
+name: CI
+
+# Se ejecuta en cada push a main y en cada Pull Request: comprueba que el lint, el formato y los
+# tests pasan, para detectar errores antes de que se cuelen en el repo. No compila instaladores
+# ni publica nada (eso es un proceso aparte, manual -- ver README, sección "Publicar una versión").
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  js:
+    name: JS (lint, formato, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run build:frontend
+
+  python:
+    name: Python (lint, formato, tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r backend/requirements-dev.txt
+      - run: ruff check backend/
+      - run: ruff format --check backend/
+      - run: pytest backend/tests

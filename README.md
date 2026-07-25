@@ -1,5 +1,7 @@
 # Merger Lab
 
+[![CI](https://github.com/SalgueroOv/mergelab/actions/workflows/ci.yml/badge.svg)](https://github.com/SalgueroOv/mergelab/actions/workflows/ci.yml)
+
 Aplicación de escritorio multiplataforma (Windows, macOS, Linux) para combinar múltiples
 archivos de hoja de cálculo (`.xls`, `.xlsx`, `.csv`, `.ods`) en un único archivo de salida,
 en cualquiera de esos mismos formatos.
@@ -88,6 +90,11 @@ Node, Python y todas las dependencias van embebidas en el paquete.
   ruff check backend/                           # lint
   ruff format backend/                          # formato
   ```
+
+Los cuatro comandos anteriores (`lint`, `format:check`, `ruff check`, `ruff format --check`) más
+`pytest backend/tests` se ejecutan automáticamente en cada push/Pull Request via GitHub Actions
+(`.github/workflows/ci.yml`) — no hace falta correrlos a mano antes de subir, pero conviene
+hacerlo igual para no esperar al resultado de CI.
 
 ## Tests
 
