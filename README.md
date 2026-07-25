@@ -126,9 +126,46 @@ npm run build:frontend
 # 3) Generar distribuibles
 npx electron-builder                 # todos los targets configurados para el SO actual
 npm run dist:win                     # solo Windows (nsis + portable)
-npm run dist:mac                     # solo macOS (dmg)
+npm run dist:mac                     # solo macOS (dmg + zip)
 npm run dist:linux                   # solo Linux (AppImage)
 ```
+
+## Auto-actualización
+
+La app comprueba en segundo plano, al arrancar (solo en la versión instalada, no en el
+portable), si hay una versión más nueva publicada como GitHub Release del propio repo
+(`electron-updater`, ver `setupAutoUpdater` en `electron/main.js` y `publish` en
+`electron-builder.yml`). Si la hay, la descarga sola y, cuando termina, pregunta si reiniciar
+para instalarla ("Reiniciar ahora" / "Más tarde") — nunca la instala sin avisar.
+
+- El **portable no se autoactualiza**: no tiene una carpeta de instalación fija donde aplicar el
+  update in situ, así que sus usuarios simplemente descargan el `.exe` nuevo cuando quieran.
+- En **macOS sin firma de código**, el auto-update puede fallar al aplicar la actualización
+  descargada (Gatekeeper). Sin certificado de desarrollador de Apple no hay forma de evitarlo.
+
+### Publicar una versión
+
+1. Sube la versión en `package.json` (campo `"version"`).
+2. Genera un [token personal de GitHub](https://github.com/settings/tokens) con permiso
+   `repo` (solo hace falta una vez; guárdalo en un sitio seguro, no en el repo).
+3. Compila y publica (sustituye `dist:win` por `dist:mac`/`dist:linux` según el SO):
+
+   ```bash
+   # PowerShell
+   $env:GH_TOKEN = "tu_token"
+   npm run dist:win -- --publish always
+
+   # bash
+   GH_TOKEN=tu_token npm run dist:win -- --publish always
+   ```
+
+   Esto sube los instaladores como GitHub Release (borrador si la versión aún no existía) y
+   genera los archivos `latest.yml`/`latest-mac.yml`/`latest-linux.yml` que usa
+   `electron-updater` para detectar la versión nueva. Repite el paso para cada sistema operativo
+   en el que quieras publicar (no se puede compilar macOS/Linux desde Windows, ver nota más
+   arriba sobre compilación cruzada).
+
+4. Publica el Release en GitHub (si `electron-builder` lo dejó como borrador).
 
 ## Funcionamiento
 

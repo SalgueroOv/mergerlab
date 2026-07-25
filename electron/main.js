@@ -6,6 +6,7 @@
  * archivo, preferencias persistidas en disco, etc.).
  */
 const { app, BrowserWindow, ipcMain, dialog, shell, session, Menu, nativeTheme } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const path = require("node:path");
 const fs = require("node:fs/promises");
 const readline = require("node:readline");
@@ -170,6 +171,106 @@ function showBackendStartupError(language, err) {
   const text = STARTUP_ERROR_TEXT[language] || STARTUP_ERROR_TEXT.es;
   const hint = isDev ? text.devHint : text.prodHint;
   dialog.showErrorBox(text.title, `${text.intro}\n\n${err.message}\n\n${hint}`);
+}
+
+// Textos del diálogo de auto-actualización (electron-updater). Mismo motivo que
+// STARTUP_ERROR_TEXT: es un diálogo nativo del proceso principal, sin acceso a i18next.
+const UPDATE_DIALOG_TEXT = {
+  es: {
+    title: "Actualización disponible",
+    body: (v) => `Se descargó la versión ${v} de Merger Lab. ¿Reiniciar ahora para instalarla?`,
+    restartNow: "Reiniciar ahora",
+    later: "Más tarde",
+  },
+  en: {
+    title: "Update available",
+    body: (v) => `Merger Lab ${v} has been downloaded. Restart now to install it?`,
+    restartNow: "Restart now",
+    later: "Later",
+  },
+  de: {
+    title: "Update verfügbar",
+    body: (v) => `Merger Lab ${v} wurde heruntergeladen. Jetzt neu starten, um es zu installieren?`,
+    restartNow: "Jetzt neu starten",
+    later: "Später",
+  },
+  fr: {
+    title: "Mise à jour disponible",
+    body: (v) => `Merger Lab ${v} a été téléchargé. Redémarrer maintenant pour l'installer ?`,
+    restartNow: "Redémarrer maintenant",
+    later: "Plus tard",
+  },
+  it: {
+    title: "Aggiornamento disponibile",
+    body: (v) => `Merger Lab ${v} è stato scaricato. Riavviare ora per installarlo?`,
+    restartNow: "Riavvia ora",
+    later: "Più tardi",
+  },
+  pt: {
+    title: "Atualização disponível",
+    body: (v) => `O Merger Lab ${v} foi baixado. Reiniciar agora para instalá-lo?`,
+    restartNow: "Reiniciar agora",
+    later: "Mais tarde",
+  },
+  ru: {
+    title: "Доступно обновление",
+    body: (v) => `Merger Lab ${v} загружен. Перезапустить сейчас, чтобы установить?`,
+    restartNow: "Перезапустить сейчас",
+    later: "Позже",
+  },
+  zh: {
+    title: "有可用更新",
+    body: (v) => `已下载 Merger Lab ${v}。是否立即重启以安装？`,
+    restartNow: "立即重启",
+    later: "以后再说",
+  },
+};
+
+/**
+ * Configura la comprobación automática de actualizaciones (electron-updater, contra GitHub
+ * Releases del propio repo -- ver `publish` en electron-builder.yml). Se llama una vez al
+ * arrancar, en segundo plano: no bloquea ni retrasa la ventana principal.
+ *
+ * No hace nada si la app corre en modo desarrollo (no hay nada publicado que comprobar) ni si
+ * corre como versión portable: el portable no tiene una carpeta de instalación fija donde
+ * aplicar la actualización in situ (ver el comentario de `useZip` en electron-builder.yml), así
+ * que actualizarlo automáticamente no es viable -- el usuario del portable simplemente descarga
+ * el .exe nuevo cuando quiera.
+ * @param {string} language
+ */
+function setupAutoUpdater(language) {
+  if (!app.isPackaged || process.env.PORTABLE_EXECUTABLE_DIR) return;
+
+  autoUpdater.autoDownload = true;
+  // Preferimos preguntar explícitamente al usuario (ver "update-downloaded" abajo) en vez de
+  // instalar sin avisar la próxima vez que cierre la app.
+  autoUpdater.autoInstallOnAppQuit = false;
+
+  autoUpdater.on("error", (err) => {
+    // Un fallo comprobando actualizaciones (sin conexión, GitHub caído, etc.) no debe
+    // interrumpir el uso normal de la app: solo se registra en consola.
+    console.error("Error comprobando actualizaciones:", err);
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    const text = UPDATE_DIALOG_TEXT[language] || UPDATE_DIALOG_TEXT.es;
+    dialog
+      .showMessageBox(mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined, {
+        type: "info",
+        title: text.title,
+        message: text.body(info.version),
+        buttons: [text.restartNow, text.later],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then(({ response }) => {
+        if (response === 0) autoUpdater.quitAndInstall();
+      });
+  });
+
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error("No se pudo comprobar si hay actualizaciones:", err);
+  });
 }
 
 // En dev, el servidor de Vite inyecta un script inline (React Fast Refresh) y usa un
@@ -458,6 +559,8 @@ app.whenReady().then(async () => {
   if (backendStartFailure) {
     showBackendStartupError(currentLanguage, backendStartFailure);
   }
+
+  setupAutoUpdater(currentLanguage);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

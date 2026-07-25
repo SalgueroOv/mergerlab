@@ -54,6 +54,11 @@ mac:
   target:
     - target: dmg
       arch: [x64, arm64]
+    # El auto-update en macOS (Squirrel.Mac, vía electron-updater) descarga y aplica un .zip, no
+    # el .dmg -- el .dmg es solo para la instalación inicial manual. Sin este target, el updater
+    # no tendría nada que descargar en macOS.
+    - target: zip
+      arch: [x64, arm64]
   icon: resources/icons/icon.icns
   category: public.app-category.productivity
   hardenedRuntime: true
@@ -70,4 +75,12 @@ linux:
   category: Office
   artifactName: "${productName}-${version}-${arch}.${ext}"
 
-publish: null
+# Destino de "npm run dist -- --publish always" (o equivalentes por SO): sube los instaladores
+# como GitHub Release y genera los archivos latest.yml/latest-mac.yml/latest-linux.yml que lee
+# electron-updater (ver electron/main.js) para saber si hay una versión más nueva. Requiere la
+# variable de entorno GH_TOKEN (token personal de GitHub con permiso de escritura sobre
+# releases) en la máquina desde la que se publica -- ver README, sección "Publicar una versión".
+publish:
+  provider: github
+  owner: SalgueroOv
+  repo: mergelab
