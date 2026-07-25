@@ -297,6 +297,44 @@ body {
   margin: -8px 0 14px;
 }
 
+/* ---- Overlay de arrastrar y soltar sobre toda la ventana ---- */
+
+.window-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg);
+  /* pointer-events: none porque solo es una señal visual -- el drop en sí lo capturan los
+     listeners en `window` (App.jsx), no este overlay. */
+  pointer-events: none;
+}
+
+.window-drop-overlay-inner {
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  padding: 32px 48px;
+  text-align: center;
+  color: var(--accent);
+  background: var(--panel-bg);
+}
+
+.window-drop-overlay-inner p {
+  margin: 2px 0;
+}
+
+.window-drop-overlay-inner > p:first-child {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.window-drop-overlay-hint {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
 /* ---- File list ---- */
 
 .file-list {

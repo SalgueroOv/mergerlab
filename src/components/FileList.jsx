@@ -1,34 +1,35 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { extensionOf, formatMetaFor } from "../formatMeta.js";
 
-const ACCEPTED_EXTENSIONS = new Set(["xls", "xlsx", "csv", "ods"]);
-
 /**
  * Zona de carga (clic o arrastrar-y-soltar) y lista reordenable de los archivos de entrada.
- * El propio componente no guarda la lista de archivos: solo dispara los callbacks (`onAddFiles`,
- * `onRemove`, `onReorder`) y `App.jsx` es quien mantiene el estado real en `files`.
+ * El propio componente no guarda la lista de archivos ni decide qué extensiones se aceptan: eso
+ * vive en `App.jsx` (`handleFilesDropped`), compartido con el drop sobre toda la ventana (ver
+ * `WindowDropOverlay` en `App.jsx`) para que ambas zonas de drop se comporten igual.
  * @param {{
  *   files: {path: string, name: string, size: number|null}[],
  *   onAddFiles: (paths?: string[]) => void,
+ *   onFilesDropped: (paths: string[]) => void,
+ *   rejectedCount: number,
  *   onRemove: (index: number) => void,
  *   onReorder: (fromIndex: number, toIndex: number) => void,
  *   disabled: boolean,
  * }} props
  */
-export default function FileList({ files, onAddFiles, onRemove, onReorder, disabled }) {
+export default function FileList({
+  files,
+  onAddFiles,
+  onFilesDropped,
+  rejectedCount,
+  onRemove,
+  onReorder,
+  disabled,
+}) {
   const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = useState(false);
-  const [rejected, setRejected] = useState(0);
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
-  const rejectTimer = useRef(null);
-
-  const flashRejected = useCallback((count) => {
-    setRejected(count);
-    clearTimeout(rejectTimer.current);
-    rejectTimer.current = setTimeout(() => setRejected(0), 3500);
-  }, []);
 
   const handleZoneDragOver = useCallback(
     (event) => {
@@ -42,7 +43,7 @@ export default function FileList({ files, onAddFiles, onRemove, onReorder, disab
   const handleZoneDragLeave = useCallback(() => setIsDragOver(false), []);
 
   const handleZoneDrop = useCallback(
-    async (event) => {
+    (event) => {
       if (disabled || !event.dataTransfer.types.includes("Files")) return;
       event.preventDefault();
       setIsDragOver(false);
@@ -51,12 +52,9 @@ export default function FileList({ files, onAddFiles, onRemove, onReorder, disab
       // Los objetos File del navegador no exponen la ruta absoluta en disco; getPathForFile
       // usa webUtils de Electron (ver preload.js) para recuperarla.
       const paths = droppedFiles.map((file) => window.electronAPI.getPathForFile(file));
-      const accepted = paths.filter((p) => ACCEPTED_EXTENSIONS.has(extensionOf(p)));
-
-      if (accepted.length > 0) onAddFiles(accepted);
-      if (accepted.length < paths.length) flashRejected(paths.length - accepted.length);
+      onFilesDropped(paths);
     },
-    [disabled, onAddFiles, flashRejected]
+    [disabled, onFilesDropped]
   );
 
   const handleZoneClick = useCallback(() => {
@@ -128,7 +126,9 @@ export default function FileList({ files, onAddFiles, onRemove, onReorder, disab
         <p className="dropzone-hint">{t("fileList.supportedFormats")}</p>
       </div>
 
-      {rejected > 0 && <p className="dropzone-warning">{t("fileList.rejected", { count: rejected })}</p>}
+      {rejectedCount > 0 && (
+        <p className="dropzone-warning">{t("fileList.rejected", { count: rejectedCount })}</p>
+      )}
 
       {files.length > 0 && (
         <ol className="file-list">

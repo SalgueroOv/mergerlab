@@ -16,6 +16,14 @@ export const FORMAT_META = {
 };
 
 /**
+ * Extensiones de entrada aceptadas al soltar archivos (arrastrar y soltar), en `FileList` y en
+ * la ventana completa (`App.jsx`). Coincide con `SUPPORTED_INPUT_EXTENSIONS` de
+ * `backend/merger.py`, pero es una lista aparte: esta se usa solo para filtrar en el momento del
+ * drop, antes de que el archivo llegue al backend.
+ */
+export const ACCEPTED_INPUT_EXTENSIONS = new Set(["xls", "xlsx", "csv", "ods"]);
+
+/**
  * Extrae la extensión de un nombre de archivo, en minúsculas y sin el punto.
  * @param {string} name
  * @returns {string} p. ej. `"xlsx"`, o `""` si `name` no tiene extensión

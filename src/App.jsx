@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import FileList from "./components/FileList.jsx";
 import FormatPicker from "./components/FormatPicker.jsx";
@@ -10,8 +10,10 @@ import AboutDialog from "./components/AboutDialog.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
 import LanguageToggle from "./components/LanguageToggle.jsx";
 import OnboardingTour, { hasSeenOnboarding } from "./components/OnboardingTour.jsx";
+import WindowDropOverlay from "./components/WindowDropOverlay.jsx";
 import { startMerge, pollMergeStatus, getColumns } from "./api.js";
 import { backendText } from "./i18n/backendMessages.js";
+import { ACCEPTED_INPUT_EXTENSIONS, extensionOf } from "./formatMeta.js";
 
 /**
  * Extrae el nombre de archivo (sin carpetas) de una ruta absoluta, aceptando tanto `/` como `\`
@@ -138,6 +140,13 @@ export default function App() {
   const [showTour, setShowTour] = useState(false);
   const [theme, setTheme] = useState("system");
   const [language, setLanguage] = useState(i18n.language);
+  const [rejectedCount, setRejectedCount] = useState(0);
+  const [isWindowDragOver, setIsWindowDragOver] = useState(false);
+  const rejectTimerRef = useRef(null);
+  // Cuenta de dragenter/dragleave en vez de un booleano: dragleave se dispara al pasar de un
+  // hijo a otro dentro de la ventana (no solo al salir de ella del todo), y sin este contador el
+  // overlay parpadearía al arrastrar sobre cualquier borde de un elemento interno.
+  const dragCounterRef = useRef(0);
 
   useEffect(() => {
     const unsubscribe = window.electronAPI.onBackendError((code) => {
@@ -264,6 +273,67 @@ export default function App() {
       return [...prev, ...additions];
     });
   }, []);
+
+  // Punto único de entrada para archivos soltados por arrastrar-y-soltar, tanto en la zona de
+  // carga (FileList) como en cualquier otro punto de la ventana (WindowDropOverlay más abajo):
+  // filtra por extensión soportada y avisa (banner temporal) si se ignoró alguno.
+  const handleFilesDropped = useCallback(
+    (paths) => {
+      const accepted = paths.filter((p) => ACCEPTED_INPUT_EXTENSIONS.has(extensionOf(p)));
+      if (accepted.length > 0) handleAddFiles(accepted);
+
+      if (accepted.length < paths.length) {
+        setRejectedCount(paths.length - accepted.length);
+        clearTimeout(rejectTimerRef.current);
+        rejectTimerRef.current = setTimeout(() => setRejectedCount(0), 3500);
+      }
+    },
+    [handleAddFiles]
+  );
+
+  // Captura el arrastre de archivos sobre cualquier punto de la ventana (no solo la zona de
+  // carga de FileList): sin `preventDefault` en dragover, Chromium intentaría navegar a/abrir el
+  // archivo soltado en vez de dejar que la app lo reciba. Se ignora mientras hay un trabajo en
+  // curso, igual que la zona de carga (`disabled` en FileList).
+  useEffect(() => {
+    const onDragEnter = (event) => {
+      if (isProcessing || !event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+      dragCounterRef.current += 1;
+      setIsWindowDragOver(true);
+    };
+    const onDragOver = (event) => {
+      if (isProcessing || !event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+    };
+    const onDragLeave = (event) => {
+      if (!event.dataTransfer.types.includes("Files")) return;
+      dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+      if (dragCounterRef.current === 0) setIsWindowDragOver(false);
+    };
+    const onDrop = (event) => {
+      event.preventDefault();
+      dragCounterRef.current = 0;
+      setIsWindowDragOver(false);
+      if (isProcessing || !event.dataTransfer.types.includes("Files")) return;
+
+      const paths = Array.from(event.dataTransfer.files).map((file) =>
+        window.electronAPI.getPathForFile(file)
+      );
+      handleFilesDropped(paths);
+    };
+
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("dragleave", onDragLeave);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("dragleave", onDragLeave);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [isProcessing, handleFilesDropped]);
 
   const handleRemove = useCallback((index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
@@ -422,6 +492,8 @@ export default function App() {
             <FileList
               files={files}
               onAddFiles={handleAddFiles}
+              onFilesDropped={handleFilesDropped}
+              rejectedCount={rejectedCount}
               onRemove={handleRemove}
               onReorder={handleReorder}
               disabled={isProcessing}
@@ -586,6 +658,7 @@ export default function App() {
         </footer>
       </div>
       <OnboardingTour active={showTour} onFinish={() => setShowTour(false)} />
+      <WindowDropOverlay active={isWindowDragOver} />
     </>
   );
 }
