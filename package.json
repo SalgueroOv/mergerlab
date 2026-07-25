@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SalgueroOv/mergelab.git"
+    "url": "https://github.com/SalgueroOv/mergerlab.git"
   },
   "private": true,
   "main": "electron/main.js",

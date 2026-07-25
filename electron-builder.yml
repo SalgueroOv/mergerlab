@@ -83,4 +83,4 @@ linux:
 publish:
   provider: github
   owner: SalgueroOv
-  repo: mergelab
+  repo: mergerlab
