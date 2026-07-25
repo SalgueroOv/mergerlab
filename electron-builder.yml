@@ -30,7 +30,7 @@ win:
     - target: portable
       arch: [x64]
   icon: resources/icons/icon.ico
-  artifactName: "${productName}-${version}-${arch}.${ext}"
+  artifactName: "MergerLab-${version}-${arch}.${ext}"
 
 nsis:
   oneClick: false
@@ -39,10 +39,10 @@ nsis:
   allowElevation: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  artifactName: "${productName}-Setup-${version}-${arch}.${ext}"
+  artifactName: "MergerLab-Setup-${version}-${arch}.${ext}"
 
 portable:
-  artifactName: "${productName}-Portable-${version}-${arch}.${ext}"
+  artifactName: "MergerLab-Portable-${version}-${arch}.${ext}"
   # El .exe portable se autoextrae a una carpeta temporal EN CADA ARRANQUE (a diferencia del
   # instalador NSIS, que solo extrae una vez). useZip cambia la compresion interna de 7z/LZMA
   # (mejor ratio, mas lenta de descomprimir) a zip (peor ratio, bastante mas rapida de
@@ -63,9 +63,12 @@ mac:
   category: public.app-category.productivity
   hardenedRuntime: true
   gatekeeperAssess: false
+  # Nombre general para los targets de mac (usado por "zip", que no tiene su propia sección de
+  # configuración); "dmg:" de abajo lo sobreescribe específicamente para el target dmg.
+  artifactName: "MergerLab-${version}-${arch}.${ext}"
 
 dmg:
-  artifactName: "${productName}-${version}-${arch}.${ext}"
+  artifactName: "MergerLab-${version}-${arch}.${ext}"
 
 linux:
   target:
@@ -73,13 +76,21 @@ linux:
       arch: [x64]
   icon: resources/icons/icon.png
   category: Office
-  artifactName: "${productName}-${version}-${arch}.${ext}"
+  artifactName: "MergerLab-${version}-${arch}.${ext}"
 
 # Destino de "npm run dist -- --publish always" (o equivalentes por SO): sube los instaladores
 # como GitHub Release y genera los archivos latest.yml/latest-mac.yml/latest-linux.yml que lee
 # electron-updater (ver electron/main.js) para saber si hay una versión más nueva. Requiere la
 # variable de entorno GH_TOKEN (token personal de GitHub con permiso de escritura sobre
 # releases) en la máquina desde la que se publica -- ver README, sección "Publicar una versión".
+#
+# IMPORTANTE: todos los artifactName de arriba usan "MergerLab" en vez de "${productName}"
+# ("Merger Lab", con espacio) a propósito. GitHub sustituye los espacios por puntos al subir
+# cualquier asset de un Release (p. ej. "Merger Lab-Setup-1.0.0.exe" queda como
+# "Merger.Lab-Setup-1.0.0.exe" una vez subido) -- pero latest.yml/latest-mac.yml/latest-linux.yml
+# se generan ANTES de subir, con el nombre original, así que si productName tuviera espacio el
+# auto-update fallaría en silencio (buscaría un archivo con un nombre que ya no existe). Sin
+# espacios en artifactName, el nombre nunca cambia al subirlo y este problema no puede pasar.
 publish:
   provider: github
   owner: SalgueroOv

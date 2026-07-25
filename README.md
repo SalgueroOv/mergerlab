@@ -20,10 +20,10 @@ francés, italiano, portugués, ruso y chino simplificado.
 
 ## Descargar e instalar (Windows)
 
-|                                                                                                                                   |                                                                                                                                                                                             |
-| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🔽 **[Descargar instalador](https://github.com/SalgueroOv/mergerlab/releases/download/v0.8.3/Merger%20Lab-Setup-0.8.3-x64.exe)**  | Recomendado. Doble clic, siguiente, siguiente. No pide permisos de administrador. Crea acceso directo en el escritorio y el menú de inicio.                                                 |
-| 🔽 **[Descargar portable](https://github.com/SalgueroOv/mergerlab/releases/download/v0.8.3/Merger%20Lab-Portable-0.8.3-x64.exe)** | No instala nada: descarga el `.exe` y ejecútalo directamente, incluso desde un USB. Útil si no puedes/quieres instalar programas en ese ordenador. No se actualiza solo (el instalador sí). |
+|                                                                                                                                |                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔽 **[Descargar instalador](https://github.com/SalgueroOv/mergerlab/releases/download/v0.8.3/MergerLab-Setup-0.8.3-x64.exe)**  | Recomendado. Doble clic, siguiente, siguiente. No pide permisos de administrador. Crea acceso directo en el escritorio y el menú de inicio.                                                 |
+| 🔽 **[Descargar portable](https://github.com/SalgueroOv/mergerlab/releases/download/v0.8.3/MergerLab-Portable-0.8.3-x64.exe)** | No instala nada: descarga el `.exe` y ejecútalo directamente, incluso desde un USB. Útil si no puedes/quieres instalar programas en ese ordenador. No se actualiza solo (el instalador sí). |
 
 ¿Windows te avisa de "editor desconocido" (SmartScreen)? Es normal en apps sin firma de código
 comercial (tiene un coste anual) — pulsa "Más información" → "Ejecutar de todas formas".
