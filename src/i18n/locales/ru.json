@@ -93,6 +93,7 @@
   "about": {
     "trigger": "О программе",
     "windowTitle": "О программе Merger Lab",
+    "tagline": "Объединяет несколько файлов электронных таблиц (xls, xlsx, csv, ods) в один итоговый файл.",
     "version": "Версия {{version}}",
     "author": "Автор",
     "license": "Лицензия",

@@ -18,13 +18,10 @@ async function init() {
 
   document.getElementById("app-name").textContent = info.name;
   document.getElementById("app-version").textContent = t("about.version", { version: info.version });
-
-  const tagline = document.getElementById("app-tagline");
-  if (info.description) {
-    tagline.textContent = info.description;
-  } else {
-    tagline.style.display = "none";
-  }
+  // El texto viene de la traducción (about.tagline), no de info.description: ese campo es el
+  // "description" de package.json, que está fijo en español y no se traduce (lo usan también
+  // el instalador y los metadatos del .exe, así que no conviene tocarlo).
+  document.getElementById("app-tagline").textContent = t("about.tagline");
 
   const authorEl = document.getElementById("app-author");
   if (info.authorUrl) {

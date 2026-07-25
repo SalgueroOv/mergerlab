@@ -89,6 +89,7 @@
   "about": {
     "trigger": "Acerca de",
     "windowTitle": "Acerca de Merger Lab",
+    "tagline": "Combina múltiples archivos de hoja de cálculo (xls, xlsx, csv, ods) en un único archivo de salida.",
     "version": "Versión {{version}}",
     "author": "Autor",
     "license": "Licencia",

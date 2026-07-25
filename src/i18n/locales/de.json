@@ -89,6 +89,7 @@
   "about": {
     "trigger": "Über",
     "windowTitle": "Über Merger Lab",
+    "tagline": "Kombiniert mehrere Tabellenkalkulationsdateien (xls, xlsx, csv, ods) zu einer einzigen Ausgabedatei.",
     "version": "Version {{version}}",
     "author": "Autor",
     "license": "Lizenz",

@@ -87,6 +87,7 @@
   "about": {
     "trigger": "关于",
     "windowTitle": "关于 Merger Lab",
+    "tagline": "将多个电子表格文件（xls、xlsx、csv、ods）合并为一个输出文件。",
     "version": "版本 {{version}}",
     "author": "作者",
     "license": "许可证",
