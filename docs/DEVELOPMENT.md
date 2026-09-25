@@ -154,8 +154,15 @@ npm run dist:linux                   # solo Linux (AppImage)
 La app comprueba en segundo plano, al arrancar (solo en la versión instalada, no en el
 portable), si hay una versión más nueva publicada como GitHub Release del propio repo
 (`electron-updater`, ver `setupAutoUpdater` en `electron/main.js` y `publish` en
-`electron-builder.yml`). Si la hay, la descarga sola y, cuando termina, pregunta si reiniciar
-para instalarla ("Reiniciar ahora" / "Más tarde") — nunca la instala sin avisar.
+`electron-builder.yml`). Si la hay, la descarga sola y, cuando termina, avisa al usuario
+("Actualizar ahora" / "Más tarde") — nunca la instala sin avisar. Al pulsar "Actualizar ahora"
+la app se cierra, el instalador se ejecuta en modo silencioso (sin mostrar su asistente) y la app
+se vuelve a abrir sola. Con "Más tarde" vuelve a avisar en el siguiente arranque (la descarga
+queda en caché, así que el aviso sale enseguida).
+
+> Las versiones ≤ 0.8.3 llamaban a `quitAndInstall()` sin modo silencioso: al actualizar
+> _desde_ ellas el usuario aún verá una vez el asistente del instalador y tendrá que pulsar
+> "Finalizar". A partir de la siguiente versión ya es totalmente automático.
 
 - El **portable no se autoactualiza**: no tiene una carpeta de instalación fija donde aplicar el
   update in situ, así que sus usuarios simplemente descargan el `.exe` nuevo cuando quieran.
@@ -167,7 +174,16 @@ para instalarla ("Reiniciar ahora" / "Más tarde") — nunca la instala sin avis
 1. Sube la versión en `package.json` (campo `"version"`).
 2. Genera un [token personal de GitHub](https://github.com/settings/tokens) con permiso
    `repo` (solo hace falta una vez; guárdalo en un sitio seguro, no en el repo).
-3. Compila y publica (sustituye `dist:win` por `dist:mac`/`dist:linux` según el SO):
+3. Compila y publica. En Windows, lo más sencillo es el build completo (incluye el backend
+   Python con PyInstaller) en modo `publish`:
+
+   ```powershell
+   $env:GH_TOKEN = "tu_token"
+   .\build.bat publish
+   ```
+
+   O, si `resources/backend` ya está generado y actualizado, solo el frontend + instaladores
+   (sustituye `dist:win` por `dist:mac`/`dist:linux` según el SO):
 
    ```bash
    # PowerShell
@@ -184,7 +200,12 @@ para instalarla ("Reiniciar ahora" / "Más tarde") — nunca la instala sin avis
    en el que quieras publicar (no se puede compilar macOS/Linux desde Windows, ver nota más
    arriba sobre compilación cruzada).
 
-4. Publica el Release en GitHub (si `electron-builder` lo dejó como borrador).
+4. Publica el Release en GitHub (si `electron-builder` lo dejó como borrador). Mientras siga
+   como borrador, las apps instaladas **no** ven la versión nueva.
+5. Comprueba que el Release tiene, además de los `.exe`, los archivos `latest.yml` y
+   `MergerLab-Setup-<versión>-x64.exe.blockmap`. Sin `latest.yml` las apps instaladas nunca se
+   enteran de la actualización (por eso no basta con subir los `.exe` a mano desde la web de
+   GitHub).
 
 ## Columna clave con nombres distintos (modo join)
 

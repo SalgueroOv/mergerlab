@@ -2,6 +2,17 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
+rem "build.bat publish" ademas sube los instaladores + latest.yml a un GitHub Release (lo que
+rem necesita electron-updater para avisar de la version nueva). Requiere la variable GH_TOKEN.
+set PUBLISH_FLAG=--publish never
+if /i "%~1"=="publish" (
+    if "%GH_TOKEN%"=="" (
+        echo ERROR: falta la variable de entorno GH_TOKEN ^(token de GitHub con permiso "repo"^).
+        exit /b 1
+    )
+    set PUBLISH_FLAG=--publish always
+)
+
 echo ==^> 1/5 Creando entorno virtual de Python (si no existe)
 if not exist backend\venv (
     python -m venv backend\venv
@@ -45,7 +56,7 @@ call npm run build:frontend
 if errorlevel 1 goto :error
 
 echo ==^> 5/5 Generando distribuibles con electron-builder (instalador NSIS + portable)
-call npx electron-builder --win nsis portable
+call npx electron-builder --win nsis portable %PUBLISH_FLAG%
 if errorlevel 1 goto :error
 
 echo.

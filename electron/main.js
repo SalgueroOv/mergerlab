@@ -178,50 +178,65 @@ function showBackendStartupError(language, err) {
 const UPDATE_DIALOG_TEXT = {
   es: {
     title: "Actualización disponible",
-    body: (v) => `Se descargó la versión ${v} de Merger Lab. ¿Reiniciar ahora para instalarla?`,
-    restartNow: "Reiniciar ahora",
+    body: (v) => `Hay una nueva versión de Merger Lab (${v}) lista para instalar.`,
+    detail:
+      "Al pulsar «Actualizar ahora», la app se cerrará, se actualizará y volverá a abrirse sola en unos segundos.",
+    updateNow: "Actualizar ahora",
     later: "Más tarde",
   },
   en: {
     title: "Update available",
-    body: (v) => `Merger Lab ${v} has been downloaded. Restart now to install it?`,
-    restartNow: "Restart now",
+    body: (v) => `A new version of Merger Lab (${v}) is ready to install.`,
+    detail:
+      "Click “Update now” and the app will close, update itself and reopen on its own in a few seconds.",
+    updateNow: "Update now",
     later: "Later",
   },
   de: {
     title: "Update verfügbar",
-    body: (v) => `Merger Lab ${v} wurde heruntergeladen. Jetzt neu starten, um es zu installieren?`,
-    restartNow: "Jetzt neu starten",
+    body: (v) => `Eine neue Version von Merger Lab (${v}) ist bereit zur Installation.`,
+    detail:
+      "Klicken Sie auf „Jetzt aktualisieren“: Die App wird geschlossen, aktualisiert und öffnet sich nach wenigen Sekunden automatisch wieder.",
+    updateNow: "Jetzt aktualisieren",
     later: "Später",
   },
   fr: {
     title: "Mise à jour disponible",
-    body: (v) => `Merger Lab ${v} a été téléchargé. Redémarrer maintenant pour l'installer ?`,
-    restartNow: "Redémarrer maintenant",
+    body: (v) => `Une nouvelle version de Merger Lab (${v}) est prête à être installée.`,
+    detail:
+      "Cliquez sur « Mettre à jour » : l'application se fermera, se mettra à jour et se rouvrira toute seule en quelques secondes.",
+    updateNow: "Mettre à jour",
     later: "Plus tard",
   },
   it: {
     title: "Aggiornamento disponibile",
-    body: (v) => `Merger Lab ${v} è stato scaricato. Riavviare ora per installarlo?`,
-    restartNow: "Riavvia ora",
+    body: (v) => `Una nuova versione di Merger Lab (${v}) è pronta per essere installata.`,
+    detail:
+      "Fai clic su «Aggiorna ora»: l'app si chiuderà, si aggiornerà e si riaprirà da sola in pochi secondi.",
+    updateNow: "Aggiorna ora",
     later: "Più tardi",
   },
   pt: {
     title: "Atualização disponível",
-    body: (v) => `O Merger Lab ${v} foi baixado. Reiniciar agora para instalá-lo?`,
-    restartNow: "Reiniciar agora",
+    body: (v) => `Uma nova versão do Merger Lab (${v}) está pronta para ser instalada.`,
+    detail:
+      "Clique em “Atualizar agora”: o app será fechado, atualizado e reaberto sozinho em alguns segundos.",
+    updateNow: "Atualizar agora",
     later: "Mais tarde",
   },
   ru: {
     title: "Доступно обновление",
-    body: (v) => `Merger Lab ${v} загружен. Перезапустить сейчас, чтобы установить?`,
-    restartNow: "Перезапустить сейчас",
+    body: (v) => `Новая версия Merger Lab (${v}) готова к установке.`,
+    detail:
+      "Нажмите «Обновить сейчас»: приложение закроется, обновится и через несколько секунд снова откроется само.",
+    updateNow: "Обновить сейчас",
     later: "Позже",
   },
   zh: {
     title: "有可用更新",
-    body: (v) => `已下载 Merger Lab ${v}。是否立即重启以安装？`,
-    restartNow: "立即重启",
+    body: (v) => `Merger Lab 新版本（${v}）已准备好安装。`,
+    detail: "点击“立即更新”后，应用将关闭、自动完成更新，并在几秒钟后自动重新打开。",
+    updateNow: "立即更新",
     later: "以后再说",
   },
 };
@@ -259,12 +274,17 @@ function setupAutoUpdater(language) {
         type: "info",
         title: text.title,
         message: text.body(info.version),
-        buttons: [text.restartNow, text.later],
+        detail: text.detail,
+        buttons: [text.updateNow, text.later],
         defaultId: 0,
         cancelId: 1,
       })
       .then(({ response }) => {
-        if (response === 0) autoUpdater.quitAndInstall();
+        // isSilent=true: el instalador NSIS es asistido (oneClick: false en
+        // electron-builder.yml), así que sin esto mostraría su asistente y el usuario tendría
+        // que pulsar "Finalizar". En silencio instala sobre la carpeta ya existente sin
+        // preguntar nada. isForceRunAfter=true: vuelve a abrir la app al terminar.
+        if (response === 0) autoUpdater.quitAndInstall(true, true);
       });
   });
 
