@@ -14,7 +14,23 @@
     "dropHint": "将文件拖到此处，或点击选择文件",
     "supportedFormats": ".xls, .xlsx, .csv, .ods",
     "rejected_other": "已忽略 {{count}} 个格式不受支持的文件。",
-    "removeFile": "移除文件"
+    "removeFile": "移除文件",
+    "csv": {
+      "separatorLabel": "分隔符",
+      "auto": "自动",
+      "autoDetected": "自动：{{separator}}",
+      "comma": "逗号 (,)",
+      "semicolon": "分号 (;)",
+      "tab": "制表符",
+      "pipe": "竖线 (|)",
+      "other": "其他…",
+      "otherPlaceholder": "?",
+      "otherAriaLabel": "{{file}} 的自定义分隔符",
+      "showPreview": "预览",
+      "hidePreview": "隐藏预览",
+      "unsure": "无法可靠地检测分隔符。请检查预览，如果列拆分不正确，请手动选择分隔符。",
+      "previewEmpty": "该文件没有数据行。"
+    }
   },
   "mode": {
     "label": "合并模式",
@@ -41,6 +57,12 @@
   "format": {
     "label": "输出格式",
     "ariaLabel": "输出格式"
+  },
+  "outputCsvSeparator": {
+    "label": "输出 CSV 的分隔符",
+    "comma": "逗号 (,)",
+    "semicolon": "分号 (;)",
+    "hint": "如果要在以逗号作为小数分隔符的区域设置（例如西班牙语或德语）下用 Excel 打开文件，请选择分号。"
   },
   "outputFileName": {
     "label": "输出文件名",
@@ -113,30 +135,38 @@
       },
       "loadFiles": {
         "title": "1. 加载文件",
-        "body": "添加你要合并的 .xlsx、.xls、.csv 或 .ods 文件。列表中的顺序很重要：可以用箭头调整顺序。"
+        "body": "添加你要合并的 .xlsx、.xls、.csv 或 .ods 文件。列表中的顺序很重要：可以通过拖动调整顺序。"
+      },
+      "csvFiles": {
+        "title": "2. CSV 文件",
+        "body": "加载 .csv 时，应用会自动检测其分隔符（逗号、分号、制表符…）。你可以手动更改分隔符并预览前几行；如果检测结果不确定，会显示类似这样的提示。"
       },
       "chooseMode": {
-        "title": "2. 选择合并方式",
+        "title": "3. 选择合并方式",
         "body": "Join 通过关键列关联文件；堆叠则在列相同的情况下将文件依次叠放。每种模式都有配图说明的独立教程（“?” 按钮）。"
       },
+      "joinType": {
+        "title": "4. Join 类型",
+        "body": "在 join 模式下，你可以选择文件的匹配方式：Inner、Left、Right 或 Outer。如果不确定该用哪一种，“?”按钮会用图示和示例解释每种类型。"
+      },
       "joinKey": {
-        "title": "3. 每个文件的关键列",
+        "title": "5. 每个文件的关键列",
         "body": "在 join 模式下，你需要分别为每个文件选择用于标识每一行的列——不同文件的列名可以不同，合并时应用会将它们视为同一个键。"
       },
       "configureOutput": {
-        "title": "4. 配置输出",
+        "title": "6. 配置输出",
         "body": "选择结果文件的格式、名称以及保存的文件夹。"
       },
       "merge": {
-        "title": "5. 合并",
+        "title": "7. 合并",
         "body": "按钮可用时，即可合并文件。如果按钮不可用，上方文字会准确说明还缺少什么。"
       },
       "theme": {
-        "title": "6. 浅色或深色主题",
+        "title": "8. 浅色或深色主题",
         "body": "默认跟随操作系统的主题；选择“浅色”或“深色”可手动固定主题。"
       },
       "help": {
-        "title": "7. 帮助和版本",
+        "title": "9. 帮助和版本",
         "body": "在这里可以查看版本号、作者信息，以及随时重新观看本导览的链接。"
       }
     }
@@ -217,6 +247,9 @@
     "output_file_locked": "对 “{{path}}” 没有写入权限。如果该文件已在其他程序中打开，请先关闭，或选择其他位置。",
     "output_write_error": "无法保存输出文件：{{detail}}",
     "xls_library_missing": "缺少用于生成 .xls 文件的 “xlwt” 库。",
-    "xls_row_limit": "合并结果共有 {{rows}} 行，超出经典 .xls 格式 {{limit}} 行的限制。请改用 .xlsx、.csv 或 .ods。"
+    "xls_row_limit": "合并结果共有 {{rows}} 行，超出经典 .xls 格式 {{limit}} 行的限制。请改用 .xlsx、.csv 或 .ods。",
+    "csv_encoding_error": "无法读取“{{filename}}”：文本使用了无法识别的编码。请将其重新另存为“CSV UTF-8”后再试。",
+    "invalid_csv_separator": "“{{filename}}”的分隔符无效：“{{separator}}”。它必须是除引号以外的单个字符。",
+    "unsupported_output_csv_separator": "不支持的输出分隔符：“{{separator}}”。允许的分隔符：{{allowed}}。"
   }
 }

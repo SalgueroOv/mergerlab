@@ -15,7 +15,23 @@
     "supportedFormats": ".xls, .xlsx, .csv, .ods",
     "rejected_one": "{{count}} file with an unsupported format was ignored.",
     "rejected_other": "{{count}} files with an unsupported format were ignored.",
-    "removeFile": "Remove file"
+    "removeFile": "Remove file",
+    "csv": {
+      "separatorLabel": "Separator",
+      "auto": "Automatic",
+      "autoDetected": "Automatic: {{separator}}",
+      "comma": "Comma (,)",
+      "semicolon": "Semicolon (;)",
+      "tab": "Tab",
+      "pipe": "Vertical bar (|)",
+      "other": "Other…",
+      "otherPlaceholder": "?",
+      "otherAriaLabel": "Custom separator for {{file}}",
+      "showPreview": "Preview",
+      "hidePreview": "Hide preview",
+      "unsure": "The separator could not be detected reliably. Check the preview and, if the columns look wrong, choose it manually.",
+      "previewEmpty": "The file has no data rows."
+    }
   },
   "mode": {
     "label": "Combination mode",
@@ -42,6 +58,12 @@
   "format": {
     "label": "Output format",
     "ariaLabel": "Output format"
+  },
+  "outputCsvSeparator": {
+    "label": "Output CSV separator",
+    "comma": "Comma (,)",
+    "semicolon": "Semicolon (;)",
+    "hint": "Choose semicolon if you will open the file in Excel with regional settings that use the comma as decimal separator (for example, Spanish or German)."
   },
   "outputFileName": {
     "label": "Output file name",
@@ -115,30 +137,38 @@
       },
       "loadFiles": {
         "title": "1. Load your files",
-        "body": "Add the .xlsx, .xls, .csv or .ods files you want to combine. The order in the list matters: you can reorder them with the arrows."
+        "body": "Add the .xlsx, .xls, .csv or .ods files you want to combine. The order in the list matters: you can reorder them by dragging."
+      },
+      "csvFiles": {
+        "title": "2. CSV files",
+        "body": "When you load a .csv, the app detects its separator on its own (comma, semicolon, tab…). You can change it manually and preview the first rows; if the detection is not sure, you will see a warning like this one."
       },
       "chooseMode": {
-        "title": "2. Choose how to combine them",
+        "title": "3. Choose how to combine them",
         "body": "Join matches files by a key column; Stack joins them one below the other when they share the same columns. Each mode has its own tutorial with diagrams (the \"?\" button)."
       },
+      "joinType": {
+        "title": "4. Join type",
+        "body": "In join mode you choose how the files are matched: Inner, Left, Right or Outer. If you are not sure which one to use, the \"?\" button explains each type with drawings and examples."
+      },
       "joinKey": {
-        "title": "3. Key column per file",
+        "title": "5. Key column per file",
         "body": "In join mode you choose which column identifies each row in EACH file separately — they can have different names, the app treats them as the same key when combining."
       },
       "configureOutput": {
-        "title": "4. Configure the output",
+        "title": "6. Configure the output",
         "body": "Choose the resulting file's format, its name and the folder where it will be saved."
       },
       "merge": {
-        "title": "5. Combine",
+        "title": "7. Combine",
         "body": "Once the button is enabled, combine the files. If it's disabled, the text above will tell you exactly what's missing."
       },
       "theme": {
-        "title": "6. Light or dark theme",
+        "title": "8. Light or dark theme",
         "body": "By default it follows the operating system's theme; choose \"Light\" or \"Dark\" to set it manually."
       },
       "help": {
-        "title": "7. Help and version",
+        "title": "9. Help and version",
         "body": "Here you'll find the version, the author, and a link to watch this tour again whenever you want."
       }
     }
@@ -219,6 +249,9 @@
     "output_file_locked": "No write permission for '{{path}}'. Close the file if it's open in another program, or choose a different location.",
     "output_write_error": "Could not save the output file: {{detail}}",
     "xls_library_missing": "The 'xlwt' library is not available to generate .xls files.",
-    "xls_row_limit": "The combined result has {{rows}} rows, which exceeds the classic .xls format's limit of {{limit}} rows. Use .xlsx, .csv or .ods instead."
+    "xls_row_limit": "The combined result has {{rows}} rows, which exceeds the classic .xls format's limit of {{limit}} rows. Use .xlsx, .csv or .ods instead.",
+    "csv_encoding_error": "Could not read '{{filename}}': the text uses an unrecognized encoding. Save it again as 'CSV UTF-8' and try again.",
+    "invalid_csv_separator": "Invalid separator for '{{filename}}': '{{separator}}'. It must be a single character other than a quote.",
+    "unsupported_output_csv_separator": "Unsupported output separator: '{{separator}}'. Allowed separators: {{allowed}}."
   }
 }

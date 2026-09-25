@@ -11,7 +11,15 @@ silencio aunque el mensaje en español siga siendo correcto.
 import pandas as pd
 import pytest
 
-from merger import MergeError, join_files, merge_files, read_file_columns, write_output
+from merger import (
+    MergeError,
+    detect_csv_separator,
+    inspect_csv,
+    join_files,
+    merge_files,
+    read_file_columns,
+    write_output,
+)
 
 
 def _write_csv(path, data):
@@ -242,6 +250,25 @@ def test_write_output_csv(tmp_path):
     assert pd.read_csv(out_path)["a"].tolist() == [1, 2]
 
 
+def test_write_output_csv_lleva_bom_y_respeta_el_separador_elegido(tmp_path):
+    df = pd.DataFrame({"nombre": ["Lucía"], "monto": [10]})
+    out_path = tmp_path / "salida.csv"
+
+    write_output(df, str(out_path), "csv", csv_separator=";")
+
+    raw = out_path.read_bytes()
+    assert raw.startswith(b"\xef\xbb\xbf")  # BOM UTF-8: Excel lo necesita para leer bien las tildes
+    assert raw[3:].decode("utf-8").splitlines() == ["nombre;monto", "Lucía;10"]
+
+
+def test_write_output_csv_separador_no_soportado(tmp_path):
+    df = pd.DataFrame({"a": [1]})
+
+    with pytest.raises(MergeError) as exc:
+        write_output(df, str(tmp_path / "salida.csv"), "csv", csv_separator="|")
+    assert exc.value.code == "unsupported_output_csv_separator"
+
+
 def test_write_output_xls_supera_el_limite_de_filas(tmp_path, monkeypatch):
     import merger
 
@@ -261,3 +288,155 @@ def test_read_file_columns(tmp_path):
     path = _write_csv(tmp_path / "a.csv", {"id": [1], "nombre": ["Ana"]})
 
     assert read_file_columns(path) == ["id", "nombre"]
+
+
+def test_read_file_columns_con_separador_elegido_a_mano(tmp_path):
+    path = tmp_path / "a.csv"
+    path.write_text("id;nombre\n1;Ana\n", encoding="utf-8")
+
+    # Forzar la coma (aunque el archivo usa ";") deja una única columna: el usuario manda.
+    assert read_file_columns(str(path), csv_separator=",") == ["id;nombre"]
+    assert read_file_columns(str(path)) == ["id", "nombre"]
+
+
+# ---- CSV: detección de separador y codificación ----
+
+
+@pytest.mark.parametrize("sep", [",", ";", "\t", "|"])
+def test_detect_csv_separator_reconoce_cada_candidato(sep):
+    lines = [sep.join(["id", "nombre", "ciudad"]), sep.join(["1", "Ana", "Rosario"])]
+
+    assert detect_csv_separator(lines) == (sep, True)
+
+
+def test_detect_csv_separator_respeta_campos_entre_comillas():
+    # La coma dentro de las comillas no debe hacer ganar a "," frente a ";".
+    lines = ["nombre;monto", '"Paz, Juan";1.500,50', '"Ríos, Ana";200']
+
+    assert detect_csv_separator(lines) == (";", True)
+
+
+def test_detect_csv_separator_archivo_de_una_sola_columna_es_seguro():
+    assert detect_csv_separator(["nombre", "Ana", "Beto"]) == (",", True)
+
+
+def test_detect_csv_separator_empate_no_es_seguro():
+    # "," y ";" dan 2 columnas consistentes en todas las filas: no hay forma de saber cuál es.
+    sep, confident = detect_csv_separator(["a,b;c", "1,2;3"])
+
+    assert sep == ","
+    assert confident is False
+
+
+def test_detect_csv_separator_filas_inconsistentes_no_es_seguro():
+    lines = ["id,nombre", "1,Ana", "2,Beto,extra", "3,Cora,extra", "4"]
+
+    sep, confident = detect_csv_separator(lines)
+
+    assert sep == ","
+    assert confident is False
+
+
+def test_merge_files_lee_csv_con_punto_y_coma(tmp_path):
+    path = tmp_path / "ventas.csv"
+    path.write_text("id;nombre\n1;Ana\n2;Beto\n", encoding="utf-8")
+
+    result = merge_files([str(path)])
+
+    assert list(result.columns) == ["id", "nombre"]
+    assert len(result) == 2
+
+
+def test_merge_files_detecta_separador_por_archivo(tmp_path):
+    a = tmp_path / "enero.csv"
+    a.write_text("id,nombre\n1,Ana\n", encoding="utf-8")
+    b = tmp_path / "febrero.csv"
+    b.write_text("id;nombre\n2;Beto\n", encoding="utf-8")
+
+    result = merge_files([str(a), str(b)])
+
+    assert list(result.columns) == ["id", "nombre"]
+    assert result["nombre"].tolist() == ["Ana", "Beto"]
+
+
+def test_merge_files_lee_csv_de_excel_en_windows_1252(tmp_path):
+    path = tmp_path / "excel.csv"
+    path.write_bytes("id;nombre\r\n1;Lucía\r\n".encode("cp1252"))
+
+    result = merge_files([str(path)])
+
+    assert result["nombre"].tolist() == ["Lucía"]
+
+
+def test_merge_files_codificacion_cambia_despues_de_la_muestra(tmp_path, monkeypatch):
+    # La muestra (primeros bytes) es ASCII puro y pasa como UTF-8, pero más adelante aparece un
+    # byte de Windows-1252: la lectura completa tiene que reintentar con cp1252 en vez de fallar.
+    import merger
+
+    monkeypatch.setattr(merger, "_CSV_SAMPLE_BYTES", 16)
+    path = tmp_path / "mixto.csv"
+    path.write_bytes("id;nombre\r\n1;Ana\r\n2;Lucía\r\n".encode("cp1252"))
+
+    result = merge_files([str(path)])
+
+    assert result["nombre"].tolist() == ["Ana", "Lucía"]
+
+
+def test_merge_files_usa_el_separador_elegido_a_mano(tmp_path):
+    path = tmp_path / "raro.csv"
+    path.write_text("id#nombre\n1#Ana\n", encoding="utf-8")
+
+    result = merge_files([str(path)], csv_separators={str(path): "#"})
+
+    assert list(result.columns) == ["id", "nombre"]
+
+
+def test_merge_files_separador_elegido_a_mano_no_valido(tmp_path):
+    path = _write_csv(tmp_path / "a.csv", {"id": [1]})
+
+    with pytest.raises(MergeError) as exc:
+        merge_files([path], csv_separators={path: '"'})
+    assert exc.value.code == "invalid_csv_separator"
+
+
+def test_join_files_con_csv_de_distintos_separadores(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("id;seguro\n1;si\n2;no\n", encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("id|gimnasio\n1|si\n", encoding="utf-8")
+
+    result = join_files([str(a), str(b)], ["id", "id"], join_type="inner")
+
+    assert list(result.columns) == ["id", "seguro", "gimnasio"]
+    assert len(result) == 1
+
+
+def test_inspect_csv_devuelve_formato_y_vista_previa(tmp_path):
+    path = tmp_path / "a.csv"
+    path.write_bytes("id;nombre\r\n1;Lucía\r\n2;Beto\r\n3;Cora\r\n4;Dani\r\n".encode("cp1252"))
+
+    info = inspect_csv(str(path))
+
+    assert info == {
+        "separator": ";",
+        "encoding": "cp1252",
+        "confident": True,
+        "columns": ["id", "nombre"],
+        "rows": [["1", "Lucía"], ["2", "Beto"], ["3", "Cora"]],
+    }
+
+
+def test_inspect_csv_con_separador_elegido_a_mano_es_seguro(tmp_path):
+    path = tmp_path / "a.csv"
+    path.write_text("a,b;c\n1,2;3\n", encoding="utf-8")
+
+    assert inspect_csv(str(path))["confident"] is False
+    info = inspect_csv(str(path), ";")
+    assert info["confident"] is True
+    assert info["columns"] == ["a,b", "c"]
+
+
+def test_inspect_csv_archivo_inexistente():
+    with pytest.raises(MergeError) as exc:
+        inspect_csv("/no/existe/archivo.csv")
+    assert exc.value.code == "file_not_found"

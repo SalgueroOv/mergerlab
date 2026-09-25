@@ -1,7 +1,7 @@
 {
   "name": "merger-lab",
   "productName": "Merger Lab",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "Combina múltiples archivos de hoja de cálculo (xls, xlsx, csv, ods) en un único archivo de salida.",
   "author": "Alejandro Salguero Oviedo",
   "license": "MIT",

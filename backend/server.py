@@ -25,8 +25,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from merger import (  # noqa: E402
     JOIN_TYPES,
+    OUTPUT_CSV_SEPARATORS,
     SUPPORTED_OUTPUT_FORMATS,
     MergeError,
+    inspect_csv,
     join_files,
     merge_files,
     read_file_columns,
@@ -47,6 +49,14 @@ def _error_response(message, status_code, code=None, params=None):
         body["code"] = code
         body["params"] = params or {}
     return jsonify(body), status_code
+
+
+def _csv_separators_from(payload):
+    """Extrae de un cuerpo JSON el campo opcional `csv_separators` (`{ruta: separador}`, los
+    separadores elegidos a mano por el usuario), descartando las entradas vacías: un archivo sin
+    separador indicado se detecta automáticamente en `merger.py`."""
+    raw = payload.get("csv_separators") or {}
+    return {path: sep for path, sep in raw.items() if isinstance(sep, str) and sep}
 
 
 def _set_job(job_id, **fields):
@@ -88,7 +98,9 @@ def merge():
 
     Cuerpo esperado (JSON): `files` (lista de rutas), `output_format`, `output_path`, `mode`
     (`"concat"` o `"join"`), y si `mode` es `"join"` también `join_keys` (objeto
-    `{ruta: columna}`) y `join_type`. Devuelve `{"job_id": ...}` con 202 si todo es válido; el
+    `{ruta: columna}`) y `join_type`. Opcionales: `csv_separators` (`{ruta: separador}`, ver
+    `_csv_separators_from`) y `output_csv_separator` (`","` por defecto, solo aplica si
+    `output_format` es `"csv"`). Devuelve `{"job_id": ...}` con 202 si todo es válido; el
     progreso y el resultado se consultan después con `GET /api/status/<job_id>`. El trabajo en
     sí (lectura, combinación y escritura) lo hace `_run_merge_job` en background para no
     bloquear la petición HTTP mientras se procesan archivos grandes.
@@ -100,6 +112,8 @@ def merge():
     mode = (payload.get("mode") or "concat").lower()
     join_keys_by_path = payload.get("join_keys") or {}
     join_type = (payload.get("join_type") or "inner").lower()
+    csv_separators = _csv_separators_from(payload)
+    output_csv_separator = payload.get("output_csv_separator") or ","
 
     if not files:
         return _error_response("No se seleccionaron archivos.", 400, code="no_files_selected")
@@ -109,6 +123,13 @@ def merge():
             400,
             code="unsupported_output_format",
             params={"format": output_format},
+        )
+    if output_format == "csv" and output_csv_separator not in OUTPUT_CSV_SEPARATORS:
+        return _error_response(
+            f"Separador de salida no soportado: '{output_csv_separator}'.",
+            400,
+            code="unsupported_output_csv_separator",
+            params={"separator": output_csv_separator, "allowed": " ".join(sorted(OUTPUT_CSV_SEPARATORS))},
         )
     if not output_path:
         return _error_response("No se indicó la ruta de guardado.", 400, code="no_output_path")
@@ -152,7 +173,17 @@ def merge():
 
     thread = threading.Thread(
         target=_run_merge_job,
-        args=(job_id, files, output_format, output_path, mode, join_keys, join_type),
+        args=(
+            job_id,
+            files,
+            output_format,
+            output_path,
+            mode,
+            join_keys,
+            join_type,
+            csv_separators,
+            output_csv_separator,
+        ),
         daemon=True,
     )
     thread.start()
@@ -164,18 +195,20 @@ def merge():
 def columns():
     """Devuelve las columnas de cada archivo indicado, para poblar el selector de clave del modo join.
 
-    Cuerpo esperado: `{"files": [ruta, ...]}`. Devuelve `{"columns": {ruta: [columna, ...]}}`.
+    Cuerpo esperado: `{"files": [ruta, ...], "csv_separators": {ruta: separador}}` (el segundo
+    campo es opcional, ver `_csv_separators_from`). Devuelve `{"columns": {ruta: [columna, ...]}}`.
     A diferencia de `/api/merge`, esto se resuelve de forma síncrona (leer solo los encabezados/
     columnas es rápido) y no crea un trabajo en background.
     """
     payload = request.get_json(silent=True) or {}
     files = payload.get("files") or []
+    csv_separators = _csv_separators_from(payload)
 
     if not files:
         return _error_response("No se seleccionaron archivos.", 400, code="no_files_selected")
 
     try:
-        result = {path: read_file_columns(path) for path in files}
+        result = {path: read_file_columns(path, csv_separators.get(path)) for path in files}
     except MergeError as exc:
         return _error_response(str(exc), 400, code=exc.code, params=exc.params)
     except Exception:
@@ -187,7 +220,50 @@ def columns():
     return jsonify({"columns": result})
 
 
-def _run_merge_job(job_id, files, output_format, output_path, mode, join_keys, join_type):
+@app.route("/api/inspect-csv", methods=["POST"])
+def inspect_csv_files():
+    """Devuelve cómo se va a leer cada CSV indicado (separador, codificación y vista previa).
+
+    Cuerpo esperado: `{"files": [ruta, ...], "csv_separators": {ruta: separador}}` (el segundo
+    campo es opcional, ver `_csv_separators_from`). Devuelve `{"csv": {ruta: info}}`, donde
+    `info` es el resultado de `merger.inspect_csv` o, si ese archivo concreto no se pudo leer,
+    `{"error": {message, code, params}}`: el error se informa por archivo para que uno roto no
+    impida mostrar la información de los demás.
+    """
+    payload = request.get_json(silent=True) or {}
+    files = payload.get("files") or []
+    csv_separators = _csv_separators_from(payload)
+
+    result = {}
+    for path in files:
+        try:
+            result[path] = inspect_csv(path, csv_separators.get(path))
+        except MergeError as exc:
+            result[path] = {"error": {"message": str(exc), "code": exc.code, "params": exc.params}}
+        except Exception:
+            traceback.print_exc()
+            result[path] = {
+                "error": {
+                    "message": "No se pudieron leer las columnas de los archivos.",
+                    "code": "columns_read_error",
+                    "params": {},
+                }
+            }
+
+    return jsonify({"csv": result})
+
+
+def _run_merge_job(
+    job_id,
+    files,
+    output_format,
+    output_path,
+    mode,
+    join_keys,
+    join_type,
+    csv_separators,
+    output_csv_separator,
+):
     """Ejecuta la combinación completa (lectura + join/concat + escritura) y actualiza `jobs[job_id]`.
 
     Pensada para correr en un hilo aparte (ver `merge`, que la lanza con `threading.Thread`), no
@@ -211,9 +287,15 @@ def _run_merge_job(job_id, files, output_format, output_path, mode, join_keys, j
             params={},
         )
         if mode == "join":
-            combined = join_files(files, join_keys, join_type, progress_callback=progress_callback)
+            combined = join_files(
+                files,
+                join_keys,
+                join_type,
+                progress_callback=progress_callback,
+                csv_separators=csv_separators,
+            )
         else:
-            combined = merge_files(files, progress_callback=progress_callback)
+            combined = merge_files(files, progress_callback=progress_callback, csv_separators=csv_separators)
 
         _set_job(
             job_id,
@@ -223,7 +305,7 @@ def _run_merge_job(job_id, files, output_format, output_path, mode, join_keys, j
             code="saving_output",
             params={},
         )
-        result_path = write_output(combined, output_path, output_format)
+        result_path = write_output(combined, output_path, output_format, output_csv_separator)
 
         _set_job(
             job_id,

@@ -42,27 +42,31 @@ export default function JoinPicker({
   const { t } = useTranslation();
   return (
     <div className="join-picker">
-      <div className="field-row">
-        <span className="field-label field-label--inline">{t("join.typeLabel")}</span>
-        <JoinTutorial />
-      </div>
-      <div className="format-picker" role="radiogroup" aria-label={t("join.typeAriaLabel")}>
-        {JOIN_TYPES.map((type) => {
-          const selected = joinType === type.value;
-          return (
-            <button
-              key={type.value}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              className={`format-pill ${selected ? "selected" : ""}`}
-              disabled={disabled}
-              onClick={() => onJoinTypeChange(type.value)}
-            >
-              {type.label}
-            </button>
-          );
-        })}
+      {/* Contenedor propio para que el recorrido de bienvenida pueda resaltar el tipo de join
+          (con su botón de ayuda) por separado de la columna clave (ver OnboardingTour). */}
+      <div className="join-type-group">
+        <div className="field-row">
+          <span className="field-label field-label--inline">{t("join.typeLabel")}</span>
+          <JoinTutorial />
+        </div>
+        <div className="format-picker" role="radiogroup" aria-label={t("join.typeAriaLabel")}>
+          {JOIN_TYPES.map((type) => {
+            const selected = joinType === type.value;
+            return (
+              <button
+                key={type.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                className={`format-pill ${selected ? "selected" : ""}`}
+                disabled={disabled}
+                onClick={() => onJoinTypeChange(type.value)}
+              >
+                {type.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="field-group join-key-group">

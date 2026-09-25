@@ -1,12 +1,54 @@
 import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { extensionOf, formatMetaFor } from "../formatMeta.js";
+import { backendText } from "../i18n/backendMessages.js";
+
+// Separadores de CSV que se ofrecen en el desplegable de cada archivo (los mismos candidatos que
+// prueba la detección automática del backend, ver CSV_SEPARATOR_CANDIDATES en merger.py), con la
+// clave de su etiqueta traducida. Cualquier otro carácter se elige con la opción "Otro".
+const CSV_SEPARATOR_OPTIONS = [
+  { value: ",", labelKey: "fileList.csv.comma" },
+  { value: ";", labelKey: "fileList.csv.semicolon" },
+  { value: "\t", labelKey: "fileList.csv.tab" },
+  { value: "|", labelKey: "fileList.csv.pipe" },
+];
+
+/**
+ * Etiqueta legible de un separador de CSV (p. ej. "Punto y coma (;)"), o el propio carácter
+ * entre comillas si no es uno de `CSV_SEPARATOR_OPTIONS`.
+ * @param {string} separator
+ * @param {import("i18next").TFunction} t
+ * @returns {string}
+ */
+function separatorLabel(separator, t) {
+  const option = CSV_SEPARATOR_OPTIONS.find((o) => o.value === separator);
+  return option ? t(option.labelKey) : `"${separator}"`;
+}
+
+/**
+ * Devuelve una copia de `set` con `value` añadido (`include = true`) o quitado.
+ * @param {Set<string>} set
+ * @param {string} value
+ * @param {boolean} include
+ * @returns {Set<string>}
+ */
+function toggledSet(set, value, include) {
+  const next = new Set(set);
+  if (include) next.add(value);
+  else next.delete(value);
+  return next;
+}
 
 /**
  * Zona de carga (clic o arrastrar-y-soltar) y lista reordenable de los archivos de entrada.
  * El propio componente no guarda la lista de archivos ni decide qué extensiones se aceptan: eso
  * vive en `App.jsx` (`handleFilesDropped`), compartido con el drop sobre toda la ventana (ver
  * `WindowDropOverlay` en `App.jsx`) para que ambas zonas de drop se comporten igual.
+ *
+ * Debajo de cada `.csv` se muestra con qué separador se va a leer (detectado automáticamente o
+ * elegido a mano), un aviso si la detección no está segura y una vista previa opcional de las
+ * primeras filas. `csvInfoByPath` (resultado de `inspectCsv` en `src/api.js`) y los separadores
+ * elegidos a mano (`csvSeparators`) viven en `App.jsx`, no en este componente.
  * @param {{
  *   files: {path: string, name: string, size: number|null}[],
  *   onAddFiles: (paths?: string[]) => void,
@@ -14,6 +56,9 @@ import { extensionOf, formatMetaFor } from "../formatMeta.js";
  *   rejectedCount: number,
  *   onRemove: (index: number) => void,
  *   onReorder: (fromIndex: number, toIndex: number) => void,
+ *   csvInfoByPath: Record<string, object>,
+ *   csvSeparators: Record<string, string>,
+ *   onCsvSeparatorChange: (path: string, separator: string) => void,
  *   disabled: boolean,
  * }} props
  */
@@ -24,12 +69,28 @@ export default function FileList({
   rejectedCount,
   onRemove,
   onReorder,
+  csvInfoByPath,
+  csvSeparators,
+  onCsvSeparatorChange,
   disabled,
 }) {
   const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
+  // Rutas de los CSV con la vista previa desplegada, y de los que tienen elegida la opción "Otro"
+  // del desplegable de separador (se guarda aparte porque, mientras el campo del carácter está
+  // vacío, no hay separador elegido a mano y el archivo se sigue leyendo en automático).
+  const [previewPaths, setPreviewPaths] = useState(() => new Set());
+  const [otherPaths, setOtherPaths] = useState(() => new Set());
+
+  const handleSeparatorSelect = useCallback(
+    (path, value) => {
+      setOtherPaths((prev) => toggledSet(prev, path, value === "other"));
+      onCsvSeparatorChange(path, value === "auto" || value === "other" ? "" : value);
+    },
+    [onCsvSeparatorChange]
+  );
 
   const handleZoneDragOver = useCallback(
     (event) => {
@@ -94,6 +155,106 @@ export default function FileList({
     setDragIndex(null);
     setOverIndex(null);
   }, []);
+
+  /**
+   * Controles de un `.csv` dentro de su fila: desplegable del separador, campo del carácter si
+   * se elige "Otro", botón de vista previa, aviso de detección dudosa o error de lectura, y la
+   * propia vista previa si está desplegada.
+   * @param {{path: string, name: string}} file
+   */
+  const renderCsvOptions = (file) => {
+    const info = csvInfoByPath[file.path];
+    const manual = csvSeparators[file.path] || "";
+    const isStandard = CSV_SEPARATOR_OPTIONS.some((o) => o.value === manual);
+    const selectValue = manual
+      ? isStandard
+        ? manual
+        : "other"
+      : otherPaths.has(file.path)
+        ? "other"
+        : "auto";
+    const readable = info && !info.error;
+    const showPreview = readable && previewPaths.has(file.path);
+    // El separador detectado solo se conoce cuando el archivo se está leyendo en automático: con
+    // uno elegido a mano, `info.separator` es ese mismo.
+    const autoLabel =
+      readable && !manual
+        ? t("fileList.csv.autoDetected", { separator: separatorLabel(info.separator, t) })
+        : t("fileList.csv.auto");
+
+    return (
+      <div className="csv-options">
+        <div className="csv-options-row">
+          <label className="csv-options-label" htmlFor={`csv-sep-${file.path}`}>
+            {t("fileList.csv.separatorLabel")}
+          </label>
+          <select
+            id={`csv-sep-${file.path}`}
+            className="destination-input csv-separator-select"
+            value={selectValue}
+            disabled={disabled}
+            onChange={(e) => handleSeparatorSelect(file.path, e.target.value)}
+          >
+            <option value="auto">{autoLabel}</option>
+            {CSV_SEPARATOR_OPTIONS.map((o) => (
+              <option key={o.labelKey} value={o.value}>
+                {t(o.labelKey)}
+              </option>
+            ))}
+            <option value="other">{t("fileList.csv.other")}</option>
+          </select>
+          {selectValue === "other" && (
+            <input
+              type="text"
+              className="destination-input csv-separator-other"
+              maxLength={1}
+              value={isStandard ? "" : manual}
+              disabled={disabled}
+              placeholder={t("fileList.csv.otherPlaceholder")}
+              aria-label={t("fileList.csv.otherAriaLabel", { file: file.name })}
+              onChange={(e) => onCsvSeparatorChange(file.path, e.target.value)}
+            />
+          )}
+          <button
+            type="button"
+            className="btn subtle csv-preview-toggle"
+            disabled={!readable}
+            aria-expanded={showPreview}
+            onClick={() => setPreviewPaths((prev) => toggledSet(prev, file.path, !prev.has(file.path)))}
+          >
+            {showPreview ? t("fileList.csv.hidePreview") : t("fileList.csv.showPreview")}
+          </button>
+        </div>
+
+        {info && info.error && <p className="csv-options-error">{backendText(info.error, t)}</p>}
+        {readable && !info.confident && <p className="csv-options-warning">{t("fileList.csv.unsure")}</p>}
+
+        {showPreview && (
+          <div className="csv-preview">
+            <table>
+              <thead>
+                <tr>
+                  {info.columns.map((col, i) => (
+                    <th key={i}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {info.rows.map((row, r) => (
+                  <tr key={r}>
+                    {row.map((cell, c) => (
+                      <td key={c}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {info.rows.length === 0 && <p className="csv-preview-empty">{t("fileList.csv.previewEmpty")}</p>}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="file-list-wrap">
@@ -165,6 +326,7 @@ export default function FileList({
                 >
                   ×
                 </button>
+                {extensionOf(file.name) === "csv" && renderCsvOptions(file)}
               </li>
             );
           })}

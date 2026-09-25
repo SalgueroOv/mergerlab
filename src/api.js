@@ -66,6 +66,9 @@ async function requestJson(url, options) {
  * @param {"concat"|"join"} [options.mode]
  * @param {Record<string,string>} [options.joinKeys] `{ruta: columnaClave}`, solo en modo `"join"`
  * @param {string} [options.joinType] `"inner" | "left" | "right" | "outer"`, solo en modo `"join"`
+ * @param {Record<string,string>} [options.csvSeparators] `{ruta: separador}` elegido a mano para
+ *   algunos CSV; los que no aparecen se detectan automáticamente en el backend
+ * @param {string} [options.outputCsvSeparator] `"," | ";"`, solo aplica si `outputFormat` es `"csv"`
  * @returns {Promise<{job_id: string}>}
  */
 export async function startMerge(files, outputFormat, outputPath, options = {}) {
@@ -82,6 +85,8 @@ export async function startMerge(files, outputFormat, outputPath, options = {}) 
       mode: options.mode ?? "concat",
       join_keys: options.joinKeys ?? {},
       join_type: options.joinType,
+      csv_separators: options.csvSeparators ?? {},
+      output_csv_separator: options.outputCsvSeparator ?? ",",
     }),
   });
 }
@@ -90,16 +95,36 @@ export async function startMerge(files, outputFormat, outputPath, options = {}) 
  * Pide al backend las columnas de cada archivo indicado (`POST /api/columns`), para poblar los
  * selectores de columna clave del modo join.
  * @param {string[]} files rutas absolutas de los archivos
+ * @param {Record<string,string>} [csvSeparators] `{ruta: separador}` elegido a mano para algunos CSV
  * @returns {Promise<Record<string, string[]>>} `{ruta: [nombreColumna, ...]}`
  */
-export async function getColumns(files) {
+export async function getColumns(files, csvSeparators = {}) {
   const base = await getApiBase();
   const { columns } = await requestJson(`${base}/api/columns`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ files }),
+    body: JSON.stringify({ files, csv_separators: csvSeparators }),
   });
   return columns;
+}
+
+/**
+ * Pide al backend cómo va a leer cada CSV indicado (`POST /api/inspect-csv`): separador,
+ * codificación, si la detección automática está segura y una vista previa de las primeras filas.
+ * @param {string[]} files rutas absolutas de archivos `.csv`
+ * @param {Record<string,string>} [csvSeparators] `{ruta: separador}` elegido a mano para algunos CSV
+ * @returns {Promise<Record<string, {separator: string, encoding: string, confident: boolean,
+ *   columns: string[], rows: string[][]} | {error: {message: string, code?: string, params?: object}}>>}
+ *   `{ruta: info}`; si un archivo concreto no se pudo leer, su `info` es `{error}`
+ */
+export async function inspectCsv(files, csvSeparators = {}) {
+  const base = await getApiBase();
+  const { csv } = await requestJson(`${base}/api/inspect-csv`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files, csv_separators: csvSeparators }),
+  });
+  return csv;
 }
 
 /**

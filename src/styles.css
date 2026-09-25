@@ -11,6 +11,8 @@
   --success: #1f9254;
   --success-bg: #e8f7ee;
   --error-bg: #fdecec;
+  --warning: #a15c07;
+  --warning-bg: #fdf4e3;
   --radius: 8px;
 }
 
@@ -24,6 +26,8 @@
     --accent-bg: #26234a;
     --error-bg: #3a1f22;
     --success-bg: #17301f;
+    --warning: #f0b35a;
+    --warning-bg: #3a2c16;
   }
 }
 
@@ -349,6 +353,7 @@ body {
 
 .file-list-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
@@ -412,6 +417,105 @@ body {
 .icon-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ---- Opciones de CSV (separador y vista previa) dentro de cada fila de la lista ---- */
+
+.csv-options {
+  flex-basis: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 24px;
+}
+
+.csv-options-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.csv-options-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Doble clase para ganarle a `.destination-input` (flex: 1; min-width: 0), definida más abajo. */
+.csv-options-row .csv-separator-select {
+  flex: 0 0 auto;
+  max-width: 100%;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.csv-options-row .csv-separator-other {
+  flex: 0 0 auto;
+  width: 44px;
+  padding: 4px 8px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.csv-preview-toggle {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.csv-options-warning,
+.csv-options-error {
+  font-size: 12px;
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.csv-options-warning {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.csv-options-error {
+  color: var(--danger);
+  background: var(--error-bg);
+}
+
+.csv-preview {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.csv-preview table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.csv-preview th,
+.csv-preview td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.csv-preview th {
+  background: var(--bg);
+  font-weight: 600;
+}
+
+.csv-preview tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.csv-preview-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  padding: 6px 8px;
 }
 
 /* ---- Format picker (pills) ---- */
@@ -707,6 +811,13 @@ body {
   min-width: 0;
 }
 
+.field-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+
 .join-key-note {
   font-size: 12px;
   color: var(--text-muted);
@@ -908,6 +1019,27 @@ body {
   font-size: 13px;
   line-height: 1.5;
   color: var(--text);
+}
+
+/* Pasos con dibujo (ver CsvRowIllustration en OnboardingTour.jsx): más anchos para que la fila
+   de ejemplo quepa sin partirse. */
+.tour-tooltip--wide {
+  width: 380px;
+}
+
+.tour-illustration {
+  margin-top: 12px;
+  pointer-events: none;
+}
+
+.tour-illustration .file-list-item {
+  background: var(--bg);
+}
+
+.tour-illustration-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tour-hint {

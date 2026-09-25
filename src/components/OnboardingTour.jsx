@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatMetaFor } from "../formatMeta.js";
 
 const STORAGE_KEY = "mergerlab.onboarding.completed";
 
@@ -9,15 +10,28 @@ const STORAGE_KEY = "mergerlab.onboarding.completed";
 // cada paso es más simple que encadenar refs a través de FileList/JoinPicker/etc. sin ganar nada.
 // title/body son claves de traducción (no el texto en sí): se resuelven con t() dentro del
 // componente, para que el recorrido se actualice si el usuario cambia de idioma a mitad de paso.
+// `illustration` (opcional) añade un dibujo dentro del tooltip, para explicar controles que solo
+// existen con archivos cargados (ver CsvRowIllustration).
 const STEP_DEFS = [
   { selector: ".brand", titleKey: "tour.steps.welcome.title", bodyKey: "tour.steps.welcome.body" },
   { selector: ".panel-input", titleKey: "tour.steps.loadFiles.title", bodyKey: "tour.steps.loadFiles.body" },
+  {
+    selector: ".panel-input",
+    titleKey: "tour.steps.csvFiles.title",
+    bodyKey: "tour.steps.csvFiles.body",
+    illustration: "csvRow",
+  },
   {
     selector: ".mode-toggle",
     titleKey: "tour.steps.chooseMode.title",
     bodyKey: "tour.steps.chooseMode.body",
   },
-  { selector: ".join-picker", titleKey: "tour.steps.joinKey.title", bodyKey: "tour.steps.joinKey.body" },
+  {
+    selector: ".join-type-group",
+    titleKey: "tour.steps.joinType.title",
+    bodyKey: "tour.steps.joinType.body",
+  },
+  { selector: ".join-key-group", titleKey: "tour.steps.joinKey.title", bodyKey: "tour.steps.joinKey.body" },
   {
     selector: ".panel-output",
     titleKey: "tour.steps.configureOutput.title",
@@ -82,6 +96,43 @@ function computeTooltipPosition(rect, tooltipRect) {
 
   return { top, left };
 }
+
+/**
+ * Dibujo de una fila `.csv` de la lista de archivos, con el separador detectado, el botón de
+ * vista previa y el aviso de detección dudosa. Reutiliza las clases CSS de la fila real de
+ * `FileList` para verse igual, pero es solo ilustrativo: no hay archivos cargados durante el
+ * recorrido (y simularlos obligaría a tocar el estado real de la app), así que el desplegable y
+ * el botón no son interactivos (`pointer-events: none` en `.tour-illustration`).
+ */
+function CsvRowIllustration() {
+  const { t } = useTranslation();
+  const meta = formatMetaFor("csv");
+  const autoLabel = t("fileList.csv.autoDetected", { separator: t("fileList.csv.semicolon") });
+  return (
+    <div className="tour-illustration" aria-hidden="true">
+      <div className="file-list-item">
+        <span className="drag-handle">⠿</span>
+        <span className="file-badge" style={{ "--badge-color": meta.color }}>
+          {meta.label}
+        </span>
+        <span className="file-name">ventas.csv</span>
+        <span className="icon-btn tour-illustration-remove">×</span>
+        <div className="csv-options">
+          <div className="csv-options-row">
+            <span className="csv-options-label">{t("fileList.csv.separatorLabel")}</span>
+            <select className="destination-input csv-separator-select" tabIndex={-1} defaultValue="auto">
+              <option value="auto">{autoLabel}</option>
+            </select>
+            <span className="btn subtle csv-preview-toggle">{t("fileList.csv.showPreview")}</span>
+          </div>
+          <p className="csv-options-warning">{t("fileList.csv.unsure")}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const ILLUSTRATIONS = { csvRow: CsvRowIllustration };
 
 /**
  * Recorrido de bienvenida tipo spotlight: resalta en secuencia los controles principales de la
@@ -155,6 +206,7 @@ export default function OnboardingTour({ active, onFinish }) {
   if (!active) return null;
 
   const step = STEP_DEFS[stepIndex];
+  const Illustration = step.illustration ? ILLUSTRATIONS[step.illustration] : null;
 
   // El overlay cubre toda la ventana con position:fixed y un z-index alto, así que es siempre
   // el elemento que recibe el click (nunca llega al botón/input real debajo). Por eso alcanza
@@ -170,7 +222,7 @@ export default function OnboardingTour({ active, onFinish }) {
       )}
       <div
         ref={tooltipRef}
-        className="tour-tooltip"
+        className={`tour-tooltip ${Illustration ? "tour-tooltip--wide" : ""}`}
         // Mientras no tengamos una medición del tooltip ya pintado (primer render de cada
         // paso), se mantiene invisible en vez de mostrarlo en una posición provisional: evita
         // el parpadeo de un tooltip fuera de lugar antes del clamp.
@@ -185,6 +237,7 @@ export default function OnboardingTour({ active, onFinish }) {
         </p>
         <h3>{t(step.titleKey)}</h3>
         <p className="tour-body">{t(step.bodyKey)}</p>
+        {Illustration && <Illustration />}
         <p className="tour-hint">{t("tour.hint")}</p>
       </div>
     </div>

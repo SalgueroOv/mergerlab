@@ -11,7 +11,7 @@ import ThemeToggle from "./components/ThemeToggle.jsx";
 import LanguageToggle from "./components/LanguageToggle.jsx";
 import OnboardingTour, { hasSeenOnboarding } from "./components/OnboardingTour.jsx";
 import WindowDropOverlay from "./components/WindowDropOverlay.jsx";
-import { startMerge, pollMergeStatus, getColumns } from "./api.js";
+import { startMerge, pollMergeStatus, getColumns, inspectCsv } from "./api.js";
 import { backendText } from "./i18n/backendMessages.js";
 import { ACCEPTED_INPUT_EXTENSIONS, extensionOf } from "./formatMeta.js";
 
@@ -121,6 +121,14 @@ export default function App() {
   const [destinationFolder, setDestinationFolder] = useState("");
   const [includeHeadersOnce, setIncludeHeadersOnce] = useState(true);
   const [addSourceColumn, setAddSourceColumn] = useState(false);
+  const [outputCsvSeparator, setOutputCsvSeparator] = useState(",");
+
+  // csvSeparators: { [filePath]: separador } — solo los CSV cuyo separador eligió el usuario a
+  // mano; los que no aparecen se leen con el separador que detecta el backend.
+  const [csvSeparators, setCsvSeparators] = useState({});
+  // csvInfoByPath: { [filePath]: resultado de inspectCsv } — cómo va a leer el backend cada CSV
+  // (separador, si la detección está segura, vista previa), o `{error}` si no se pudo leer.
+  const [csvInfoByPath, setCsvInfoByPath] = useState({});
 
   const [joinType, setJoinType] = useState("inner");
   // joinKeys: { [filePath]: nombreDeColumnaElegidaEnEseArchivo } — cada archivo puede usar un
@@ -185,6 +193,62 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  // Rutas de los CSV cargados, como texto (una por línea) para que los efectos que dependen de
+  // ellas no se relancen cuando `files` cambia sin que cambien sus CSV (p. ej. al llegar los
+  // tamaños de `statFiles` o al reordenar: por eso van ordenadas).
+  const csvPathsKey = useMemo(
+    () =>
+      files
+        .filter((f) => extensionOf(f.name) === "csv")
+        .map((f) => f.path)
+        .sort()
+        .join("\n"),
+    [files]
+  );
+
+  // Descarta los separadores elegidos a mano de archivos que ya no están en la lista.
+  useEffect(() => {
+    const current = new Set(csvPathsKey ? csvPathsKey.split("\n") : []);
+    setCsvSeparators((prev) => {
+      const kept = Object.entries(prev).filter(([p]) => current.has(p));
+      return kept.length === Object.keys(prev).length ? prev : Object.fromEntries(kept);
+    });
+  }, [csvPathsKey]);
+
+  useEffect(() => {
+    const csvPaths = csvPathsKey ? csvPathsKey.split("\n") : [];
+    if (csvPaths.length === 0) {
+      setCsvInfoByPath({});
+      return undefined;
+    }
+
+    let cancelled = false;
+    inspectCsv(csvPaths, csvSeparators)
+      .then((result) => {
+        if (!cancelled) setCsvInfoByPath(result);
+      })
+      .catch((err) => {
+        // Fallo de la petición entera (p. ej. backend caído): se muestra el mismo error en cada CSV.
+        if (cancelled) return;
+        const error = { message: err.message, code: err.code, params: err.params };
+        setCsvInfoByPath(Object.fromEntries(csvPaths.map((p) => [p, { error }])));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [csvPathsKey, csvSeparators]);
+
+  const handleCsvSeparatorChange = useCallback((path, separator) => {
+    setCsvSeparators((prev) => {
+      if ((prev[path] || "") === separator) return prev;
+      const next = { ...prev };
+      if (separator) next[path] = separator;
+      else delete next[path];
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (mode !== "join" || files.length === 0) {
       setColumnsByPath({});
@@ -197,7 +261,10 @@ export default function App() {
     setLoadingColumns(true);
     setColumnsError(null);
 
-    getColumns(files.map((f) => f.path))
+    getColumns(
+      files.map((f) => f.path),
+      csvSeparators
+    )
       .then((result) => {
         if (cancelled) return;
         setColumnsByPath(result);
@@ -214,7 +281,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [mode, files, t]);
+  }, [mode, files, csvSeparators, t]);
 
   // Sugiere por defecto, para cada archivo, la columna cuyo nombre normalizado coincide en
   // TODOS los archivos (ver normalizeColumnName). Conserva cualquier elección manual ya hecha
@@ -410,7 +477,15 @@ export default function App() {
         files.map((f) => f.path),
         outputFormat,
         outputPath,
-        { includeHeadersOnce, addSourceColumn, mode, joinKeys: joinKeysPayload, joinType }
+        {
+          includeHeadersOnce,
+          addSourceColumn,
+          mode,
+          joinKeys: joinKeysPayload,
+          joinType,
+          csvSeparators,
+          outputCsvSeparator,
+        }
       );
 
       const finalStatus = await pollMergeStatus(jobId, (status) => {
@@ -439,6 +514,8 @@ export default function App() {
     mode,
     joinKeys,
     joinType,
+    csvSeparators,
+    outputCsvSeparator,
     t,
   ]);
 
@@ -496,6 +573,9 @@ export default function App() {
               rejectedCount={rejectedCount}
               onRemove={handleRemove}
               onReorder={handleReorder}
+              csvInfoByPath={csvInfoByPath}
+              csvSeparators={csvSeparators}
+              onCsvSeparatorChange={handleCsvSeparatorChange}
               disabled={isProcessing}
             />
           </section>
@@ -547,6 +627,34 @@ export default function App() {
               <label className="field-label">{t("format.label")}</label>
               <FormatPicker value={outputFormat} onChange={setOutputFormat} disabled={isProcessing} />
             </div>
+
+            {outputFormat === "csv" && (
+              <div className="field-group">
+                <label className="field-label">{t("outputCsvSeparator.label")}</label>
+                <div className="format-picker" role="radiogroup" aria-label={t("outputCsvSeparator.label")}>
+                  {[
+                    { value: ",", labelKey: "outputCsvSeparator.comma" },
+                    { value: ";", labelKey: "outputCsvSeparator.semicolon" },
+                  ].map((option) => {
+                    const selected = outputCsvSeparator === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        className={`format-pill ${selected ? "selected" : ""}`}
+                        disabled={isProcessing}
+                        onClick={() => setOutputCsvSeparator(option.value)}
+                      >
+                        {t(option.labelKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="field-hint">{t("outputCsvSeparator.hint")}</p>
+              </div>
+            )}
 
             <div className="field-group">
               <label className="field-label" htmlFor="output-filename">

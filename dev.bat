@@ -8,4 +8,6 @@ start "Merger Lab - Vite (frontend)" cmd /k "npm run dev:frontend"
 echo Esperando a que Vite arranque en el puerto 5173...
 npx wait-on tcp:5173
 
-start "Merger Lab - Electron" cmd /k "call backend\venv\Scripts\activate.bat && set NODE_ENV=development && npx electron ."
+rem Comillas en el set: sin ellas cmd guarda el espacio antes de "&&" (NODE_ENV="development ")
+rem y Electron no reconoce el modo desarrollo.
+start "Merger Lab - Electron" cmd /k "call backend\venv\Scripts\activate.bat && set "NODE_ENV=development" && npx electron ."

@@ -15,7 +15,23 @@
     "supportedFormats": ".xls, .xlsx, .csv, .ods",
     "rejected_one": "{{count}} Datei mit nicht unterstütztem Format wurde ignoriert.",
     "rejected_other": "{{count}} Dateien mit nicht unterstütztem Format wurden ignoriert.",
-    "removeFile": "Datei entfernen"
+    "removeFile": "Datei entfernen",
+    "csv": {
+      "separatorLabel": "Trennzeichen",
+      "auto": "Automatisch",
+      "autoDetected": "Automatisch: {{separator}}",
+      "comma": "Komma (,)",
+      "semicolon": "Semikolon (;)",
+      "tab": "Tabulator",
+      "pipe": "Senkrechter Strich (|)",
+      "other": "Andere…",
+      "otherPlaceholder": "?",
+      "otherAriaLabel": "Eigenes Trennzeichen für {{file}}",
+      "showPreview": "Vorschau",
+      "hidePreview": "Vorschau ausblenden",
+      "unsure": "Das Trennzeichen konnte nicht sicher erkannt werden. Prüfe die Vorschau und wähle es manuell, falls die Spalten nicht stimmen.",
+      "previewEmpty": "Die Datei enthält keine Datenzeilen."
+    }
   },
   "mode": {
     "label": "Kombinationsmodus",
@@ -42,6 +58,12 @@
   "format": {
     "label": "Ausgabeformat",
     "ariaLabel": "Ausgabeformat"
+  },
+  "outputCsvSeparator": {
+    "label": "Trennzeichen der CSV-Ausgabe",
+    "comma": "Komma (,)",
+    "semicolon": "Semikolon (;)",
+    "hint": "Wähle Semikolon, wenn du die Datei in Excel mit Regionaleinstellungen öffnest, die das Komma als Dezimaltrennzeichen verwenden (zum Beispiel Deutsch)."
   },
   "outputFileName": {
     "label": "Name der Ausgabedatei",
@@ -115,30 +137,38 @@
       },
       "loadFiles": {
         "title": "1. Dateien laden",
-        "body": "Füge die .xlsx-, .xls-, .csv- oder .ods-Dateien hinzu, die du kombinieren möchtest. Die Reihenfolge in der Liste ist wichtig: Du kannst sie mit den Pfeilen ändern."
+        "body": "Füge die .xlsx-, .xls-, .csv- oder .ods-Dateien hinzu, die du kombinieren möchtest. Die Reihenfolge in der Liste ist wichtig: Du kannst sie per Drag & Drop ändern."
+      },
+      "csvFiles": {
+        "title": "2. CSV-Dateien",
+        "body": "Wenn du eine .csv lädst, erkennt die App das Trennzeichen selbst (Komma, Semikolon, Tabulator…). Du kannst es manuell ändern und eine Vorschau der ersten Zeilen ansehen; ist die Erkennung unsicher, erscheint ein Hinweis wie dieser."
       },
       "chooseMode": {
-        "title": "2. Wähle, wie sie kombiniert werden",
+        "title": "3. Wähle, wie sie kombiniert werden",
         "body": "Join verbindet Dateien über eine Schlüsselspalte; Stapeln fügt sie untereinander zusammen, wenn sie dieselben Spalten haben. Jeder Modus hat sein eigenes Tutorial mit Grafiken (die Schaltfläche \"?\")."
       },
+      "joinType": {
+        "title": "4. Join-Typ",
+        "body": "Im Join-Modus wählst du, wie die Dateien verknüpft werden: Inner, Left, Right oder Outer. Wenn du unsicher bist, erklärt die Schaltfläche \"?\" jeden Typ mit Grafiken und Beispielen."
+      },
       "joinKey": {
-        "title": "3. Schlüsselspalte pro Datei",
+        "title": "5. Schlüsselspalte pro Datei",
         "body": "Im Join-Modus wählst du für JEDE Datei einzeln aus, welche Spalte jede Zeile identifiziert — sie können unterschiedliche Namen haben, die App behandelt sie beim Kombinieren als denselben Schlüssel."
       },
       "configureOutput": {
-        "title": "4. Ausgabe konfigurieren",
+        "title": "6. Ausgabe konfigurieren",
         "body": "Wähle das Format der Ergebnisdatei, ihren Namen und den Ordner, in dem sie gespeichert wird."
       },
       "merge": {
-        "title": "5. Kombinieren",
+        "title": "7. Kombinieren",
         "body": "Sobald die Schaltfläche aktiviert ist, kombiniere die Dateien. Ist sie deaktiviert, zeigt der Text darüber genau an, was noch fehlt."
       },
       "theme": {
-        "title": "6. Helles oder dunkles Design",
+        "title": "8. Helles oder dunkles Design",
         "body": "Standardmäßig folgt es dem Design des Betriebssystems; wähle \"Hell\" oder \"Dunkel\", um es manuell festzulegen."
       },
       "help": {
-        "title": "7. Hilfe und Version",
+        "title": "9. Hilfe und Version",
         "body": "Hier findest du die Version, den Autor und einen Link, um diese Tour jederzeit erneut anzusehen."
       }
     }
@@ -219,6 +249,9 @@
     "output_file_locked": "Keine Schreibberechtigung für '{{path}}'. Schließe die Datei, falls sie in einem anderen Programm geöffnet ist, oder wähle einen anderen Speicherort.",
     "output_write_error": "Die Ausgabedatei konnte nicht gespeichert werden: {{detail}}",
     "xls_library_missing": "Die Bibliothek 'xlwt' ist nicht verfügbar, um .xls-Dateien zu erzeugen.",
-    "xls_row_limit": "Das kombinierte Ergebnis hat {{rows}} Zeilen und überschreitet damit das Limit von {{limit}} Zeilen des klassischen .xls-Formats. Verwende stattdessen .xlsx, .csv oder .ods."
+    "xls_row_limit": "Das kombinierte Ergebnis hat {{rows}} Zeilen und überschreitet damit das Limit von {{limit}} Zeilen des klassischen .xls-Formats. Verwende stattdessen .xlsx, .csv oder .ods.",
+    "csv_encoding_error": "'{{filename}}' konnte nicht gelesen werden: Der Text verwendet eine unbekannte Kodierung. Speichere die Datei erneut als 'CSV UTF-8' und versuche es noch einmal.",
+    "invalid_csv_separator": "Ungültiges Trennzeichen für '{{filename}}': '{{separator}}'. Es muss ein einzelnes Zeichen außer Anführungszeichen sein.",
+    "unsupported_output_csv_separator": "Nicht unterstütztes Ausgabe-Trennzeichen: '{{separator}}'. Erlaubte Trennzeichen: {{allowed}}."
   }
 }

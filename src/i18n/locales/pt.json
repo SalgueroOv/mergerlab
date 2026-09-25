@@ -15,7 +15,23 @@
     "supportedFormats": ".xls, .xlsx, .csv, .ods",
     "rejected_one": "{{count}} arquivo com formato não suportado foi ignorado.",
     "rejected_other": "{{count}} arquivos com formato não suportado foram ignorados.",
-    "removeFile": "Remover arquivo"
+    "removeFile": "Remover arquivo",
+    "csv": {
+      "separatorLabel": "Separador",
+      "auto": "Automático",
+      "autoDetected": "Automático: {{separator}}",
+      "comma": "Vírgula (,)",
+      "semicolon": "Ponto e vírgula (;)",
+      "tab": "Tabulação",
+      "pipe": "Barra vertical (|)",
+      "other": "Outro…",
+      "otherPlaceholder": "?",
+      "otherAriaLabel": "Separador personalizado de {{file}}",
+      "showPreview": "Pré-visualização",
+      "hidePreview": "Ocultar pré-visualização",
+      "unsure": "Não foi possível detectar o separador com segurança. Confira a pré-visualização e, se as colunas não estiverem certas, escolha-o manualmente.",
+      "previewEmpty": "O arquivo não tem linhas de dados."
+    }
   },
   "mode": {
     "label": "Modo de combinação",
@@ -42,6 +58,12 @@
   "format": {
     "label": "Formato de saída",
     "ariaLabel": "Formato de saída"
+  },
+  "outputCsvSeparator": {
+    "label": "Separador do CSV de saída",
+    "comma": "Vírgula (,)",
+    "semicolon": "Ponto e vírgula (;)",
+    "hint": "Escolha ponto e vírgula se for abrir o arquivo no Excel com configurações regionais que usam a vírgula como separador decimal (por exemplo, português)."
   },
   "outputFileName": {
     "label": "Nome do arquivo de saída",
@@ -115,30 +137,38 @@
       },
       "loadFiles": {
         "title": "1. Carregue seus arquivos",
-        "body": "Adicione os arquivos .xlsx, .xls, .csv ou .ods que deseja combinar. A ordem na lista importa: você pode reordená-los com as setas."
+        "body": "Adicione os arquivos .xlsx, .xls, .csv ou .ods que deseja combinar. A ordem na lista importa: você pode reordená-los arrastando."
+      },
+      "csvFiles": {
+        "title": "2. Arquivos CSV",
+        "body": "Ao carregar um .csv, o app detecta sozinho o separador (vírgula, ponto e vírgula, tabulação…). Você pode alterá-lo manualmente e ver uma pré-visualização das primeiras linhas; se a detecção não tiver certeza, verá um aviso como este."
       },
       "chooseMode": {
-        "title": "2. Escolha como combiná-los",
+        "title": "3. Escolha como combiná-los",
         "body": "Join cruza arquivos por uma coluna-chave; Empilhar os une um abaixo do outro quando compartilham as mesmas colunas. Cada modo tem seu próprio tutorial com desenhos (o botão \"?\")."
       },
+      "joinType": {
+        "title": "4. Tipo de join",
+        "body": "No modo join você escolhe como os arquivos são cruzados: Inner, Left, Right ou Outer. Se não souber qual usar, o botão \"?\" explica cada tipo com desenhos e exemplos."
+      },
       "joinKey": {
-        "title": "3. Coluna-chave por arquivo",
+        "title": "5. Coluna-chave por arquivo",
         "body": "No modo join, você escolhe qual coluna identifica cada linha em CADA arquivo separadamente — podem ter nomes diferentes, o app as trata como a mesma chave ao combinar."
       },
       "configureOutput": {
-        "title": "4. Configure a saída",
+        "title": "6. Configure a saída",
         "body": "Escolha o formato do arquivo resultante, seu nome e a pasta onde salvá-lo."
       },
       "merge": {
-        "title": "5. Combinar",
+        "title": "7. Combinar",
         "body": "Quando o botão estiver habilitado, combine os arquivos. Se estiver desabilitado, o texto acima dirá exatamente o que está faltando."
       },
       "theme": {
-        "title": "6. Tema claro ou escuro",
+        "title": "8. Tema claro ou escuro",
         "body": "Por padrão, segue o tema do sistema operacional; escolha \"Claro\" ou \"Escuro\" para defini-lo manualmente."
       },
       "help": {
-        "title": "7. Ajuda e versão",
+        "title": "9. Ajuda e versão",
         "body": "Aqui você encontra a versão, o autor e um link para rever este tour quando quiser."
       }
     }
@@ -219,6 +249,9 @@
     "output_file_locked": "Sem permissão de escrita em '{{path}}'. Feche o arquivo se ele estiver aberto em outro programa, ou escolha outro local.",
     "output_write_error": "Não foi possível salvar o arquivo de saída: {{detail}}",
     "xls_library_missing": "A biblioteca 'xlwt' não está disponível para gerar arquivos .xls.",
-    "xls_row_limit": "O resultado combinado tem {{rows}} linhas, o que ultrapassa o limite de {{limit}} linhas do formato .xls clássico. Use .xlsx, .csv ou .ods em vez disso."
+    "xls_row_limit": "O resultado combinado tem {{rows}} linhas, o que ultrapassa o limite de {{limit}} linhas do formato .xls clássico. Use .xlsx, .csv ou .ods em vez disso.",
+    "csv_encoding_error": "Não foi possível ler '{{filename}}': o texto usa uma codificação não reconhecida. Salve-o novamente como 'CSV UTF-8' e tente outra vez.",
+    "invalid_csv_separator": "Separador inválido para '{{filename}}': '{{separator}}'. Deve ser um único caractere diferente de aspas.",
+    "unsupported_output_csv_separator": "Separador de saída não suportado: '{{separator}}'. Separadores permitidos: {{allowed}}."
   }
 }

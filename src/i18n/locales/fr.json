@@ -15,7 +15,23 @@
     "supportedFormats": ".xls, .xlsx, .csv, .ods",
     "rejected_one": "{{count}} fichier au format non pris en charge a été ignoré.",
     "rejected_other": "{{count}} fichiers au format non pris en charge ont été ignorés.",
-    "removeFile": "Retirer le fichier"
+    "removeFile": "Retirer le fichier",
+    "csv": {
+      "separatorLabel": "Séparateur",
+      "auto": "Automatique",
+      "autoDetected": "Automatique : {{separator}}",
+      "comma": "Virgule (,)",
+      "semicolon": "Point-virgule (;)",
+      "tab": "Tabulation",
+      "pipe": "Barre verticale (|)",
+      "other": "Autre…",
+      "otherPlaceholder": "?",
+      "otherAriaLabel": "Séparateur personnalisé pour {{file}}",
+      "showPreview": "Aperçu",
+      "hidePreview": "Masquer l'aperçu",
+      "unsure": "Le séparateur n'a pas pu être détecté avec certitude. Vérifiez l'aperçu et, si les colonnes sont incorrectes, choisissez-le manuellement.",
+      "previewEmpty": "Le fichier ne contient aucune ligne de données."
+    }
   },
   "mode": {
     "label": "Mode de combinaison",
@@ -42,6 +58,12 @@
   "format": {
     "label": "Format de sortie",
     "ariaLabel": "Format de sortie"
+  },
+  "outputCsvSeparator": {
+    "label": "Séparateur du CSV de sortie",
+    "comma": "Virgule (,)",
+    "semicolon": "Point-virgule (;)",
+    "hint": "Choisissez le point-virgule si vous ouvrez le fichier avec Excel dans une configuration régionale qui utilise la virgule comme séparateur décimal (par exemple, le français)."
   },
   "outputFileName": {
     "label": "Nom du fichier de sortie",
@@ -115,30 +137,38 @@
       },
       "loadFiles": {
         "title": "1. Chargez vos fichiers",
-        "body": "Ajoutez les fichiers .xlsx, .xls, .csv ou .ods que vous voulez combiner. L'ordre de la liste compte : vous pouvez les réorganiser avec les flèches."
+        "body": "Ajoutez les fichiers .xlsx, .xls, .csv ou .ods que vous voulez combiner. L'ordre de la liste compte : vous pouvez les réorganiser par glisser-déposer."
+      },
+      "csvFiles": {
+        "title": "2. Fichiers CSV",
+        "body": "Quand vous chargez un .csv, l'application détecte toute seule son séparateur (virgule, point-virgule, tabulation…). Vous pouvez le changer manuellement et voir un aperçu des premières lignes ; si la détection n'est pas sûre, un avertissement comme celui-ci s'affiche."
       },
       "chooseMode": {
-        "title": "2. Choisissez comment les combiner",
+        "title": "3. Choisissez comment les combiner",
         "body": "Join relie les fichiers via une colonne clé ; Empiler les assemble les uns sous les autres lorsqu'ils partagent les mêmes colonnes. Chaque mode a son propre tutoriel avec des schémas (le bouton \"?\")."
       },
+      "joinType": {
+        "title": "4. Type de join",
+        "body": "En mode join, vous choisissez comment les fichiers sont croisés : Inner, Left, Right ou Outer. Si vous ne savez pas lequel utiliser, le bouton « ? » explique chaque type avec des schémas et des exemples."
+      },
       "joinKey": {
-        "title": "3. Colonne clé par fichier",
+        "title": "5. Colonne clé par fichier",
         "body": "En mode join, vous choisissez quelle colonne identifie chaque ligne dans CHAQUE fichier séparément — ils peuvent avoir des noms différents, l'application les traite comme la même clé lors de la combinaison."
       },
       "configureOutput": {
-        "title": "4. Configurez la sortie",
+        "title": "6. Configurez la sortie",
         "body": "Choisissez le format du fichier résultant, son nom et le dossier où l'enregistrer."
       },
       "merge": {
-        "title": "5. Combiner",
+        "title": "7. Combiner",
         "body": "Lorsque le bouton est activé, combinez les fichiers. S'il est désactivé, le texte au-dessus indiquera exactement ce qui manque."
       },
       "theme": {
-        "title": "6. Thème clair ou sombre",
+        "title": "8. Thème clair ou sombre",
         "body": "Par défaut, il suit le thème du système d'exploitation ; choisissez \"Clair\" ou \"Sombre\" pour le fixer manuellement."
       },
       "help": {
-        "title": "7. Aide et version",
+        "title": "9. Aide et version",
         "body": "Vous trouverez ici la version, l'auteur et un lien pour revoir cette visite quand vous le souhaitez."
       }
     }
@@ -219,6 +249,9 @@
     "output_file_locked": "Pas de droits d'écriture pour '{{path}}'. Fermez le fichier s'il est ouvert dans un autre programme, ou choisissez un autre emplacement.",
     "output_write_error": "Impossible d'enregistrer le fichier de sortie : {{detail}}",
     "xls_library_missing": "La bibliothèque 'xlwt' n'est pas disponible pour générer des fichiers .xls.",
-    "xls_row_limit": "Le résultat combiné comporte {{rows}} lignes, ce qui dépasse la limite de {{limit}} lignes du format .xls classique. Utilisez plutôt .xlsx, .csv ou .ods."
+    "xls_row_limit": "Le résultat combiné comporte {{rows}} lignes, ce qui dépasse la limite de {{limit}} lignes du format .xls classique. Utilisez plutôt .xlsx, .csv ou .ods.",
+    "csv_encoding_error": "Impossible de lire '{{filename}}' : le texte utilise un encodage non reconnu. Enregistrez-le à nouveau au format 'CSV UTF-8' et réessayez.",
+    "invalid_csv_separator": "Séparateur non valide pour '{{filename}}' : '{{separator}}'. Il doit s'agir d'un seul caractère autre que les guillemets.",
+    "unsupported_output_csv_separator": "Séparateur de sortie non pris en charge : '{{separator}}'. Séparateurs autorisés : {{allowed}}."
   }
 }
