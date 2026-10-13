@@ -21,6 +21,7 @@
     "dist:win": "npm run build:frontend && electron-builder --win nsis portable",
     "dist:mac": "npm run build:frontend && electron-builder --mac dmg",
     "dist:linux": "npm run build:frontend && electron-builder --linux AppImage",
+    "test": "node --test electron/releaseNotes.test.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

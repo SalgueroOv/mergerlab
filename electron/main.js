@@ -7,6 +7,7 @@
  */
 const { app, BrowserWindow, ipcMain, dialog, shell, session, Menu, nativeTheme } = require("electron");
 const { autoUpdater } = require("electron-updater");
+const { formatReleaseNotes } = require("./releaseNotes.js");
 const path = require("node:path");
 const fs = require("node:fs/promises");
 const readline = require("node:readline");
@@ -104,6 +105,7 @@ async function saveLanguagePreference(language) {
 // el renderer, donde ya está disponible el motor de i18n completo (i18next).
 const STARTUP_ERROR_TEXT = {
   es: {
+    whatsNew: "Novedades:",
     title: "Error al iniciar Merger Lab",
     intro: "No se pudo iniciar el proceso de combinación de archivos.",
     devHint:
@@ -111,6 +113,7 @@ const STARTUP_ERROR_TEXT = {
     prodHint: "Reinstala la aplicación o contacta con soporte.",
   },
   en: {
+    whatsNew: "What's new:",
     title: "Error starting Merger Lab",
     intro: "The file-merging process could not be started.",
     devHint:
@@ -118,6 +121,7 @@ const STARTUP_ERROR_TEXT = {
     prodHint: "Reinstall the application or contact support.",
   },
   de: {
+    whatsNew: "Neuigkeiten:",
     title: "Fehler beim Starten von Merger Lab",
     intro: "Der Prozess zum Kombinieren der Dateien konnte nicht gestartet werden.",
     devHint:
@@ -125,6 +129,7 @@ const STARTUP_ERROR_TEXT = {
     prodHint: "Installiere die Anwendung neu oder wende dich an den Support.",
   },
   fr: {
+    whatsNew: "Nouveautés :",
     title: "Erreur au démarrage de Merger Lab",
     intro: "Le processus de combinaison des fichiers n'a pas pu démarrer.",
     devHint:
@@ -132,6 +137,7 @@ const STARTUP_ERROR_TEXT = {
     prodHint: "Réinstallez l'application ou contactez le support.",
   },
   it: {
+    whatsNew: "Novità:",
     title: "Errore durante l'avvio di Merger Lab",
     intro: "Non è stato possibile avviare il processo di combinazione dei file.",
     devHint:
@@ -139,6 +145,7 @@ const STARTUP_ERROR_TEXT = {
     prodHint: "Reinstalla l'applicazione o contatta l'assistenza.",
   },
   pt: {
+    whatsNew: "Novidades:",
     title: "Erro ao iniciar o Merger Lab",
     intro: "Não foi possível iniciar o processo de combinação de arquivos.",
     devHint:
@@ -146,6 +153,7 @@ const STARTUP_ERROR_TEXT = {
     prodHint: "Reinstale a aplicação ou entre em contato com o suporte.",
   },
   ru: {
+    whatsNew: "Что нового:",
     title: "Ошибка запуска Merger Lab",
     intro: "Не удалось запустить процесс объединения файлов.",
     devHint:
@@ -153,6 +161,7 @@ const STARTUP_ERROR_TEXT = {
     prodHint: "Переустановите приложение или обратитесь в поддержку.",
   },
   zh: {
+    whatsNew: "更新内容：",
     title: "启动 Merger Lab 时出错",
     intro: "无法启动文件合并进程。",
     devHint: "请检查是否已安装 Python 3 并在 PATH 中可用，以及是否已安装 backend/requirements.txt。",
@@ -251,15 +260,17 @@ const UPDATE_DIALOG_TEXT = {
  * aplicar la actualización in situ (ver el comentario de `useZip` en electron-builder.yml), así
  * que actualizarlo automáticamente no es viable -- el usuario del portable simplemente descarga
  * el .exe nuevo cuando quiera.
- * @param {string} language
  */
-function setupAutoUpdater(language) {
+function setupAutoUpdater() {
   if (!app.isPackaged || process.env.PORTABLE_EXECUTABLE_DIR) return;
 
   autoUpdater.autoDownload = true;
   // Preferimos preguntar explícitamente al usuario (ver "update-downloaded" abajo) en vez de
   // instalar sin avisar la próxima vez que cierre la app.
   autoUpdater.autoInstallOnAppQuit = false;
+  // Con esto `info.releaseNotes` trae las notas de todas las versiones intermedias (no solo la
+  // última), por si el usuario salta varias versiones de golpe.
+  autoUpdater.fullChangelog = true;
 
   autoUpdater.on("error", (err) => {
     // Un fallo comprobando actualizaciones (sin conexión, GitHub caído, etc.) no debe
@@ -268,13 +279,15 @@ function setupAutoUpdater(language) {
   });
 
   autoUpdater.on("update-downloaded", (info) => {
-    const text = UPDATE_DIALOG_TEXT[language] || UPDATE_DIALOG_TEXT.es;
+    // Se lee `currentLanguage` aquí (no al arrancar): el usuario pudo cambiar de idioma después.
+    const text = UPDATE_DIALOG_TEXT[currentLanguage] || UPDATE_DIALOG_TEXT.es;
+    const notes = formatReleaseNotes(info.releaseNotes, currentLanguage);
     dialog
       .showMessageBox(mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined, {
         type: "info",
         title: text.title,
         message: text.body(info.version),
-        detail: text.detail,
+        detail: notes ? [text.whatsNew, notes, "", text.detail].join("\n") : text.detail,
         buttons: [text.updateNow, text.later],
         defaultId: 0,
         cancelId: 1,
@@ -580,7 +593,7 @@ app.whenReady().then(async () => {
     showBackendStartupError(currentLanguage, backendStartFailure);
   }
 
-  setupAutoUpdater(currentLanguage);
+  setupAutoUpdater();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

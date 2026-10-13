@@ -207,6 +207,27 @@ queda en caché, así que el aviso sale enseguida).
    enteran de la actualización (por eso no basta con subir los `.exe` a mano desde la web de
    GitHub).
 
+#### Notas del Release (se muestran en el aviso de actualización)
+
+El aviso "Actualizar ahora / Más tarde" muestra las notas del Release en texto plano
+(`electron/releaseNotes.js`), incluidas las de las versiones intermedias si el usuario se
+salta varias. Para que salgan en su idioma, escribe el cuerpo del Release con dos secciones,
+cada una precedida por una línea con solo `Español` o `English` (admite `##`, negrita o emoji):
+
+```markdown
+## Español
+
+- Corrige X
+
+## English
+
+- Fixes X
+```
+
+La app muestra la sección en español si su idioma es `es` y la inglesa en cualquier otro. Sin
+esos marcadores se muestra el texto tal cual; sin notas, el aviso sale sin ese bloque. Tests:
+`npm test`.
+
 ## Columna clave con nombres distintos (modo join)
 
 Cada archivo tiene su propio selector de columna clave (`JoinPicker.jsx`) — no hace falta que se
