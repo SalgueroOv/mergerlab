@@ -16,6 +16,10 @@
     "rejected_one": "Se ignoraron {{count}} archivo con formato no soportado.",
     "rejected_other": "Se ignoraron {{count}} archivos con formato no soportado.",
     "removeFile": "Quitar archivo",
+    "sheets": {
+      "label": "Hoja",
+      "all": "Todas las hojas ({{count}})"
+    },
     "csv": {
       "separatorLabel": "Separador",
       "auto": "Automático",
@@ -253,6 +257,8 @@
     "output_write_error": "No se pudo guardar el archivo de salida: {{detail}}",
     "xls_library_missing": "La librería 'xlwt' no está disponible para generar archivos .xls.",
     "xls_row_limit": "El resultado combinado tiene {{rows}} filas, que supera el límite de {{limit}} filas del formato .xls clásico. Usa .xlsx, .csv u .ods en su lugar.",
+    "xlsx_row_limit": "El resultado combinado tiene {{rows}} filas, que supera el límite de {{limit}} filas del formato .xlsx. Usa .csv en su lugar.",
+    "sheet_not_found": "La hoja «{{sheet}}» no existe en «{{filename}}».",
     "csv_encoding_error": "No se pudo leer '{{filename}}': el texto usa una codificación no reconocida. Guárdalo de nuevo como 'CSV UTF-8' e inténtalo otra vez.",
     "invalid_csv_separator": "Separador no válido para '{{filename}}': '{{separator}}'. Debe ser un único carácter distinto de comillas.",
     "unsupported_output_csv_separator": "Separador de salida no soportado: '{{separator}}'. Separadores permitidos: {{allowed}}."

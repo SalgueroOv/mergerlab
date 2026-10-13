@@ -16,6 +16,10 @@
     "rejected_one": "{{count}} file with an unsupported format was ignored.",
     "rejected_other": "{{count}} files with an unsupported format were ignored.",
     "removeFile": "Remove file",
+    "sheets": {
+      "label": "Sheet",
+      "all": "All sheets ({{count}})"
+    },
     "csv": {
       "separatorLabel": "Separator",
       "auto": "Automatic",
@@ -253,6 +257,8 @@
     "output_write_error": "Could not save the output file: {{detail}}",
     "xls_library_missing": "The 'xlwt' library is not available to generate .xls files.",
     "xls_row_limit": "The combined result has {{rows}} rows, which exceeds the classic .xls format's limit of {{limit}} rows. Use .xlsx, .csv or .ods instead.",
+    "xlsx_row_limit": "The combined result has {{rows}} rows, which exceeds the {{limit}}-row limit of the .xlsx format. Use .csv instead.",
+    "sheet_not_found": "Sheet “{{sheet}}” does not exist in “{{filename}}”.",
     "csv_encoding_error": "Could not read '{{filename}}': the text uses an unrecognized encoding. Save it again as 'CSV UTF-8' and try again.",
     "invalid_csv_separator": "Invalid separator for '{{filename}}': '{{separator}}'. It must be a single character other than a quote.",
     "unsupported_output_csv_separator": "Unsupported output separator: '{{separator}}'. Allowed separators: {{allowed}}."

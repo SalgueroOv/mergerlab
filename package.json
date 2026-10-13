@@ -21,7 +21,7 @@
     "dist:win": "npm run build:frontend && electron-builder --win nsis portable",
     "dist:mac": "npm run build:frontend && electron-builder --mac dmg",
     "dist:linux": "npm run build:frontend && electron-builder --linux AppImage",
-    "test": "node --test electron/releaseNotes.test.js",
+    "test": "node --test electron/releaseNotes.test.js && vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -36,6 +36,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
@@ -46,8 +48,10 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^17.7.0",
+    "jsdom": "^26.1.0",
     "prettier": "^3.9.6",
     "vite": "^6.0.7",
+    "vitest": "^3.2.7",
     "wait-on": "^8.0.1"
   }
 }

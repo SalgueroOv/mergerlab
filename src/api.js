@@ -67,6 +67,7 @@ async function requestJson(url, options) {
  * @param {object} [options]
  * @param {boolean} [options.addSourceColumn] solo aplica en modo `"concat"`
  * @param {string} [options.sourceColumnName] nombre de esa columna (traducido al idioma de la app)
+ * @param {Record<string,string>} [options.sheets] `{ruta: hoja}` elegida para algunos Excel
  * @param {boolean} [options.allAsText] leer todas las columnas como texto (ceros a la izquierda)
  * @param {"concat"|"join"} [options.mode]
  * @param {Record<string,string>} [options.joinKeys] `{ruta: columnaClave}`, solo en modo `"join"`
@@ -88,6 +89,7 @@ export async function startMerge(files, outputFormat, outputPath, options = {}) 
       add_source_column: options.addSourceColumn ?? false,
       source_column_name: options.sourceColumnName,
       all_as_text: options.allAsText ?? false,
+      sheets: options.sheets ?? {},
       mode: options.mode ?? "concat",
       join_keys: options.joinKeys ?? {},
       join_type: options.joinType,
@@ -102,16 +104,33 @@ export async function startMerge(files, outputFormat, outputPath, options = {}) 
  * selectores de columna clave del modo join.
  * @param {string[]} files rutas absolutas de los archivos
  * @param {Record<string,string>} [csvSeparators] `{ruta: separador}` elegido a mano para algunos CSV
+ * @param {Record<string,string>} [sheets] `{ruta: hoja}` elegida para algunos Excel (sin entrada = todas)
  * @returns {Promise<Record<string, string[]>>} `{ruta: [nombreColumna, ...]}`
  */
-export async function getColumns(files, csvSeparators = {}) {
+export async function getColumns(files, csvSeparators = {}, sheets = {}) {
   const base = await getApiBase();
   const { columns } = await requestJson(`${base}/api/columns`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ files, csv_separators: csvSeparators }),
+    body: JSON.stringify({ files, csv_separators: csvSeparators, sheets }),
   });
   return columns;
+}
+
+/**
+ * Pide al backend los nombres de las hojas de cada archivo (`POST /api/sheets`), para el selector
+ * de hoja de los Excel con varias.
+ * @param {string[]} files rutas absolutas de los archivos
+ * @returns {Promise<Record<string, string[]>>} `{ruta: [hoja, ...]}`; los `.csv` llevan lista vacía
+ */
+export async function getSheets(files) {
+  const base = await getApiBase();
+  const { sheets } = await requestJson(`${base}/api/sheets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files }),
+  });
+  return sheets;
 }
 
 /**

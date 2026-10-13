@@ -62,6 +62,11 @@ Todas las versiones, con su registro de cambios, están en la
 - Entrada y salida: `.xlsx`, `.xls`, `.csv`, `.ods`.
 - El formato `.xls` clásico admite un máximo de 65 535 filas; si el resultado combinado lo
   supera, exporta a `.xlsx`, `.csv` u `.ods` en su lugar.
+- El formato `.xlsx` admite un máximo de 1 048 575 filas de datos; si el resultado lo supera,
+  exporta a `.csv`.
+- Si un Excel tiene varias hojas, por defecto se combinan todas; en la lista de archivos puedes
+  elegir una hoja concreta.
+- Un `.xls` que en realidad es una tabla HTML o un texto delimitado se lee igualmente.
 - Los archivos protegidos con contraseña no son compatibles.
 
 ## Desarrollo y contribuciones

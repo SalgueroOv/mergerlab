@@ -33,6 +33,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   getTheme: () => ipcRenderer.invoke("get-theme"),
   setTheme: (theme) => ipcRenderer.invoke("set-theme", theme),
+  getPreferences: () => ipcRenderer.invoke("get-preferences"),
+  setPreferences: (preferences) => ipcRenderer.invoke("set-preferences", preferences),
   getLanguage: () => ipcRenderer.invoke("get-language"),
   setLanguage: (language) => ipcRenderer.invoke("set-language", language),
 });

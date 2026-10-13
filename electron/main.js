@@ -104,6 +104,36 @@ async function saveLanguagePreference(language) {
   }
 }
 
+// Preferencias de la pantalla principal que se recuerdan entre sesiones (carpeta de destino,
+// formato de salida, modo...). Mismo patrón que el idioma: un archivo propio en userData. Solo se
+// aceptan estas claves y valores, para que un archivo editado a mano no pueda meter basura.
+const PREFERENCE_VALIDATORS = {
+  destinationFolder: (v) => typeof v === "string",
+  outputFormat: (v) => ["xlsx", "xls", "csv", "ods"].includes(v),
+  outputCsvSeparator: (v) => [",", ";"].includes(v),
+  mode: (v) => ["concat", "join"].includes(v),
+  joinType: (v) => ["inner", "left", "right", "outer"].includes(v),
+};
+
+function preferencesPath() {
+  return path.join(app.getPath("userData"), "preferences.json");
+}
+
+/** Lee las preferencias guardadas, descartando claves desconocidas o con valores no válidos. */
+async function loadPreferences() {
+  let parsed = {};
+  try {
+    parsed = JSON.parse(await fs.readFile(preferencesPath(), "utf-8"));
+  } catch {
+    // Primer arranque, o archivo inexistente/corrupto: sin preferencias.
+  }
+  const preferences = {};
+  for (const [key, isValid] of Object.entries(PREFERENCE_VALIDATORS)) {
+    if (isValid(parsed?.[key])) preferences[key] = parsed[key];
+  }
+  return preferences;
+}
+
 // Textos del único diálogo nativo que muestra el proceso principal (fallo al arrancar el
 // backend Python). Es el único texto de main.js que necesita traducción: todo lo demás vive en
 // el renderer, donde ya está disponible el motor de i18n completo (i18next).
@@ -555,7 +585,7 @@ async function createWindow() {
     width: 1000,
     height: 720,
     minWidth: 820,
-    minHeight: 760,
+    minHeight: 600,
     title: "Merger Lab",
     autoHideMenuBar: true,
     show: false,
@@ -707,6 +737,37 @@ ipcMain.handle("select-input-files", async () => {
   }
 
   return { canceled: false, files: result.filePaths };
+});
+
+/**
+ * Preferencias recordadas. La carpeta de destino solo se devuelve si todavía existe (puede
+ * haberse borrado o ser de un disco desconectado).
+ */
+ipcMain.handle("get-preferences", async () => {
+  const preferences = await loadPreferences();
+  if (preferences.destinationFolder) {
+    try {
+      const stats = await fs.stat(preferences.destinationFolder);
+      if (!stats.isDirectory()) delete preferences.destinationFolder;
+    } catch {
+      delete preferences.destinationFolder;
+    }
+  }
+  return preferences;
+});
+
+/** Guarda (fusionando con lo anterior) las preferencias válidas de `partial`. */
+ipcMain.handle("set-preferences", async (_event, partial) => {
+  const updates = {};
+  for (const [key, isValid] of Object.entries(PREFERENCE_VALIDATORS)) {
+    if (isValid(partial?.[key])) updates[key] = partial[key];
+  }
+  try {
+    const merged = { ...(await loadPreferences()), ...updates };
+    await fs.writeFile(preferencesPath(), JSON.stringify(merged), "utf-8");
+  } catch (err) {
+    console.error("No se pudieron guardar las preferencias:", err);
+  }
 });
 
 /**

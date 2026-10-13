@@ -16,6 +16,10 @@
     "rejected_one": "{{count}} file con formato non supportato è stato ignorato.",
     "rejected_other": "{{count}} file con formato non supportato sono stati ignorati.",
     "removeFile": "Rimuovi file",
+    "sheets": {
+      "label": "Foglio",
+      "all": "Tutti i fogli ({{count}})"
+    },
     "csv": {
       "separatorLabel": "Separatore",
       "auto": "Automatico",
@@ -253,6 +257,8 @@
     "output_write_error": "Impossibile salvare il file di output: {{detail}}",
     "xls_library_missing": "La libreria 'xlwt' non è disponibile per generare file .xls.",
     "xls_row_limit": "Il risultato combinato ha {{rows}} righe, che supera il limite di {{limit}} righe del formato .xls classico. Usa invece .xlsx, .csv o .ods.",
+    "xlsx_row_limit": "Il risultato combinato ha {{rows}} righe, oltre il limite di {{limit}} righe del formato .xlsx. Usa invece .csv.",
+    "sheet_not_found": "Il foglio «{{sheet}}» non esiste in «{{filename}}».",
     "csv_encoding_error": "Impossibile leggere '{{filename}}': il testo usa una codifica non riconosciuta. Salvalo di nuovo come 'CSV UTF-8' e riprova.",
     "invalid_csv_separator": "Separatore non valido per '{{filename}}': '{{separator}}'. Deve essere un singolo carattere diverso dalle virgolette.",
     "unsupported_output_csv_separator": "Separatore di output non supportato: '{{separator}}'. Separatori consentiti: {{allowed}}."

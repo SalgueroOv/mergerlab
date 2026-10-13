@@ -16,6 +16,10 @@
     "rejected_one": "{{count}} Datei mit nicht unterstütztem Format wurde ignoriert.",
     "rejected_other": "{{count}} Dateien mit nicht unterstütztem Format wurden ignoriert.",
     "removeFile": "Datei entfernen",
+    "sheets": {
+      "label": "Blatt",
+      "all": "Alle Blätter ({{count}})"
+    },
     "csv": {
       "separatorLabel": "Trennzeichen",
       "auto": "Automatisch",
@@ -253,6 +257,8 @@
     "output_write_error": "Die Ausgabedatei konnte nicht gespeichert werden: {{detail}}",
     "xls_library_missing": "Die Bibliothek 'xlwt' ist nicht verfügbar, um .xls-Dateien zu erzeugen.",
     "xls_row_limit": "Das kombinierte Ergebnis hat {{rows}} Zeilen und überschreitet damit das Limit von {{limit}} Zeilen des klassischen .xls-Formats. Verwende stattdessen .xlsx, .csv oder .ods.",
+    "xlsx_row_limit": "Das kombinierte Ergebnis hat {{rows}} Zeilen und überschreitet das Limit von {{limit}} Zeilen des .xlsx-Formats. Verwende stattdessen .csv.",
+    "sheet_not_found": "Das Blatt „{{sheet}}“ existiert in „{{filename}}“ nicht.",
     "csv_encoding_error": "'{{filename}}' konnte nicht gelesen werden: Der Text verwendet eine unbekannte Kodierung. Speichere die Datei erneut als 'CSV UTF-8' und versuche es noch einmal.",
     "invalid_csv_separator": "Ungültiges Trennzeichen für '{{filename}}': '{{separator}}'. Es muss ein einzelnes Zeichen außer Anführungszeichen sein.",
     "unsupported_output_csv_separator": "Nicht unterstütztes Ausgabe-Trennzeichen: '{{separator}}'. Erlaubte Trennzeichen: {{allowed}}."

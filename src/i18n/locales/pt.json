@@ -16,6 +16,10 @@
     "rejected_one": "{{count}} arquivo com formato não suportado foi ignorado.",
     "rejected_other": "{{count}} arquivos com formato não suportado foram ignorados.",
     "removeFile": "Remover arquivo",
+    "sheets": {
+      "label": "Planilha",
+      "all": "Todas as planilhas ({{count}})"
+    },
     "csv": {
       "separatorLabel": "Separador",
       "auto": "Automático",
@@ -253,6 +257,8 @@
     "output_write_error": "Não foi possível salvar o arquivo de saída: {{detail}}",
     "xls_library_missing": "A biblioteca 'xlwt' não está disponível para gerar arquivos .xls.",
     "xls_row_limit": "O resultado combinado tem {{rows}} linhas, o que ultrapassa o limite de {{limit}} linhas do formato .xls clássico. Use .xlsx, .csv ou .ods em vez disso.",
+    "xlsx_row_limit": "O resultado combinado tem {{rows}} linhas, acima do limite de {{limit}} linhas do formato .xlsx. Use .csv.",
+    "sheet_not_found": "A planilha “{{sheet}}” não existe em “{{filename}}”.",
     "csv_encoding_error": "Não foi possível ler '{{filename}}': o texto usa uma codificação não reconhecida. Salve-o novamente como 'CSV UTF-8' e tente outra vez.",
     "invalid_csv_separator": "Separador inválido para '{{filename}}': '{{separator}}'. Deve ser um único caractere diferente de aspas.",
     "unsupported_output_csv_separator": "Separador de saída não suportado: '{{separator}}'. Separadores permitidos: {{allowed}}."

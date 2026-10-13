@@ -59,6 +59,9 @@ function toggledSet(set, value, include) {
  *   csvInfoByPath: Record<string, object>,
  *   csvSeparators: Record<string, string>,
  *   onCsvSeparatorChange: (path: string, separator: string) => void,
+ *   sheetsByPath: Record<string, string[]>,
+ *   selectedSheets: Record<string, string>,
+ *   onSheetChange: (path: string, sheet: string) => void,
  *   disabled: boolean,
  * }} props
  */
@@ -72,6 +75,9 @@ export default function FileList({
   csvInfoByPath,
   csvSeparators,
   onCsvSeparatorChange,
+  sheetsByPath = {},
+  selectedSheets = {},
+  onSheetChange,
   disabled,
 }) {
   const { t } = useTranslation();
@@ -256,6 +262,40 @@ export default function FileList({
     );
   };
 
+  /**
+   * Selector de hoja de un Excel/ODS con más de una hoja: "Todas las hojas" (por defecto, se
+   * combinan todas) o una hoja concreta.
+   * @param {{path: string, name: string}} file
+   */
+  const renderSheetOptions = (file) => {
+    const sheets = sheetsByPath[file.path] || [];
+    if (sheets.length < 2) return null;
+    const id = `sheet-${file.path}`;
+    return (
+      <div className="csv-options">
+        <div className="csv-options-row">
+          <label className="csv-options-label" htmlFor={id}>
+            {t("fileList.sheets.label")}
+          </label>
+          <select
+            id={id}
+            className="destination-input csv-separator-select"
+            value={selectedSheets[file.path] || ""}
+            disabled={disabled}
+            onChange={(e) => onSheetChange(file.path, e.target.value)}
+          >
+            <option value="">{t("fileList.sheets.all", { count: sheets.length })}</option>
+            {sheets.map((sheet) => (
+              <option key={sheet} value={sheet}>
+                {sheet}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="file-list-wrap">
       <div
@@ -327,6 +367,7 @@ export default function FileList({
                   ×
                 </button>
                 {extensionOf(file.name) === "csv" && renderCsvOptions(file)}
+                {extensionOf(file.name) !== "csv" && renderSheetOptions(file)}
               </li>
             );
           })}

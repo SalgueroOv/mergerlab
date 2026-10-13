@@ -16,6 +16,10 @@
     "rejected_one": "{{count}} fichier au format non pris en charge a été ignoré.",
     "rejected_other": "{{count}} fichiers au format non pris en charge ont été ignorés.",
     "removeFile": "Retirer le fichier",
+    "sheets": {
+      "label": "Feuille",
+      "all": "Toutes les feuilles ({{count}})"
+    },
     "csv": {
       "separatorLabel": "Séparateur",
       "auto": "Automatique",
@@ -253,6 +257,8 @@
     "output_write_error": "Impossible d'enregistrer le fichier de sortie : {{detail}}",
     "xls_library_missing": "La bibliothèque 'xlwt' n'est pas disponible pour générer des fichiers .xls.",
     "xls_row_limit": "Le résultat combiné comporte {{rows}} lignes, ce qui dépasse la limite de {{limit}} lignes du format .xls classique. Utilisez plutôt .xlsx, .csv ou .ods.",
+    "xlsx_row_limit": "Le résultat combiné compte {{rows}} lignes, ce qui dépasse la limite de {{limit}} lignes du format .xlsx. Utilisez plutôt .csv.",
+    "sheet_not_found": "La feuille « {{sheet}} » n'existe pas dans « {{filename}} ».",
     "csv_encoding_error": "Impossible de lire '{{filename}}' : le texte utilise un encodage non reconnu. Enregistrez-le à nouveau au format 'CSV UTF-8' et réessayez.",
     "invalid_csv_separator": "Séparateur non valide pour '{{filename}}' : '{{separator}}'. Il doit s'agir d'un seul caractère autre que les guillemets.",
     "unsupported_output_csv_separator": "Séparateur de sortie non pris en charge : '{{separator}}'. Séparateurs autorisés : {{allowed}}."

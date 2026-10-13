@@ -15,6 +15,10 @@
     "supportedFormats": ".xls, .xlsx, .csv, .ods",
     "rejected_other": "已忽略 {{count}} 个格式不受支持的文件。",
     "removeFile": "移除文件",
+    "sheets": {
+      "label": "工作表",
+      "all": "所有工作表（{{count}}）"
+    },
     "csv": {
       "separatorLabel": "分隔符",
       "auto": "自动",
@@ -251,6 +255,8 @@
     "output_write_error": "无法保存输出文件：{{detail}}",
     "xls_library_missing": "缺少用于生成 .xls 文件的 “xlwt” 库。",
     "xls_row_limit": "合并结果共有 {{rows}} 行，超出经典 .xls 格式 {{limit}} 行的限制。请改用 .xlsx、.csv 或 .ods。",
+    "xlsx_row_limit": "合并结果有 {{rows}} 行，超过 .xlsx 格式 {{limit}} 行的上限。请改用 .csv。",
+    "sheet_not_found": "“{{filename}}”中不存在工作表“{{sheet}}”。",
     "csv_encoding_error": "无法读取“{{filename}}”：文本使用了无法识别的编码。请将其重新另存为“CSV UTF-8”后再试。",
     "invalid_csv_separator": "“{{filename}}”的分隔符无效：“{{separator}}”。它必须是除引号以外的单个字符。",
     "unsupported_output_csv_separator": "不支持的输出分隔符：“{{separator}}”。允许的分隔符：{{allowed}}。"
