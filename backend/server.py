@@ -38,6 +38,7 @@ from merger import (  # noqa: E402
     MergeError,
     inspect_csv,
     join_files,
+    list_sheets,
     merge_files,
     read_file_columns,
     validate_output_extension,
@@ -74,6 +75,13 @@ def _csv_separators_from(payload):
     separador indicado se detecta automáticamente en `merger.py`."""
     raw = payload.get("csv_separators") or {}
     return {path: sep for path, sep in raw.items() if isinstance(sep, str) and sep}
+
+
+def _sheets_from(payload):
+    """Extrae de un cuerpo JSON el campo opcional `sheets` (`{ruta: nombre de hoja}`), la hoja de
+    Excel/ODS elegida por el usuario para cada archivo; sin entrada se usan todas las hojas."""
+    raw = payload.get("sheets") or {}
+    return {path: name for path, name in raw.items() if isinstance(name, str) and name}
 
 
 def _set_job(job_id, **fields):
@@ -138,7 +146,8 @@ def merge():
     (`"concat"` o `"join"`), y si `mode` es `"join"` también `join_keys` (objeto
     `{ruta: columna}`) y `join_type`. Opcionales: `csv_separators` (`{ruta: separador}`, ver
     `_csv_separators_from`) y `output_csv_separator` (`","` por defecto, solo aplica si
-    `output_format` es `"csv"`), `add_source_column` y `source_column_name` (solo modo `"concat"`:
+    `output_format` es `"csv"`), `sheets` (`{ruta: hoja}` para leer solo una hoja de un Excel),
+    `add_source_column` y `source_column_name` (solo modo `"concat"`:
     añade una columna con el archivo de origen de cada fila), y `all_as_text` (leer todas las
     celdas como texto). Devuelve `{"job_id": ...}` con 202 si todo es válido; el
     progreso y el resultado se consultan después con `GET /api/status/<job_id>`. El trabajo en
@@ -159,6 +168,7 @@ def merge():
     if not isinstance(source_column_name, str) or not source_column_name.strip():
         source_column_name = DEFAULT_SOURCE_COLUMN
     all_as_text = bool(payload.get("all_as_text"))
+    sheets = _sheets_from(payload)
 
     if not files:
         return _error_response("No se seleccionaron archivos.", 400, code="no_files_selected")
@@ -235,6 +245,7 @@ def merge():
             add_source_column,
             source_column_name.strip(),
             all_as_text,
+            sheets,
         ),
         daemon=True,
     )
@@ -255,12 +266,13 @@ def columns():
     payload = request.get_json(silent=True) or {}
     files = payload.get("files") or []
     csv_separators = _csv_separators_from(payload)
+    sheets = _sheets_from(payload)
 
     if not files:
         return _error_response("No se seleccionaron archivos.", 400, code="no_files_selected")
 
     try:
-        result = {path: read_file_columns(path, csv_separators.get(path)) for path in files}
+        result = {path: read_file_columns(path, csv_separators.get(path), sheets.get(path)) for path in files}
     except MergeError as exc:
         return _error_response(str(exc), 400, code=exc.code, params=exc.params)
     except Exception:
@@ -270,6 +282,24 @@ def columns():
         )
 
     return jsonify({"columns": result})
+
+
+@app.route("/api/sheets", methods=["POST"])
+def sheets_of_files():
+    """Devuelve los nombres de las hojas de cada archivo indicado, para el selector de hoja.
+
+    Cuerpo esperado: `{"files": [ruta, ...]}`. Devuelve `{"sheets": {ruta: [hoja, ...]}}`; los
+    archivos sin hojas (`.csv`) llevan una lista vacía. Un archivo que no se pudo abrir también
+    queda con lista vacía: el error real aparecerá al leerlo para combinar.
+    """
+    payload = request.get_json(silent=True) or {}
+    result = {}
+    for path in payload.get("files") or []:
+        try:
+            result[path] = list_sheets(path)
+        except Exception:
+            result[path] = []
+    return jsonify({"sheets": result})
 
 
 @app.route("/api/inspect-csv", methods=["POST"])
@@ -318,6 +348,7 @@ def _run_merge_job(
     add_source_column=False,
     source_column_name=DEFAULT_SOURCE_COLUMN,
     all_as_text=False,
+    sheets=None,
 ):
     """Ejecuta la combinación completa (lectura + join/concat + escritura) y actualiza `jobs[job_id]`.
 
@@ -349,6 +380,7 @@ def _run_merge_job(
                 progress_callback=progress_callback,
                 csv_separators=csv_separators,
                 all_as_text=all_as_text,
+                sheets=sheets,
             )
         else:
             combined = merge_files(
@@ -358,6 +390,7 @@ def _run_merge_job(
                 add_source_column=add_source_column,
                 source_column_name=source_column_name,
                 all_as_text=all_as_text,
+                sheets=sheets,
             )
 
         _set_job(

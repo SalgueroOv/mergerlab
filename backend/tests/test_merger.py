@@ -11,11 +11,13 @@ silencio aunque el mensaje en español siga siendo correcto.
 import pandas as pd
 import pytest
 
+import merger
 from merger import (
     MergeError,
     detect_csv_separator,
     inspect_csv,
     join_files,
+    list_sheets,
     merge_files,
     read_file_columns,
     write_output,
@@ -546,3 +548,160 @@ def test_write_output_acepta_la_extension_en_mayusculas(tmp_path):
     write_output(pd.DataFrame({"a": [1]}), str(out), "csv")
 
     assert out.exists()
+
+
+# ---- Fase 4: enteros con huecos, hojas, encabezados, límites y .xls falsos ----
+
+
+def test_merge_files_enteros_con_huecos_no_pasan_a_decimales(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 2], "cantidad": [5, 6]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [3]})
+
+    result = merge_files([a, b])
+    out = tmp_path / "salida.csv"
+    write_output(result, str(out), "csv")
+
+    assert out.read_text(encoding="utf-8-sig").splitlines() == ["id,cantidad", "1,5", "2,6", "3,"]
+
+
+def test_merge_files_enteros_con_huecos_tambien_en_xlsx_y_xls(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1], "cantidad": [5]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2]})
+    result = merge_files([a, b])
+
+    for fmt in ("xlsx", "xls"):
+        out = tmp_path / f"salida.{fmt}"
+        write_output(result, str(out), fmt)
+        engine = "openpyxl" if fmt == "xlsx" else "xlrd"
+        back = pd.read_excel(out, engine=engine)
+        assert back["id"].tolist() == [1, 2]
+        assert back["cantidad"].iloc[0] == 5
+
+
+def test_merge_files_los_decimales_reales_no_se_tocan(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"precio": [1.5, 2.0]})
+
+    assert merge_files([a])["precio"].tolist() == [1.5, 2.0]
+
+
+def _write_two_sheet_xlsx(path):
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        pd.DataFrame({"id": [1, 2], "a": ["x", "y"]}).to_excel(writer, sheet_name="Uno", index=False)
+        pd.DataFrame({"id": [3], "b": ["z"]}).to_excel(writer, sheet_name="Dos", index=False)
+    return str(path)
+
+
+def test_list_sheets(tmp_path):
+    xlsx = _write_two_sheet_xlsx(tmp_path / "libro.xlsx")
+    csv_path = _write_csv(tmp_path / "a.csv", {"id": [1]})
+
+    assert list_sheets(xlsx) == ["Uno", "Dos"]
+    assert list_sheets(csv_path) == []
+
+
+def test_merge_files_sin_hoja_elegida_combina_todas(tmp_path):
+    xlsx = _write_two_sheet_xlsx(tmp_path / "libro.xlsx")
+
+    result = merge_files([xlsx])
+
+    assert result["id"].tolist() == [1, 2, 3]
+
+
+def test_merge_files_con_hoja_elegida_lee_solo_esa(tmp_path):
+    xlsx = _write_two_sheet_xlsx(tmp_path / "libro.xlsx")
+
+    result = merge_files([xlsx], sheets={xlsx: "Dos"})
+
+    assert result["id"].tolist() == [3]
+    assert list(result.columns) == ["id", "b"]
+
+
+def test_merge_files_hoja_inexistente(tmp_path):
+    xlsx = _write_two_sheet_xlsx(tmp_path / "libro.xlsx")
+
+    with pytest.raises(MergeError) as exc:
+        merge_files([xlsx], sheets={xlsx: "NoExiste"})
+    assert exc.value.code == "sheet_not_found"
+
+
+def test_join_files_con_hoja_elegida(tmp_path):
+    xlsx = _write_two_sheet_xlsx(tmp_path / "libro.xlsx")
+    other = _write_csv(tmp_path / "otro.csv", {"id": [3, 1], "c": ["p", "q"]})
+
+    result = join_files([xlsx, other], ["id", "id"], sheets={xlsx: "Dos"})
+
+    assert result["id"].tolist() == ["3"]
+    assert "b" in result.columns
+
+
+def test_read_file_columns_lee_solo_los_encabezados(tmp_path, monkeypatch):
+    path = _write_csv(tmp_path / "a.csv", {"id": [1, 2, 3], "nombre": ["a", "b", "c"]})
+    seen = {}
+    real = pd.read_csv
+
+    def spy(*args, **kwargs):
+        seen["nrows"] = kwargs.get("nrows")
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(pd, "read_csv", spy)
+
+    assert read_file_columns(path) == ["id", "nombre"]
+    assert seen["nrows"] == 0
+
+
+def test_read_file_columns_excel_y_hoja(tmp_path):
+    xlsx = _write_two_sheet_xlsx(tmp_path / "libro.xlsx")
+
+    assert read_file_columns(xlsx, sheet="Dos") == ["id", "b"]
+    assert read_file_columns(xlsx) == ["id", "a", "b"]
+
+
+def test_write_output_xlsx_supera_el_limite_de_filas(tmp_path, monkeypatch):
+    monkeypatch.setattr(merger, "XLSX_MAX_ROWS", 2)
+    df = pd.DataFrame({"a": [1, 2, 3]})
+
+    with pytest.raises(MergeError) as exc:
+        write_output(df, str(tmp_path / "salida.xlsx"), "xlsx")
+    assert exc.value.code == "xlsx_row_limit"
+    assert exc.value.params["rows"] == 3
+
+
+def test_xls_falso_en_html_se_lee_como_tabla(tmp_path):
+    path = tmp_path / "informe.xls"
+    path.write_text(
+        "<html><body><table><tr><th>id</th><th>nombre</th></tr>"
+        "<tr><td>1</td><td>Ana</td></tr><tr><td>2</td><td>Beto</td></tr></table></body></html>",
+        encoding="utf-8",
+    )
+
+    result = merge_files([str(path)])
+
+    assert list(result.columns) == ["id", "nombre"]
+    assert result["nombre"].tolist() == ["Ana", "Beto"]
+    assert read_file_columns(str(path)) == ["id", "nombre"]
+
+
+def test_xls_falso_en_texto_se_lee_como_csv(tmp_path):
+    path = tmp_path / "datos.xls"
+    path.write_text("id;nombre\n1;Ana\n2;Beto\n", encoding="utf-8")
+
+    result = merge_files([str(path)])
+
+    assert list(result.columns) == ["id", "nombre"]
+    assert result["id"].tolist() == [1, 2]
+
+
+def test_xls_falso_sin_tabla_da_error_de_lectura(tmp_path):
+    path = tmp_path / "vacio.xls"
+    path.write_text("<html><body>nada</body></html>", encoding="utf-8")
+
+    with pytest.raises(MergeError) as exc:
+        merge_files([str(path)])
+    assert exc.value.code == "file_read_error"
+
+
+def test_xls_autentico_sigue_leyendose_con_xlrd(tmp_path):
+    path = tmp_path / "real.xls"
+    write_output(pd.DataFrame({"id": [1, 2]}), str(path), "xls")
+
+    assert merge_files([str(path)])["id"].tolist() == [1, 2]

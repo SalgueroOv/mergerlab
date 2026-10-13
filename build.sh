@@ -36,6 +36,8 @@ pyinstaller backend/server.py \
   --hidden-import odf.table \
   --hidden-import odf.text \
   --collect-submodules odf \
+  --hidden-import lxml.etree \
+  --hidden-import lxml.html \
   --noconfirm
 
 deactivate

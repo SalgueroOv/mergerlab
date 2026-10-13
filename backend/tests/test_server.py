@@ -197,3 +197,53 @@ def test_merge_rechaza_una_salida_con_extension_distinta_al_formato(client, tmp_
     assert response.status_code == 400
     assert response.get_json()["code"] == "output_extension_mismatch"
     assert not out.exists()
+
+
+# ---- hojas de Excel ----
+
+
+def _two_sheet_xlsx(path):
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        pd.DataFrame({"id": [1, 2]}).to_excel(writer, sheet_name="Uno", index=False)
+        pd.DataFrame({"id": [3]}).to_excel(writer, sheet_name="Dos", index=False)
+    return str(path)
+
+
+def test_sheets_lista_las_hojas_de_cada_archivo(client, tmp_path):
+    xlsx = _two_sheet_xlsx(tmp_path / "libro.xlsx")
+    csv_path = tmp_path / "a.csv"
+    csv_path.write_text("id\n1\n", encoding="utf-8")
+
+    response = client.post("/api/sheets", json={"files": [xlsx, str(csv_path)]})
+
+    assert response.get_json() == {"sheets": {xlsx: ["Uno", "Dos"], str(csv_path): []}}
+
+
+def test_merge_aplica_la_hoja_elegida(client, tmp_path):
+    xlsx = _two_sheet_xlsx(tmp_path / "libro.xlsx")
+    out = tmp_path / "salida.csv"
+
+    status = _run_merge(
+        client,
+        {
+            "files": [xlsx],
+            "output_format": "csv",
+            "output_path": str(out),
+            "mode": "concat",
+            "sheets": {xlsx: "Dos"},
+        },
+    )
+
+    assert status["status"] == "done", status
+    assert pd.read_csv(out)["id"].tolist() == [3]
+
+
+def test_columns_respeta_la_hoja_elegida(client, tmp_path):
+    xlsx = tmp_path / "libro.xlsx"
+    with pd.ExcelWriter(xlsx, engine="openpyxl") as writer:
+        pd.DataFrame({"a": [1]}).to_excel(writer, sheet_name="Uno", index=False)
+        pd.DataFrame({"b": [1]}).to_excel(writer, sheet_name="Dos", index=False)
+
+    response = client.post("/api/columns", json={"files": [str(xlsx)], "sheets": {str(xlsx): "Dos"}})
+
+    assert response.get_json() == {"columns": {str(xlsx): ["b"]}}
