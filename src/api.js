@@ -61,8 +61,9 @@ async function requestJson(url, options) {
  * @param {string} outputFormat `"xlsx" | "xls" | "csv" | "ods"`
  * @param {string} outputPath ruta absoluta completa del archivo de salida
  * @param {object} [options]
- * @param {boolean} [options.includeHeadersOnce] solo aplica en modo `"concat"`
  * @param {boolean} [options.addSourceColumn] solo aplica en modo `"concat"`
+ * @param {string} [options.sourceColumnName] nombre de esa columna (traducido al idioma de la app)
+ * @param {boolean} [options.allAsText] leer todas las columnas como texto (ceros a la izquierda)
  * @param {"concat"|"join"} [options.mode]
  * @param {Record<string,string>} [options.joinKeys] `{ruta: columnaClave}`, solo en modo `"join"`
  * @param {string} [options.joinType] `"inner" | "left" | "right" | "outer"`, solo en modo `"join"`
@@ -80,8 +81,9 @@ export async function startMerge(files, outputFormat, outputPath, options = {}) 
       files,
       output_format: outputFormat,
       output_path: outputPath,
-      include_headers_once: options.includeHeadersOnce ?? true,
       add_source_column: options.addSourceColumn ?? false,
+      source_column_name: options.sourceColumnName,
+      all_as_text: options.allAsText ?? false,
       mode: options.mode ?? "concat",
       join_keys: options.joinKeys ?? {},
       join_type: options.joinType,

@@ -24,6 +24,7 @@ from flask import Flask, jsonify, request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from merger import (  # noqa: E402
+    DEFAULT_SOURCE_COLUMN,
     JOIN_TYPES,
     OUTPUT_CSV_SEPARATORS,
     SUPPORTED_OUTPUT_FORMATS,
@@ -100,7 +101,9 @@ def merge():
     (`"concat"` o `"join"`), y si `mode` es `"join"` también `join_keys` (objeto
     `{ruta: columna}`) y `join_type`. Opcionales: `csv_separators` (`{ruta: separador}`, ver
     `_csv_separators_from`) y `output_csv_separator` (`","` por defecto, solo aplica si
-    `output_format` es `"csv"`). Devuelve `{"job_id": ...}` con 202 si todo es válido; el
+    `output_format` es `"csv"`), `add_source_column` y `source_column_name` (solo modo `"concat"`:
+    añade una columna con el archivo de origen de cada fila), y `all_as_text` (leer todas las
+    celdas como texto). Devuelve `{"job_id": ...}` con 202 si todo es válido; el
     progreso y el resultado se consultan después con `GET /api/status/<job_id>`. El trabajo en
     sí (lectura, combinación y escritura) lo hace `_run_merge_job` en background para no
     bloquear la petición HTTP mientras se procesan archivos grandes.
@@ -114,6 +117,11 @@ def merge():
     join_type = (payload.get("join_type") or "inner").lower()
     csv_separators = _csv_separators_from(payload)
     output_csv_separator = payload.get("output_csv_separator") or ","
+    add_source_column = bool(payload.get("add_source_column"))
+    source_column_name = payload.get("source_column_name")
+    if not isinstance(source_column_name, str) or not source_column_name.strip():
+        source_column_name = DEFAULT_SOURCE_COLUMN
+    all_as_text = bool(payload.get("all_as_text"))
 
     if not files:
         return _error_response("No se seleccionaron archivos.", 400, code="no_files_selected")
@@ -183,6 +191,9 @@ def merge():
             join_type,
             csv_separators,
             output_csv_separator,
+            add_source_column,
+            source_column_name.strip(),
+            all_as_text,
         ),
         daemon=True,
     )
@@ -263,6 +274,9 @@ def _run_merge_job(
     join_type,
     csv_separators,
     output_csv_separator,
+    add_source_column=False,
+    source_column_name=DEFAULT_SOURCE_COLUMN,
+    all_as_text=False,
 ):
     """Ejecuta la combinación completa (lectura + join/concat + escritura) y actualiza `jobs[job_id]`.
 
@@ -293,9 +307,17 @@ def _run_merge_job(
                 join_type,
                 progress_callback=progress_callback,
                 csv_separators=csv_separators,
+                all_as_text=all_as_text,
             )
         else:
-            combined = merge_files(files, progress_callback=progress_callback, csv_separators=csv_separators)
+            combined = merge_files(
+                files,
+                progress_callback=progress_callback,
+                csv_separators=csv_separators,
+                add_source_column=add_source_column,
+                source_column_name=source_column_name,
+                all_as_text=all_as_text,
+            )
 
         _set_job(
             job_id,

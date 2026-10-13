@@ -9,6 +9,10 @@ import pandas as pd
 SUPPORTED_INPUT_EXTENSIONS = {".xlsx", ".xls", ".csv", ".ods"}
 SUPPORTED_OUTPUT_FORMATS = {"xlsx", "xls", "csv", "ods"}
 JOIN_TYPES = {"inner", "left", "right", "outer"}
+# Nombre por defecto de la columna que indica de qué archivo viene cada fila al apilar.
+DEFAULT_SOURCE_COLUMN = "archivo_origen"
+# Motor de lectura de pandas para cada extensión de hoja de cálculo.
+_EXCEL_ENGINES = {".xlsx": "openpyxl", ".xls": "xlrd", ".ods": "odf"}
 
 # Límite de filas del formato .xls clásico (65536 filas, incluye la fila de encabezado).
 XLS_MAX_ROWS = 65536 - 1
@@ -180,8 +184,10 @@ def _csv_format(path, separator=None):
     return detected, encoding, confident
 
 
-def _read_csv(path, separator=None):
+def _read_csv(path, separator=None, dtype=None):
     """Lee un CSV detectando la codificación y, si `separator` es `None`, también el separador.
+
+    `dtype` se pasa tal cual a `pd.read_csv` (ver `_dtype_for`).
 
     La codificación se decide sobre una muestra del principio del archivo (ver
     `_read_csv_sample`); si más adelante aparece un byte que no encaja con ella, se reintenta con
@@ -191,13 +197,27 @@ def _read_csv(path, separator=None):
 
     for candidate in CSV_ENCODINGS[CSV_ENCODINGS.index(encoding) :]:
         try:
-            return pd.read_csv(path, sep=separator, encoding=candidate)
+            return pd.read_csv(path, sep=separator, encoding=candidate, dtype=dtype)
         except UnicodeDecodeError:
             continue
     raise _csv_encoding_error(path)
 
 
-def _read_spreadsheet(path, csv_separator=None):
+def _dtype_for(key=None, all_as_text=False):
+    """Devuelve el `dtype` de pandas para leer un archivo sin perder información.
+
+    Con `all_as_text` todas las columnas se leen como texto. Si no, solo la columna clave `key`
+    (si hay): leída como número, una clave con celdas vacías pasa a decimales (`1` -> `1.0`, y no
+    cruza con `1` de otro archivo) y pierde los ceros a la izquierda (`00123` -> `123`).
+    """
+    if all_as_text:
+        return str
+    if key:
+        return {key: str}
+    return None
+
+
+def _read_spreadsheet(path, csv_separator=None, key=None, all_as_text=False):
     """Lee `path` y devuelve una lista de DataFrames, una por cada hoja del archivo.
 
     Para `.csv` (que no tiene hojas) la lista siempre tiene un único elemento; se lee con
@@ -206,23 +226,20 @@ def _read_spreadsheet(path, csv_separator=None):
     `.xlsx`, `xlrd` para `.xls` y `odf` para `.ods`. Lanza `MergeError` si el archivo no existe,
     tiene un formato no soportado o pandas no consigue leerlo (corrupto, protegido con
     contraseña, etc.).
+
+    `key` y `all_as_text` controlan qué columnas se leen como texto (ver `_dtype_for`).
     """
     if not os.path.exists(path):
         raise MergeError(f"El archivo no existe: {path}", code="file_not_found", params={"path": path})
 
     ext = _extension_of(path)
+    dtype = _dtype_for(key, all_as_text)
 
     try:
         if ext == ".csv":
-            return [_read_csv(path, csv_separator)]
-        if ext == ".xlsx":
-            sheets = pd.read_excel(path, sheet_name=None, engine="openpyxl")
-            return list(sheets.values())
-        if ext == ".xls":
-            sheets = pd.read_excel(path, sheet_name=None, engine="xlrd")
-            return list(sheets.values())
-        if ext == ".ods":
-            sheets = pd.read_excel(path, sheet_name=None, engine="odf")
+            return [_read_csv(path, csv_separator, dtype)]
+        if ext in _EXCEL_ENGINES:
+            sheets = pd.read_excel(path, sheet_name=None, engine=_EXCEL_ENGINES[ext], dtype=dtype)
             return list(sheets.values())
     except MergeError:
         raise
@@ -282,7 +299,32 @@ def inspect_csv(path, separator=None):
     }
 
 
-def merge_files(file_paths, progress_callback=None, csv_separators=None):
+def _unique_column_name(name, taken):
+    """Devuelve `name`, o `name_2`, `name_3`... si ya está en `taken` (conjunto de nombres usados)."""
+    candidate = name
+    suffix = 2
+    while candidate in taken:
+        candidate = f"{name}_{suffix}"
+        suffix += 1
+    return candidate
+
+
+def _strip_column_names(df):
+    """Devuelve `df` con los espacios de los extremos de los nombres de columna recortados.
+
+    Los nombres que no son texto (p. ej. un encabezado numérico) se dejan como están.
+    """
+    return df.rename(columns=lambda col: col.strip() if isinstance(col, str) else col)
+
+
+def merge_files(
+    file_paths,
+    progress_callback=None,
+    csv_separators=None,
+    add_source_column=False,
+    source_column_name=DEFAULT_SOURCE_COLUMN,
+    all_as_text=False,
+):
     """Lee todos los archivos indicados (en el orden dado) y los concatena en un único DataFrame.
 
     Las columnas se alinean por nombre (unión); las celdas sin correspondencia quedan vacías.
@@ -295,12 +337,21 @@ def merge_files(file_paths, progress_callback=None, csv_separators=None):
 
     `csv_separators` es un diccionario opcional `{ruta: separador}` con el separador elegido a
     mano para algunos CSV; los que no aparecen (o tienen `None`) se detectan automáticamente.
+
+    Con `add_source_column` se antepone una columna llamada `source_column_name` con el nombre
+    (con extensión) del archivo de donde salió cada fila; si ese nombre ya lo usa una columna de
+    los datos, se le añade un sufijo (`_2`, `_3`...) para no pisarla. Con `all_as_text` todas las
+    celdas se leen como texto (conserva ceros a la izquierda y evita `1` -> `1.0`).
+
+    Los espacios al principio y al final de los nombres de columna se ignoran, para que
+    `Nombre` y `Nombre ` se apilen en una sola columna.
     """
     if not file_paths:
         raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
 
     csv_separators = csv_separators or {}
     frames = []
+    frame_sources = []
     total = len(file_paths)
 
     for index, path in enumerate(file_paths, start=1):
@@ -308,9 +359,10 @@ def merge_files(file_paths, progress_callback=None, csv_separators=None):
         if ext not in SUPPORTED_INPUT_EXTENSIONS:
             raise _unsupported_format_error(ext, path)
 
-        for sheet_df in _read_spreadsheet(path, csv_separators.get(path)):
+        for sheet_df in _read_spreadsheet(path, csv_separators.get(path), all_as_text=all_as_text):
             if sheet_df.shape[1] > 0:
-                frames.append(sheet_df)
+                frames.append(_strip_column_names(sheet_df))
+                frame_sources.append(os.path.basename(path))
 
         if progress_callback:
             filename = os.path.basename(path)
@@ -325,12 +377,20 @@ def merge_files(file_paths, progress_callback=None, csv_separators=None):
     if not frames:
         raise MergeError("Los archivos seleccionados no contienen datos para combinar.", code="no_data")
 
+    if add_source_column:
+        taken = {col for frame in frames for col in frame.columns}
+        column_name = _unique_column_name(source_column_name or DEFAULT_SOURCE_COLUMN, taken)
+        frames = [
+            frame.assign(**{column_name: source}).loc[:, [column_name, *frame.columns]]
+            for frame, source in zip(frames, frame_sources)
+        ]
+
     return pd.concat(frames, ignore_index=True, sort=False)
 
 
-def _read_single_dataframe(path, csv_separator=None):
+def _read_single_dataframe(path, csv_separator=None, key=None, all_as_text=False):
     """Lee un archivo y devuelve un único DataFrame (concatenando sus hojas si tiene varias)."""
-    sheets = _read_spreadsheet(path, csv_separator)
+    sheets = _read_spreadsheet(path, csv_separator, key, all_as_text)
     if len(sheets) == 1:
         return sheets[0]
     return pd.concat(sheets, ignore_index=True, sort=False)
@@ -355,7 +415,14 @@ def _stringify_key_column(series):
     return result
 
 
-def join_files(file_paths, join_keys, join_type="inner", progress_callback=None, csv_separators=None):
+def join_files(
+    file_paths,
+    join_keys,
+    join_type="inner",
+    progress_callback=None,
+    csv_separators=None,
+    all_as_text=False,
+):
     """Combina los archivos indicados uniéndolos por una columna clave (equivalente a un JOIN SQL).
 
     A diferencia de merge_files (que apila filas una debajo de otra), acá cada archivo aporta
@@ -378,6 +445,10 @@ def join_files(file_paths, join_keys, join_type="inner", progress_callback=None,
     `progress_callback`, si se indica, se invoca tras combinar cada archivo con la misma firma
     que en `merge_files`: `(index, total, message, code, params)`. `csv_separators` funciona
     igual que en `merge_files`.
+
+    La columna clave de cada archivo se lee siempre como texto (así no pierde ceros a la izquierda
+    ni se convierte en decimal por tener celdas vacías); con `all_as_text` se leen como texto
+    todas las columnas.
     """
     if not file_paths:
         raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
@@ -403,7 +474,7 @@ def join_files(file_paths, join_keys, join_type="inner", progress_callback=None,
         if ext not in SUPPORTED_INPUT_EXTENSIONS:
             raise _unsupported_format_error(ext, path)
 
-        df = _read_single_dataframe(path, csv_separators.get(path))
+        df = _read_single_dataframe(path, csv_separators.get(path), key=key, all_as_text=all_as_text)
 
         if key not in df.columns:
             raise MergeError(

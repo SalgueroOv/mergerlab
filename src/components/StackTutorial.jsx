@@ -80,7 +80,7 @@ function StackDiagram() {
 
 /**
  * Botón "?" junto a "Opciones" (modo apilar) que abre un modal explicando cómo funciona apilar
- * filas y qué hace cada casilla (`includeHeadersOnce`, `addSourceColumn`). Sin props.
+ * filas y qué hace cada casilla (`addSourceColumn`). Sin props.
  */
 export default function StackTutorial() {
   const { t } = useTranslation();
@@ -133,9 +133,6 @@ export default function StackTutorial() {
               <p>{t("stackTutorial.body1")}</p>
               <p>{t("stackTutorial.body2")}</p>
               <ul className="stack-tutorial-list">
-                <li>
-                  <strong>{t("stackTutorial.headersOnceTerm")}</strong>: {t("stackTutorial.headersOnceNote")}
-                </li>
                 <li>
                   <strong>{t("stackTutorial.sourceColumnTerm")}</strong>:{" "}
                   {t("stackTutorial.sourceColumnNote")}

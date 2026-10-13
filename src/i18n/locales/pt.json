@@ -76,8 +76,11 @@
   },
   "stackOptions": {
     "label": "Opções",
-    "headersOnce": "Incluir cabeçalhos apenas uma vez",
-    "sourceColumn": "Adicionar coluna com o nome do arquivo de origem"
+    "sourceColumn": "Adicionar coluna com o nome do arquivo de origem",
+    "sourceColumnName": "arquivo_origem"
+  },
+  "readOptions": {
+    "allAsText": "Ler todas as colunas como texto (mantém zeros à esquerda)"
   },
   "progress": {
     "completedPrefix": "Concluído — arquivo salvo em",
@@ -207,8 +210,6 @@
     },
     "body1": "Empilhar pega cada arquivo e coloca suas linhas uma abaixo da outra, na ordem em que aparecem na lista. Não cruza dados entre arquivos: apenas os concatena. As colunas são alinhadas por nome; se um arquivo não tiver alguma coluna que os demais têm, essa célula fica vazia em suas linhas.",
     "body2": "Use este modo quando os arquivos representam o mesmo tipo de dado repetido ao longo do tempo ou por lote (por exemplo, vendas de janeiro, fevereiro e março com as mesmas colunas), diferentemente do join, que cruza colunas diferentes usando uma chave em comum.",
-    "headersOnceTerm": "Incluir cabeçalhos apenas uma vez",
-    "headersOnceNote": "evita que o nome das colunas se repita como se fosse uma linha de dados para cada arquivo adicionado.",
     "sourceColumnTerm": "Adicionar coluna com o nome do arquivo de origem",
     "sourceColumnNote": "adiciona uma coluna extra indicando de qual arquivo veio cada linha, útil para rastrear a origem depois de empilhar."
   },

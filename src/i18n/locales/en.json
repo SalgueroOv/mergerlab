@@ -76,8 +76,11 @@
   },
   "stackOptions": {
     "label": "Options",
-    "headersOnce": "Include headers only once",
-    "sourceColumn": "Add a column with the source file name"
+    "sourceColumn": "Add a column with the source file name",
+    "sourceColumnName": "source_file"
+  },
+  "readOptions": {
+    "allAsText": "Read all columns as text (keeps leading zeros)"
   },
   "progress": {
     "completedPrefix": "Done — file saved to",
@@ -207,8 +210,6 @@
     },
     "body1": "Stacking takes each file and places its rows one below the other, in the order they appear in the list. It doesn't cross data between files: it just concatenates them. Columns are aligned by name; if a file is missing a column the others have, that cell is left blank in its rows.",
     "body2": "Use this mode when the files represent the same kind of data repeated over time or in batches (for example, sales for January, February and March with the same columns), unlike a join, which crosses different columns using a shared key.",
-    "headersOnceTerm": "Include headers only once",
-    "headersOnceNote": "prevents the column names from repeating as if they were a data row for each added file.",
     "sourceColumnTerm": "Add a column with the source file name",
     "sourceColumnNote": "adds an extra column indicating which file each row came from, useful for tracing its origin after stacking."
   },

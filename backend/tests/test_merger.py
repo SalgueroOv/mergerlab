@@ -440,3 +440,91 @@ def test_inspect_csv_archivo_inexistente():
     with pytest.raises(MergeError) as exc:
         inspect_csv("/no/existe/archivo.csv")
     assert exc.value.code == "file_not_found"
+
+
+# ---- columna de origen, claves como texto y nombres de columna al apilar ----
+
+
+def test_merge_files_columna_de_origen_lleva_el_nombre_de_cada_archivo(tmp_path):
+    a = _write_csv(tmp_path / "enero.csv", {"id": [1, 2], "valor": ["a", "b"]})
+    b = _write_csv(tmp_path / "febrero.csv", {"id": [3], "valor": ["c"]})
+
+    result = merge_files([a, b], add_source_column=True, source_column_name="source_file")
+
+    assert list(result.columns) == ["source_file", "id", "valor"]
+    assert result["source_file"].tolist() == ["enero.csv", "enero.csv", "febrero.csv"]
+
+
+def test_merge_files_sin_columna_de_origen_no_la_agrega(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1]})
+
+    assert "archivo_origen" not in merge_files([a]).columns
+
+
+def test_merge_files_columna_de_origen_no_pisa_una_columna_existente(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"archivo_origen": ["x"], "id": [1]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2]})
+
+    result = merge_files([a, b], add_source_column=True)
+
+    assert result["archivo_origen"].iloc[0] == "x"
+    assert pd.isna(result["archivo_origen"].iloc[1])
+    assert result["archivo_origen_2"].tolist() == ["a.csv", "b.csv"]
+
+
+def test_merge_files_ignora_espacios_en_los_nombres_de_columna(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"Nombre": ["Ana"]})
+    b = _write_csv(tmp_path / "b.csv", {"nombre ": ["Luis"]})
+    c = _write_csv(tmp_path / "c.csv", {" Nombre": ["Eva"]})
+
+    result = merge_files([a, b, c])
+
+    # "Nombre" y "nombre " (distinto de mayúsculas) siguen siendo columnas distintas; lo que se
+    # unifica son los espacios: " Nombre" cae en "Nombre".
+    assert list(result.columns) == ["Nombre", "nombre"]
+    assert result["Nombre"].iloc[0] == "Ana"
+    assert result["Nombre"].iloc[2] == "Eva"
+
+
+def test_join_files_con_celda_vacia_en_la_clave_conserva_las_coincidencias(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("id,x\n1,a\n2,b\n,c\n", encoding="utf-8")
+    b = _write_csv(tmp_path / "b.csv", {"id": [1, 2], "y": ["p", "q"]})
+
+    result = join_files([str(a), b], ["id", "id"], join_type="inner")
+
+    assert sorted(result["id"].tolist()) == ["1", "2"]
+
+
+def test_join_files_conserva_ceros_a_la_izquierda_en_la_clave(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("dni,x\n00123,a\n00456,b\n", encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("dni,y\n00123,p\n", encoding="utf-8")
+
+    result = join_files([str(a), str(b)], ["dni", "dni"], join_type="inner")
+
+    assert result["dni"].tolist() == ["00123"]
+
+
+def test_join_files_conserva_ceros_a_la_izquierda_en_excel_con_clave_vacia(tmp_path):
+    a = tmp_path / "a.xlsx"
+    pd.DataFrame({"dni": ["00123", "00456", None], "x": [1, 2, 3]}).to_excel(a, index=False)
+    b = tmp_path / "b.xlsx"
+    pd.DataFrame({"dni": ["00123", "00456"], "y": [1, 2]}).to_excel(b, index=False)
+
+    result = join_files([str(a), str(b)], ["dni", "dni"], join_type="inner")
+
+    assert sorted(result["dni"].tolist()) == ["00123", "00456"]
+
+
+def test_merge_files_todo_como_texto_conserva_ceros_a_la_izquierda(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("codigo,n\n00123,1\n", encoding="utf-8")
+
+    default = merge_files([str(a)])
+    as_text = merge_files([str(a)], all_as_text=True)
+
+    assert default["codigo"].tolist() == [123]
+    assert as_text["codigo"].tolist() == ["00123"]
+    assert as_text["n"].tolist() == ["1"]

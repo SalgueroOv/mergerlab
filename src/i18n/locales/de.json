@@ -76,8 +76,11 @@
   },
   "stackOptions": {
     "label": "Optionen",
-    "headersOnce": "Überschriften nur einmal einfügen",
-    "sourceColumn": "Spalte mit Name der Quelldatei hinzufügen"
+    "sourceColumn": "Spalte mit Name der Quelldatei hinzufügen",
+    "sourceColumnName": "quelldatei"
+  },
+  "readOptions": {
+    "allAsText": "Alle Spalten als Text lesen (führende Nullen bleiben erhalten)"
   },
   "progress": {
     "completedPrefix": "Abgeschlossen — Datei gespeichert unter",
@@ -207,8 +210,6 @@
     },
     "body1": "Beim Stapeln werden die Zeilen jeder Datei in der Reihenfolge, in der sie in der Liste erscheinen, untereinander angeordnet. Dabei werden keine Daten zwischen Dateien verknüpft, sie werden nur aneinandergehängt. Spalten werden nach Namen ausgerichtet; fehlt einer Datei eine Spalte, die die anderen haben, bleibt diese Zelle in ihren Zeilen leer.",
     "body2": "Verwende diesen Modus, wenn die Dateien dieselbe Art von Daten darstellen, die im Zeitverlauf oder stapelweise wiederholt werden (z. B. Verkäufe für Januar, Februar und März mit denselben Spalten) — im Gegensatz zum Join, der unterschiedliche Spalten über einen gemeinsamen Schlüssel verknüpft.",
-    "headersOnceTerm": "Überschriften nur einmal einfügen",
-    "headersOnceNote": "verhindert, dass sich die Spaltennamen für jede hinzugefügte Datei wie eine Datenzeile wiederholen.",
     "sourceColumnTerm": "Spalte mit Name der Quelldatei hinzufügen",
     "sourceColumnNote": "fügt eine zusätzliche Spalte hinzu, die angibt, aus welcher Datei jede Zeile stammt — nützlich, um die Herkunft nach dem Stapeln nachzuverfolgen."
   },

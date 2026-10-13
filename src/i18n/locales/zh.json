@@ -75,8 +75,11 @@
   },
   "stackOptions": {
     "label": "选项",
-    "headersOnce": "仅包含一次表头",
-    "sourceColumn": "添加一列显示来源文件名"
+    "sourceColumn": "添加一列显示来源文件名",
+    "sourceColumnName": "来源文件"
+  },
+  "readOptions": {
+    "allAsText": "将所有列按文本读取（保留前导零）"
   },
   "progress": {
     "completedPrefix": "已完成 — 文件已保存到",
@@ -205,8 +208,6 @@
     },
     "body1": "堆叠会按照列表中的顺序，将每个文件的行依次叠放在一起。它不会在文件之间关联数据，只是简单地拼接起来。列按名称对齐；如果某个文件缺少其他文件拥有的列，对应单元格会留空。",
     "body2": "当文件表示随时间或批次重复出现的同类数据时（例如列相同的一月、二月和三月销售数据），可使用此模式；这与通过共同键关联不同列的 join 不同。",
-    "headersOnceTerm": "仅包含一次表头",
-    "headersOnceNote": "避免每添加一个文件，列名就像数据行一样重复出现。",
     "sourceColumnTerm": "添加一列显示来源文件名",
     "sourceColumnNote": "添加一个额外的列，标明每一行来自哪个文件，便于在堆叠后追溯数据来源。"
   },

@@ -76,8 +76,11 @@
   },
   "stackOptions": {
     "label": "Opciones",
-    "headersOnce": "Incluir encabezados solo una vez",
-    "sourceColumn": "Añadir columna con nombre de archivo origen"
+    "sourceColumn": "Añadir columna con nombre de archivo origen",
+    "sourceColumnName": "archivo_origen"
+  },
+  "readOptions": {
+    "allAsText": "Leer todas las columnas como texto (conserva ceros a la izquierda)"
   },
   "progress": {
     "completedPrefix": "Completado — archivo guardado en",
@@ -207,8 +210,6 @@
     },
     "body1": "Apilar toma cada archivo y pone sus filas una debajo de otra, en el orden en que aparecen en la lista. No cruza datos entre archivos: solo los concatena. Las columnas se alinean por nombre; si un archivo no tiene alguna columna que sí tienen los demás, esa celda queda vacía en sus filas.",
     "body2": "Usa este modo cuando los archivos representan el mismo tipo de datos repetido en el tiempo o por lote (por ejemplo, ventas de enero, febrero y marzo con las mismas columnas), a diferencia del join, que cruza columnas distintas usando una clave en común.",
-    "headersOnceTerm": "Incluir encabezados solo una vez",
-    "headersOnceNote": "evita que el nombre de las columnas se repita como si fuera una fila de datos por cada archivo añadido.",
     "sourceColumnTerm": "Añadir columna con nombre de archivo origen",
     "sourceColumnNote": "agrega una columna extra que indica de qué archivo vino cada fila, útil para rastrear el origen después de apilar."
   },

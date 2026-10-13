@@ -119,8 +119,8 @@ export default function App() {
   const [outputFormat, setOutputFormat] = useState("xlsx");
   const [outputFileName, setOutputFileName] = useState("combinado");
   const [destinationFolder, setDestinationFolder] = useState("");
-  const [includeHeadersOnce, setIncludeHeadersOnce] = useState(true);
   const [addSourceColumn, setAddSourceColumn] = useState(false);
+  const [allAsText, setAllAsText] = useState(false);
   const [outputCsvSeparator, setOutputCsvSeparator] = useState(",");
 
   // csvSeparators: { [filePath]: separador } — solo los CSV cuyo separador eligió el usuario a
@@ -478,8 +478,9 @@ export default function App() {
         outputFormat,
         outputPath,
         {
-          includeHeadersOnce,
           addSourceColumn,
+          sourceColumnName: t("stackOptions.sourceColumnName"),
+          allAsText,
           mode,
           joinKeys: joinKeysPayload,
           joinType,
@@ -509,8 +510,8 @@ export default function App() {
     outputFormat,
     outputFileName,
     destinationFolder,
-    includeHeadersOnce,
     addSourceColumn,
+    allAsText,
     mode,
     joinKeys,
     joinType,
@@ -693,21 +694,24 @@ export default function App() {
               </div>
             </div>
 
+            <div className="field-group">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={allAsText}
+                  disabled={isProcessing}
+                  onChange={(e) => setAllAsText(e.target.checked)}
+                />
+                {t("readOptions.allAsText")}
+              </label>
+            </div>
+
             {mode === "concat" && (
               <div className="field-group">
                 <div className="field-row">
                   <span className="field-label field-label--inline">{t("stackOptions.label")}</span>
                   <StackTutorial />
                 </div>
-                <label className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={includeHeadersOnce}
-                    disabled={isProcessing}
-                    onChange={(e) => setIncludeHeadersOnce(e.target.checked)}
-                  />
-                  {t("stackOptions.headersOnce")}
-                </label>
                 <label className="checkbox-row">
                   <input
                     type="checkbox"

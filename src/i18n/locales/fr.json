@@ -76,8 +76,11 @@
   },
   "stackOptions": {
     "label": "Options",
-    "headersOnce": "Inclure les en-têtes une seule fois",
-    "sourceColumn": "Ajouter une colonne avec le nom du fichier source"
+    "sourceColumn": "Ajouter une colonne avec le nom du fichier source",
+    "sourceColumnName": "fichier_source"
+  },
+  "readOptions": {
+    "allAsText": "Lire toutes les colonnes comme du texte (conserve les zéros initiaux)"
   },
   "progress": {
     "completedPrefix": "Terminé — fichier enregistré dans",
@@ -207,8 +210,6 @@
     },
     "body1": "Empiler prend chaque fichier et place ses lignes les unes sous les autres, dans l'ordre où ils apparaissent dans la liste. Cela ne croise pas les données entre les fichiers : cela se contente de les concaténer. Les colonnes sont alignées par nom ; si un fichier n'a pas une colonne que les autres ont, cette cellule reste vide dans ses lignes.",
     "body2": "Utilisez ce mode lorsque les fichiers représentent le même type de données répété dans le temps ou par lot (par exemple, les ventes de janvier, février et mars avec les mêmes colonnes), contrairement au join, qui croise des colonnes différentes via une clé commune.",
-    "headersOnceTerm": "Inclure les en-têtes une seule fois",
-    "headersOnceNote": "évite que le nom des colonnes se répète comme s'il s'agissait d'une ligne de données pour chaque fichier ajouté.",
     "sourceColumnTerm": "Ajouter une colonne avec le nom du fichier source",
     "sourceColumnNote": "ajoute une colonne supplémentaire indiquant de quel fichier provient chaque ligne, utile pour retrouver son origine après l'empilement."
   },

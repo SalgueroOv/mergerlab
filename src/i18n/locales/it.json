@@ -76,8 +76,11 @@
   },
   "stackOptions": {
     "label": "Opzioni",
-    "headersOnce": "Includi le intestazioni una sola volta",
-    "sourceColumn": "Aggiungi una colonna con il nome del file di origine"
+    "sourceColumn": "Aggiungi una colonna con il nome del file di origine",
+    "sourceColumnName": "file_origine"
+  },
+  "readOptions": {
+    "allAsText": "Leggi tutte le colonne come testo (mantiene gli zeri iniziali)"
   },
   "progress": {
     "completedPrefix": "Completato — file salvato in",
@@ -207,8 +210,6 @@
     },
     "body1": "Impilare prende ogni file e mette le sue righe una sotto l'altra, nell'ordine in cui appaiono nell'elenco. Non incrocia i dati tra i file: si limita a concatenarli. Le colonne vengono allineate per nome; se un file non ha una colonna presente negli altri, quella cella resta vuota nelle sue righe.",
     "body2": "Usa questa modalità quando i file rappresentano lo stesso tipo di dati ripetuto nel tempo o per lotti (ad esempio, vendite di gennaio, febbraio e marzo con le stesse colonne), a differenza del join, che incrocia colonne diverse usando una chiave comune.",
-    "headersOnceTerm": "Includi le intestazioni una sola volta",
-    "headersOnceNote": "evita che il nome delle colonne si ripeta come se fosse una riga di dati per ogni file aggiunto.",
     "sourceColumnTerm": "Aggiungi una colonna con il nome del file di origine",
     "sourceColumnNote": "aggiunge una colonna extra che indica da quale file proviene ogni riga, utile per rintracciarne l'origine dopo l'impilamento."
   },
