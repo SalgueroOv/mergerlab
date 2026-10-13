@@ -7,10 +7,24 @@ import pytest
 
 import server
 
+TOKEN = "token-de-prueba"
+
 
 @pytest.fixture
 def client():
+    """Cliente de Flask que ya envía el token de autenticación en cada petición."""
     server.app.config["TESTING"] = True
+    server.app.config["AUTH_TOKEN"] = TOKEN
+    with server.app.test_client() as test_client:
+        test_client.environ_base["HTTP_X_AUTH_TOKEN"] = TOKEN
+        yield test_client
+
+
+@pytest.fixture
+def anonymous_client():
+    """Cliente de Flask sin token, como lo vería una web ajena."""
+    server.app.config["TESTING"] = True
+    server.app.config["AUTH_TOKEN"] = TOKEN
     with server.app.test_client() as test_client:
         yield test_client
 
@@ -105,3 +119,81 @@ def test_merge_join_conserva_ceros_en_la_clave(client, tmp_path):
 
     assert status["status"] == "done", status
     assert pd.read_csv(out, dtype=str)["dni"].tolist() == ["00123"]
+
+
+# ---- seguridad: token, CORS y extensión de salida ----
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("get", "/api/health"),
+        ("post", "/api/inspect-csv"),
+        ("post", "/api/columns"),
+        ("post", "/api/merge"),
+        ("get", "/api/status/x"),
+    ],
+)
+def test_peticion_sin_token_recibe_401(anonymous_client, method, path):
+    response = getattr(anonymous_client, method)(path, json={"files": []})
+
+    assert response.status_code == 401
+    assert response.get_json()["code"] == "unauthorized"
+
+
+def test_peticion_con_token_incorrecto_recibe_401(anonymous_client):
+    response = anonymous_client.get("/api/health", headers={"X-Auth-Token": "otro"})
+
+    assert response.status_code == 401
+
+
+def test_inspect_csv_sin_token_no_filtra_el_contenido_del_archivo(anonymous_client, tmp_path):
+    secret = tmp_path / "secreto.csv"
+    secret.write_text("clave,valor\nuno,contenido-privado\n", encoding="utf-8")
+
+    response = anonymous_client.post("/api/inspect-csv", json={"files": [str(secret)]})
+
+    assert response.status_code == 401
+    assert b"contenido-privado" not in response.data
+
+
+def test_sin_token_configurado_en_el_servidor_se_rechaza_todo(client):
+    server.app.config["AUTH_TOKEN"] = None
+
+    assert client.get("/api/health").status_code == 401
+
+
+def test_peticion_con_token_correcto_funciona(client):
+    assert client.get("/api/health").status_code == 200
+
+
+def test_cors_ya_no_acepta_cualquier_origen(client):
+    ajeno = client.get("/api/health", headers={"Origin": "https://sitio-malicioso.example"})
+    propio = client.get("/api/health", headers={"Origin": "http://localhost:5173"})
+    file_origin = client.get("/api/health", headers={"Origin": "null"})
+
+    assert "Access-Control-Allow-Origin" not in ajeno.headers
+    assert propio.headers["Access-Control-Allow-Origin"] == "http://localhost:5173"
+    assert file_origin.headers["Access-Control-Allow-Origin"] == "null"
+
+
+def test_preflight_no_necesita_token_y_permite_la_cabecera_del_token(anonymous_client):
+    response = anonymous_client.options("/api/merge", headers={"Origin": "null"})
+
+    assert response.status_code == 204
+    assert "X-Auth-Token" in response.headers["Access-Control-Allow-Headers"]
+
+
+def test_merge_rechaza_una_salida_con_extension_distinta_al_formato(client, tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("id\n1\n", encoding="utf-8")
+    out = tmp_path / "salida.bat"
+
+    response = client.post(
+        "/api/merge",
+        json={"files": [str(a)], "output_format": "csv", "output_path": str(out), "mode": "concat"},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["code"] == "output_extension_mismatch"
+    assert not out.exists()

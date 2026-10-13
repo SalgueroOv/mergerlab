@@ -9,6 +9,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, session, Menu, nativeTheme }
 const { autoUpdater } = require("electron-updater");
 const { formatReleaseNotes } = require("./releaseNotes.js");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const fs = require("node:fs/promises");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
@@ -19,6 +20,9 @@ const isDev = process.env.NODE_ENV === "development";
 /** @type {import('child_process').ChildProcess | null} */
 let backendProcess = null;
 let backendPort = null;
+// Token secreto de esta ejecución: se pasa al backend por variable de entorno y al renderer por
+// IPC (`get-backend-port`); el backend rechaza las peticiones que no lo traigan.
+let backendToken = null;
 let backendStartError = null;
 let mainWindow = null;
 let aboutWindow = null;
@@ -250,6 +254,67 @@ const UPDATE_DIALOG_TEXT = {
   },
 };
 
+// Textos del diálogo de confirmación al sobrescribir el archivo de salida (diálogo nativo,
+// mismo motivo que UPDATE_DIALOG_TEXT). `{n}` se sustituye por el nombre del archivo.
+const OVERWRITE_DIALOG_TEXT = {
+  es: {
+    title: "Archivo existente",
+    message: "Ya existe «{n}» en la carpeta de destino.",
+    detail: "Si continúas, se reemplazará su contenido.",
+    replace: "Reemplazar",
+    cancel: "Cancelar",
+  },
+  en: {
+    title: "File already exists",
+    message: "“{n}” already exists in the destination folder.",
+    detail: "If you continue, its contents will be replaced.",
+    replace: "Replace",
+    cancel: "Cancel",
+  },
+  de: {
+    title: "Datei vorhanden",
+    message: "„{n}“ existiert bereits im Zielordner.",
+    detail: "Wenn Sie fortfahren, wird der Inhalt ersetzt.",
+    replace: "Ersetzen",
+    cancel: "Abbrechen",
+  },
+  fr: {
+    title: "Fichier existant",
+    message: "« {n} » existe déjà dans le dossier de destination.",
+    detail: "Si vous continuez, son contenu sera remplacé.",
+    replace: "Remplacer",
+    cancel: "Annuler",
+  },
+  it: {
+    title: "File esistente",
+    message: "«{n}» esiste già nella cartella di destinazione.",
+    detail: "Se continui, il contenuto verrà sostituito.",
+    replace: "Sostituisci",
+    cancel: "Annulla",
+  },
+  pt: {
+    title: "Arquivo existente",
+    message: "“{n}” já existe na pasta de destino.",
+    detail: "Se continuar, o conteúdo será substituído.",
+    replace: "Substituir",
+    cancel: "Cancelar",
+  },
+  ru: {
+    title: "Файл уже существует",
+    message: "Файл «{n}» уже есть в папке назначения.",
+    detail: "Если продолжить, его содержимое будет заменено.",
+    replace: "Заменить",
+    cancel: "Отмена",
+  },
+  zh: {
+    title: "文件已存在",
+    message: "目标文件夹中已存在“{n}”。",
+    detail: "继续将替换其内容。",
+    replace: "替换",
+    cancel: "取消",
+  },
+};
+
 /**
  * Configura la comprobación automática de actualizaciones (electron-updater, contra GitHub
  * Releases del propio repo -- ver `publish` en electron-builder.yml). Se llama una vez al
@@ -367,9 +432,11 @@ function startBackend() {
     let settled = false;
 
     try {
+      backendToken = crypto.randomBytes(32).toString("hex");
       backendProcess = spawn(command, args, {
         cwd: path.dirname(command),
         windowsHide: true,
+        env: { ...process.env, MERGERLAB_TOKEN: backendToken },
       });
     } catch (err) {
       reject(err);
@@ -620,7 +687,11 @@ app.on("before-quit", () => {
 
 /** Puerto del backend y, si no llegó a arrancar, el motivo (ver `src/api.js::getApiBase`). */
 ipcMain.handle("get-backend-port", () => {
-  return { port: backendPort, error: backendStartError ? backendStartError.message : null };
+  return {
+    port: backendPort,
+    token: backendToken,
+    error: backendStartError ? backendStartError.message : null,
+  };
 });
 
 /** Diálogo nativo para elegir uno o varios archivos de entrada. */
@@ -636,6 +707,29 @@ ipcMain.handle("select-input-files", async () => {
   }
 
   return { canceled: false, files: result.filePaths };
+});
+
+/**
+ * Si `filePath` ya existe, pregunta con un diálogo nativo si se puede reemplazar.
+ * @returns {Promise<boolean>} `true` si se puede escribir (no existía o el usuario aceptó)
+ */
+ipcMain.handle("confirm-overwrite", async (_event, filePath) => {
+  try {
+    await fs.access(filePath);
+  } catch {
+    return true;
+  }
+  const text = OVERWRITE_DIALOG_TEXT[currentLanguage] || OVERWRITE_DIALOG_TEXT.es;
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: "warning",
+    title: text.title,
+    message: text.message.replace("{n}", path.basename(filePath)),
+    detail: text.detail,
+    buttons: [text.replace, text.cancel],
+    defaultId: 1,
+    cancelId: 1,
+  });
+  return response === 0;
 });
 
 /** Diálogo nativo para elegir la carpeta de destino del archivo combinado. */

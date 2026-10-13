@@ -5,6 +5,12 @@ en producción como ejecutable de PyInstaller). Al arrancar, elige un puerto lib
 en 127.0.0.1 y lo imprime en stdout como `PORT:<numero>` para que el proceso
 principal de Electron lo capture.
 
+Seguridad: Electron genera un token aleatorio por ejecución, se lo pasa al backend en la
+variable de entorno `MERGERLAB_TOKEN` y a su ventana por IPC. Toda petición debe traerlo en la
+cabecera `X-Auth-Token` (si no, 401) y solo se habilita CORS para los orígenes de la propia app,
+para que ninguna web abierta en el navegador pueda usar la API local. Sin la variable el
+backend no arranca.
+
 Todas las respuestas que incluyen un mensaje para el usuario (errores 4xx/5xx y el estado de
 los trabajos de combinación) llevan tanto `message` en español como, cuando el mensaje es
 traducible, `code`/`params`: el frontend traduce con `code`/`params` vía i18next si los
@@ -12,6 +18,7 @@ reconoce (ver `src/i18n/backendMessages.js`) y usa `message` como respaldo si no
 contrato deliberadamente nunca rompe hacia atrás: `message` siempre está presente.
 """
 
+import hmac
 import os
 import socket
 import sys
@@ -33,10 +40,19 @@ from merger import (  # noqa: E402
     join_files,
     merge_files,
     read_file_columns,
+    validate_output_extension,
     write_output,
 )
 
 app = Flask(__name__)
+
+# Orígenes desde los que la ventana de la app llama a la API: `file://` (producción) llega como
+# "null"; el servidor de Vite (desarrollo) como http://localhost:5173.
+ALLOWED_ORIGINS = {"null", "http://localhost:5173", "http://127.0.0.1:5173"}
+AUTH_HEADER = "X-Auth-Token"
+# Variable de entorno con el token secreto de esta ejecución; la define Electron al lanzar el
+# backend y la lee `main()`. Sin token configurado, `require_token` rechaza todas las peticiones.
+TOKEN_ENV_VAR = "MERGERLAB_TOKEN"
 
 jobs = {}
 jobs_lock = threading.Lock()
@@ -77,13 +93,34 @@ def handle_preflight():
         return "", 204
 
 
+@app.before_request
+def require_token():
+    """Rechaza con 401 toda petición que no traiga el token secreto de esta ejecución.
+
+    Sin esto, cualquier página web abierta en el navegador podría llamar a la API local (leer
+    archivos con `/api/inspect-csv`, escribir con `/api/merge`). El token solo lo conocen el
+    proceso de Electron y su ventana. Se compara en tiempo constante.
+    """
+    if request.method == "OPTIONS":
+        return None
+    expected = app.config.get("AUTH_TOKEN")
+    received = request.headers.get(AUTH_HEADER, "")
+    if not expected or not hmac.compare_digest(received.encode(), expected.encode()):
+        return _error_response("No autorizado.", 401, code="unauthorized")
+    return None
+
+
 @app.after_request
 def add_cors_headers(response):
-    # La ventana de Electron (file:// o http://localhost:5173) hace peticiones
-    # cross-origin al backend en 127.0.0.1:<puerto>; se habilita CORS localmente.
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    # La ventana de Electron hace peticiones cross-origin al backend en 127.0.0.1:<puerto>; solo
+    # se habilita CORS para los orígenes de la propia app (ver ALLOWED_ORIGINS), no para
+    # cualquier web.
+    origin = request.headers.get("Origin")
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = f"Content-Type, {AUTH_HEADER}"
+    response.headers["Vary"] = "Origin"
     return response
 
 
@@ -141,6 +178,10 @@ def merge():
         )
     if not output_path:
         return _error_response("No se indicó la ruta de guardado.", 400, code="no_output_path")
+    try:
+        validate_output_extension(output_path, output_format)
+    except MergeError as exc:
+        return _error_response(str(exc), 400, code=exc.code, params=exc.params)
     if mode not in ("concat", "join"):
         return _error_response(
             f"Modo de combinación no soportado: '{mode}'.",
@@ -381,6 +422,11 @@ def main():
     que el puerto se imprima y quede disponible para Electron lo antes posible, sin esperar a
     que se resuelva el import.
     """
+    token = os.environ.get(TOKEN_ENV_VAR)
+    if not token:
+        sys.exit(f"Falta la variable de entorno {TOKEN_ENV_VAR}: el backend solo se lanza desde la app.")
+    app.config["AUTH_TOKEN"] = token
+
     port = _find_free_port()
     # Electron lee esta línea de stdout para saber a qué puerto conectarse.
     print(f"PORT:{port}", flush=True)

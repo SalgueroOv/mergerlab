@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // (lo usa FileList.jsx al soltar archivos por drag & drop).
   getPathForFile: (file) => webUtils.getPathForFile(file),
   getBackendPort: () => ipcRenderer.invoke("get-backend-port"),
+  confirmOverwrite: (filePath) => ipcRenderer.invoke("confirm-overwrite", filePath),
   openContainingFolder: (filePath) => ipcRenderer.invoke("open-containing-folder", filePath),
   openAboutWindow: () => ipcRenderer.invoke("open-about-window"),
   // onBackendError/onReplayOnboarding son eventos que empuja el proceso principal (no los pide

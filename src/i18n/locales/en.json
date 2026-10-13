@@ -248,6 +248,8 @@
     "output_dir_missing": "The destination folder does not exist: {{dir}}",
     "output_dir_no_permission": "No write permission in the destination folder: {{dir}}",
     "output_file_locked": "No write permission for '{{path}}'. Close the file if it's open in another program, or choose a different location.",
+    "output_extension_mismatch": "The output file extension ({{ext}}) does not match the chosen format ({{expected}}).",
+    "unauthorized": "Unauthorized: the window could not authenticate with the internal engine. Restart the application.",
     "output_write_error": "Could not save the output file: {{detail}}",
     "xls_library_missing": "The 'xlwt' library is not available to generate .xls files.",
     "xls_row_limit": "The combined result has {{rows}} rows, which exceeds the classic .xls format's limit of {{limit}} rows. Use .xlsx, .csv or .ods instead.",

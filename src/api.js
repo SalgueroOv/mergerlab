@@ -7,6 +7,7 @@
 import i18n from "./i18n/index.js";
 
 let cachedBase = null;
+let cachedToken = null;
 
 /**
  * Resuelve (y cachea) la URL base del backend, p. ej. `"http://127.0.0.1:53210"`.
@@ -15,10 +16,11 @@ let cachedBase = null;
 async function getApiBase() {
   if (cachedBase) return cachedBase;
 
-  const { port, error } = await window.electronAPI.getBackendPort();
-  if (error || !port) {
+  const { port, token, error } = await window.electronAPI.getBackendPort();
+  if (error || !port || !token) {
     throw new Error(error || i18n.t("errors.backendUnavailable"));
   }
+  cachedToken = token;
   cachedBase = `http://127.0.0.1:${port}`;
   return cachedBase;
 }
@@ -33,7 +35,9 @@ async function getApiBase() {
  * @returns {Promise<any>} el cuerpo de la respuesta ya parseado
  */
 async function requestJson(url, options) {
-  const response = await fetch(url, options);
+  // El backend exige el token secreto de esta ejecución en cada petición (ver server.py).
+  const headers = { ...options?.headers, "X-Auth-Token": cachedToken };
+  const response = await fetch(url, { ...options, headers });
   let body = null;
   try {
     body = await response.json();

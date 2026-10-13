@@ -528,3 +528,21 @@ def test_merge_files_todo_como_texto_conserva_ceros_a_la_izquierda(tmp_path):
     assert default["codigo"].tolist() == [123]
     assert as_text["codigo"].tolist() == ["00123"]
     assert as_text["n"].tolist() == ["1"]
+
+
+def test_write_output_rechaza_extension_distinta_al_formato(tmp_path):
+    out = tmp_path / "salida.bat"
+
+    with pytest.raises(MergeError) as exc:
+        write_output(pd.DataFrame({"a": [1]}), str(out), "csv")
+
+    assert exc.value.code == "output_extension_mismatch"
+    assert not out.exists()
+
+
+def test_write_output_acepta_la_extension_en_mayusculas(tmp_path):
+    out = tmp_path / "SALIDA.CSV"
+
+    write_output(pd.DataFrame({"a": [1]}), str(out), "csv")
+
+    assert out.exists()

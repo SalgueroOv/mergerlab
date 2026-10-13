@@ -461,15 +461,18 @@ export default function App() {
   const handleMerge = useCallback(async () => {
     if (!canMerge) return;
 
+    const safeName = sanitizeFileName(outputFileName) || "combinado";
+    const outputPath = joinPath(destinationFolder, `${safeName}.${outputFormat}`);
+
+    // Si el archivo de salida ya existe, el proceso principal pregunta antes de reemplazarlo.
+    if (!(await window.electronAPI.confirmOverwrite(outputPath))) return;
+
     setIsProcessing(true);
     setProgressState("running");
     setProgress(0);
     setProcessedCount(null);
     setResultPath(null);
     setStatusMessage(t("status.startingMerge"));
-
-    const safeName = sanitizeFileName(outputFileName) || "combinado";
-    const outputPath = joinPath(destinationFolder, `${safeName}.${outputFormat}`);
 
     try {
       const joinKeysPayload = Object.fromEntries(files.map((f) => [f.path, joinKeys[f.path] || ""]));

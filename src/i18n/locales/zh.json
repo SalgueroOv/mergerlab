@@ -246,6 +246,8 @@
     "output_dir_missing": "目标文件夹不存在：{{dir}}",
     "output_dir_no_permission": "对目标文件夹没有写入权限：{{dir}}",
     "output_file_locked": "对 “{{path}}” 没有写入权限。如果该文件已在其他程序中打开，请先关闭，或选择其他位置。",
+    "output_extension_mismatch": "输出文件的扩展名（{{ext}}）与所选格式（{{expected}}）不一致。",
+    "unauthorized": "未授权：窗口无法通过内部引擎的身份验证。请重新启动应用程序。",
     "output_write_error": "无法保存输出文件：{{detail}}",
     "xls_library_missing": "缺少用于生成 .xls 文件的 “xlwt” 库。",
     "xls_row_limit": "合并结果共有 {{rows}} 行，超出经典 .xls 格式 {{limit}} 行的限制。请改用 .xlsx、.csv 或 .ods。",

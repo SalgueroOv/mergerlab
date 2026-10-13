@@ -525,6 +525,23 @@ def join_files(
     return result
 
 
+def validate_output_extension(output_path, output_format):
+    """Comprueba que la extensión de `output_path` coincide con `output_format`.
+
+    Evita que la API escriba un archivo con una extensión arbitraria (p. ej. `.bat`) aunque el
+    contenido sea una hoja de cálculo. Lanza `MergeError` con `code="output_extension_mismatch"`.
+    """
+    expected = f".{output_format.lower()}"
+    actual = _extension_of(output_path)
+    if actual != expected:
+        raise MergeError(
+            f"La extensión del archivo de salida ('{actual or 'ninguna'}') no coincide con el "
+            f"formato elegido ('{expected}').",
+            code="output_extension_mismatch",
+            params={"ext": actual or "-", "expected": expected},
+        )
+
+
 def write_output(df, output_path, output_format, csv_separator=","):
     """Guarda `df` en `output_path` con el formato `output_format` (`xlsx`, `xls`, `csv` u `ods`).
 
@@ -553,6 +570,8 @@ def write_output(df, output_path, output_format, csv_separator=","):
             code="unsupported_output_csv_separator",
             params={"separator": csv_separator, "allowed": " ".join(sorted(OUTPUT_CSV_SEPARATORS))},
         )
+
+    validate_output_extension(output_path, output_format)
 
     output_dir = os.path.dirname(output_path) or "."
     if not os.path.isdir(output_dir):

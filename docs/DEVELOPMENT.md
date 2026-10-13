@@ -228,6 +228,16 @@ La app muestra la sección en español si su idioma es `es` y la inglesa en cual
 esos marcadores se muestra el texto tal cual; sin notas, el aviso sale sin ese bloque. Tests:
 `npm test`.
 
+## Seguridad del backend local
+
+El backend escucha en `127.0.0.1` con un puerto aleatorio, pero eso no impide que una web abierta
+en el navegador le haga peticiones. Por eso Electron genera un token por ejecución
+(`MERGERLAB_TOKEN`), lo pasa al backend por variable de entorno y al renderer vía
+`get-backend-port`; `src/api.js` lo envía en `X-Auth-Token` y `server.py` responde 401 sin él.
+Si lanzas `python backend/server.py` a mano para depurar, define antes `MERGERLAB_TOKEN`.
+Además, `/api/merge` solo guarda en la extensión que corresponde al formato elegido, y la app
+pide confirmación antes de reemplazar un archivo de salida existente.
+
 ## Columna clave con nombres distintos (modo join)
 
 Cada archivo tiene su propio selector de columna clave (`JoinPicker.jsx`) — no hace falta que se

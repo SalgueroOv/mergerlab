@@ -248,6 +248,8 @@
     "output_dir_missing": "La cartella di destinazione non esiste: {{dir}}",
     "output_dir_no_permission": "Nessun permesso di scrittura nella cartella di destinazione: {{dir}}",
     "output_file_locked": "Nessun permesso di scrittura per '{{path}}'. Chiudi il file se è aperto in un altro programma, oppure scegli un'altra posizione.",
+    "output_extension_mismatch": "L'estensione del file di output ({{ext}}) non corrisponde al formato scelto ({{expected}}).",
+    "unauthorized": "Non autorizzato: la finestra non è riuscita ad autenticarsi con il motore interno. Riavvia l'applicazione.",
     "output_write_error": "Impossibile salvare il file di output: {{detail}}",
     "xls_library_missing": "La libreria 'xlwt' non è disponibile per generare file .xls.",
     "xls_row_limit": "Il risultato combinato ha {{rows}} righe, che supera il limite di {{limit}} righe del formato .xls classico. Usa invece .xlsx, .csv o .ods.",

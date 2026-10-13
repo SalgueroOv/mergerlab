@@ -248,6 +248,8 @@
     "output_dir_missing": "Der Zielordner existiert nicht: {{dir}}",
     "output_dir_no_permission": "Keine Schreibberechtigung im Zielordner: {{dir}}",
     "output_file_locked": "Keine Schreibberechtigung für '{{path}}'. Schließe die Datei, falls sie in einem anderen Programm geöffnet ist, oder wähle einen anderen Speicherort.",
+    "output_extension_mismatch": "Die Dateiendung der Ausgabedatei ({{ext}}) passt nicht zum gewählten Format ({{expected}}).",
+    "unauthorized": "Nicht autorisiert: Das Fenster konnte sich nicht beim internen Modul authentifizieren. Starte die Anwendung neu.",
     "output_write_error": "Die Ausgabedatei konnte nicht gespeichert werden: {{detail}}",
     "xls_library_missing": "Die Bibliothek 'xlwt' ist nicht verfügbar, um .xls-Dateien zu erzeugen.",
     "xls_row_limit": "Das kombinierte Ergebnis hat {{rows}} Zeilen und überschreitet damit das Limit von {{limit}} Zeilen des klassischen .xls-Formats. Verwende stattdessen .xlsx, .csv oder .ods.",
