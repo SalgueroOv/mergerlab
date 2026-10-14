@@ -171,6 +171,105 @@ def test_merge_left_anti_escribe_las_filas_sin_coincidencia(client, tmp_path):
     assert result.values.tolist() == [["00123", "Ana"], ["", "Cora"]]
 
 
+# ---- quitar filas duplicadas ----
+
+
+def _two_csv_with_a_repeated_row(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("id,nombre\n1,Ana\n2,Beto\n1,Ana\n", encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("id,nombre\n2,Beto\n3,Cora\n", encoding="utf-8")
+    return str(a), str(b)
+
+
+def test_merge_quita_filas_duplicadas_al_apilar(client, tmp_path):
+    a, b = _two_csv_with_a_repeated_row(tmp_path)
+    out = tmp_path / "salida.csv"
+
+    status = _run_merge(
+        client,
+        {
+            "files": [a, b],
+            "output_format": "csv",
+            "output_path": str(out),
+            "mode": "concat",
+            "add_source_column": True,
+            "remove_duplicates": True,
+        },
+    )
+
+    assert status["status"] == "done", status
+    assert status["code"] == "merge_done_duplicates"
+    assert status["params"] == {"duplicatesRemoved": 2, "count": 2}
+    assert "Se quitaron 2 filas duplicadas." in status["message"]
+    result = pd.read_csv(out, dtype=str, encoding="utf-8-sig")
+    # la columna de origen no impide detectar la fila de "b" repetida de "a", y se conserva
+    assert result.values.tolist() == [["a.csv", "1", "Ana"], ["a.csv", "2", "Beto"], ["b.csv", "3", "Cora"]]
+
+
+def test_merge_sin_la_opcion_no_quita_duplicados(client, tmp_path):
+    a, b = _two_csv_with_a_repeated_row(tmp_path)
+    out = tmp_path / "salida.csv"
+
+    status = _run_merge(
+        client,
+        {"files": [a, b], "output_format": "csv", "output_path": str(out), "mode": "concat"},
+    )
+
+    assert status["status"] == "done", status
+    assert status["code"] == "merge_done"
+    assert status["params"] == {"duplicatesRemoved": 0}
+    assert len(pd.read_csv(out)) == 5
+
+
+def test_merge_con_la_opcion_y_sin_duplicados_mantiene_merge_done(client, tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("id\n1\n2\n", encoding="utf-8")
+    out = tmp_path / "salida.csv"
+
+    status = _run_merge(
+        client,
+        {
+            "files": [str(a)],
+            "output_format": "csv",
+            "output_path": str(out),
+            "mode": "concat",
+            "remove_duplicates": True,
+        },
+    )
+
+    assert status["code"] == "merge_done"
+    assert status["params"] == {"duplicatesRemoved": 0}
+
+
+def test_merge_quita_filas_duplicadas_en_un_join(client, tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("dni,nombre\n001,Ana\n001,Ana\n002,Beto\n", encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("dni,ciudad\n001,Lima\n002,Quito\n", encoding="utf-8")
+    out = tmp_path / "salida.csv"
+
+    status = _run_merge(
+        client,
+        {
+            "files": [str(a), str(b)],
+            "output_format": "csv",
+            "output_path": str(out),
+            "mode": "join",
+            "join_keys": {str(a): "dni", str(b): "dni"},
+            "join_type": "inner",
+            "remove_duplicates": True,
+        },
+    )
+
+    assert status["status"] == "done", status
+    assert status["code"] == "merge_done_duplicates"
+    assert status["params"] == {"duplicatesRemoved": 1, "count": 1}
+    assert status["message"] == "Combinación completada. Se quitó 1 fila duplicada."
+    result = pd.read_csv(out, dtype=str, encoding="utf-8-sig")
+    assert result.values.tolist() == [["001", "Ana", "Lima"], ["002", "Beto", "Quito"]]
+
+
 # ---- seguridad: token, CORS y extensión de salida ----
 
 

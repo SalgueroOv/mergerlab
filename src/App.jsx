@@ -39,6 +39,7 @@ export default function App() {
   const [destinationFolder, setDestinationFolder] = useState("");
   const [addSourceColumn, setAddSourceColumn] = useState(false);
   const [allAsText, setAllAsText] = useState(false);
+  const [removeDuplicates, setRemoveDuplicates] = useState(false);
   const [outputCsvSeparator, setOutputCsvSeparator] = useState(",");
 
   // csvSeparators: { [filePath]: separador } — solo los CSV cuyo separador eligió el usuario a
@@ -67,6 +68,10 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState("");
   const [processedCount, setProcessedCount] = useState(null);
   const [resultPath, setResultPath] = useState(null);
+  // Estado final del backend (`{code, message, params}`) cuando trae algo que contar además de
+  // "completado" (hoy, las filas duplicadas quitadas); se traduce al pintar, para que siga el
+  // idioma actual.
+  const [doneNotice, setDoneNotice] = useState(null);
   const [backendError, setBackendError] = useState(null);
   const [showTour, setShowTour] = useState(false);
   const [theme, setTheme] = useState("system");
@@ -94,8 +99,8 @@ export default function App() {
   }, []);
 
   // Preferencias recordadas entre sesiones (carpeta de destino, formato, separador del CSV de
-  // salida, modo y tipo de join). `prefsLoaded` evita guardar los valores por defecto antes de
-  // haber leído los guardados.
+  // salida, modo, tipo de join y quitar filas duplicadas). `prefsLoaded` evita guardar los
+  // valores por defecto antes de haber leído los guardados.
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   useEffect(() => {
     window.electronAPI
@@ -106,6 +111,7 @@ export default function App() {
         if (prefs.outputCsvSeparator) setOutputCsvSeparator(prefs.outputCsvSeparator);
         if (prefs.mode) setMode(prefs.mode);
         if (prefs.joinType) setJoinType(prefs.joinType);
+        if (typeof prefs.removeDuplicates === "boolean") setRemoveDuplicates(prefs.removeDuplicates);
       })
       .finally(() => setPrefsLoaded(true));
   }, []);
@@ -118,8 +124,9 @@ export default function App() {
       outputCsvSeparator,
       mode,
       joinType,
+      removeDuplicates,
     });
-  }, [prefsLoaded, destinationFolder, outputFormat, outputCsvSeparator, mode, joinType]);
+  }, [prefsLoaded, destinationFolder, outputFormat, outputCsvSeparator, mode, joinType, removeDuplicates]);
 
   const handleThemeChange = useCallback((value) => {
     setTheme(value);
@@ -419,6 +426,7 @@ export default function App() {
     setFiles([]);
     setProgressState("hidden");
     setResultPath(null);
+    setDoneNotice(null);
   }, []);
 
   const handleBrowseFolder = useCallback(async () => {
@@ -476,6 +484,7 @@ export default function App() {
     setProgress(0);
     setProcessedCount(null);
     setResultPath(null);
+    setDoneNotice(null);
     setStatusMessage(t("status.startingMerge"));
 
     try {
@@ -488,6 +497,7 @@ export default function App() {
           addSourceColumn,
           sourceColumnName: t("stackOptions.sourceColumnName"),
           allAsText,
+          removeDuplicates,
           sheets: selectedSheets,
           mode,
           joinKeys: joinKeysPayload,
@@ -505,6 +515,7 @@ export default function App() {
 
       setProgress(100);
       setResultPath(finalStatus.result_path || outputPath);
+      setDoneNotice(finalStatus.params?.duplicatesRemoved > 0 ? finalStatus : null);
       setProgressState("success");
     } catch (err) {
       setStatusMessage(backendText(err, t, t("status.unexpectedError")));
@@ -520,6 +531,7 @@ export default function App() {
     destinationFolder,
     addSourceColumn,
     allAsText,
+    removeDuplicates,
     selectedSheets,
     mode,
     joinKeys,
@@ -716,6 +728,15 @@ export default function App() {
                 />
                 {t("readOptions.allAsText")}
               </label>
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={removeDuplicates}
+                  disabled={isProcessing}
+                  onChange={(e) => setRemoveDuplicates(e.target.checked)}
+                />
+                {t("readOptions.removeDuplicates")}
+              </label>
             </div>
 
             {mode === "concat" && (
@@ -745,6 +766,7 @@ export default function App() {
           processed={processedCount}
           total={files.length}
           resultPath={resultPath}
+          note={doneNotice ? backendText(doneNotice, t) : null}
           onOpenFolder={(p) => window.electronAPI.openContainingFolder(p)}
         />
 

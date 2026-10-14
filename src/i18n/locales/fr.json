@@ -89,7 +89,8 @@
     "sourceColumnName": "fichier_source"
   },
   "readOptions": {
-    "allAsText": "Lire toutes les colonnes comme du texte (conserve les zéros initiaux)"
+    "allAsText": "Lire toutes les colonnes comme du texte (conserve les zéros initiaux)",
+    "removeDuplicates": "Supprimer les lignes en double"
   },
   "progress": {
     "completedPrefix": "Terminé — fichier enregistré dans",
@@ -247,6 +248,8 @@
     "join_file_progress": "{{filename}} combiné ({{index}}/{{total}})",
     "saving_output": "Enregistrement du fichier combiné...",
     "merge_done": "Combinaison terminée.",
+    "merge_done_duplicates_one": "Combinaison terminée. {{count}} ligne en double a été supprimée.",
+    "merge_done_duplicates_other": "Combinaison terminée. {{count}} lignes en double ont été supprimées.",
     "no_files_selected": "Aucun fichier n'a été sélectionné.",
     "unsupported_output_format": "Format de sortie non pris en charge : '{{format}}'.",
     "no_output_path": "Aucun chemin d'enregistrement n'a été indiqué.",

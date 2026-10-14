@@ -91,7 +91,8 @@
     "sourceColumnName": "исходный_файл"
   },
   "readOptions": {
-    "allAsText": "Читать все столбцы как текст (сохраняет ведущие нули)"
+    "allAsText": "Читать все столбцы как текст (сохраняет ведущие нули)",
+    "removeDuplicates": "Удалить повторяющиеся строки"
   },
   "progress": {
     "completedPrefix": "Готово — файл сохранён в",
@@ -251,6 +252,10 @@
     "join_file_progress": "Объединён {{filename}} ({{index}}/{{total}})",
     "saving_output": "Сохранение объединённого файла...",
     "merge_done": "Объединение завершено.",
+    "merge_done_duplicates_one": "Объединение завершено. Удалена {{count}} повторяющаяся строка.",
+    "merge_done_duplicates_few": "Объединение завершено. Удалено {{count}} повторяющиеся строки.",
+    "merge_done_duplicates_many": "Объединение завершено. Удалено {{count}} повторяющихся строк.",
+    "merge_done_duplicates_other": "Объединение завершено. Удалено {{count}} повторяющихся строк.",
     "no_files_selected": "Файлы не выбраны.",
     "unsupported_output_format": "Неподдерживаемый формат вывода: «{{format}}».",
     "no_output_path": "Не указан путь сохранения.",

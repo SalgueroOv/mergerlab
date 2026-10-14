@@ -89,7 +89,8 @@
     "sourceColumnName": "quelldatei"
   },
   "readOptions": {
-    "allAsText": "Alle Spalten als Text lesen (führende Nullen bleiben erhalten)"
+    "allAsText": "Alle Spalten als Text lesen (führende Nullen bleiben erhalten)",
+    "removeDuplicates": "Doppelte Zeilen entfernen"
   },
   "progress": {
     "completedPrefix": "Abgeschlossen — Datei gespeichert unter",
@@ -247,6 +248,8 @@
     "join_file_progress": "{{filename}} kombiniert ({{index}}/{{total}})",
     "saving_output": "Kombinierte Datei wird gespeichert...",
     "merge_done": "Kombination abgeschlossen.",
+    "merge_done_duplicates_one": "Kombination abgeschlossen. {{count}} doppelte Zeile wurde entfernt.",
+    "merge_done_duplicates_other": "Kombination abgeschlossen. {{count}} doppelte Zeilen wurden entfernt.",
     "no_files_selected": "Es wurden keine Dateien ausgewählt.",
     "unsupported_output_format": "Nicht unterstütztes Ausgabeformat: '{{format}}'.",
     "no_output_path": "Es wurde kein Speicherpfad angegeben.",

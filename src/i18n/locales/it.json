@@ -89,7 +89,8 @@
     "sourceColumnName": "file_origine"
   },
   "readOptions": {
-    "allAsText": "Leggi tutte le colonne come testo (mantiene gli zeri iniziali)"
+    "allAsText": "Leggi tutte le colonne come testo (mantiene gli zeri iniziali)",
+    "removeDuplicates": "Rimuovi le righe duplicate"
   },
   "progress": {
     "completedPrefix": "Completato — file salvato in",
@@ -247,6 +248,8 @@
     "join_file_progress": "Combinato {{filename}} ({{index}}/{{total}})",
     "saving_output": "Salvataggio del file combinato...",
     "merge_done": "Combinazione completata.",
+    "merge_done_duplicates_one": "Combinazione completata. È stata rimossa {{count}} riga duplicata.",
+    "merge_done_duplicates_other": "Combinazione completata. Sono state rimosse {{count}} righe duplicate.",
     "no_files_selected": "Non è stato selezionato alcun file.",
     "unsupported_output_format": "Formato di output non supportato: '{{format}}'.",
     "no_output_path": "Non è stato indicato alcun percorso di salvataggio.",

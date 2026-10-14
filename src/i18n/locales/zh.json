@@ -88,7 +88,8 @@
     "sourceColumnName": "来源文件"
   },
   "readOptions": {
-    "allAsText": "将所有列按文本读取（保留前导零）"
+    "allAsText": "将所有列按文本读取（保留前导零）",
+    "removeDuplicates": "删除重复行"
   },
   "progress": {
     "completedPrefix": "已完成 — 文件已保存到",
@@ -245,6 +246,7 @@
     "join_file_progress": "已合并 {{filename}}（{{index}}/{{total}}）",
     "saving_output": "正在保存合并后的文件...",
     "merge_done": "合并已完成。",
+    "merge_done_duplicates_other": "合并已完成。已删除 {{count}} 行重复数据。",
     "no_files_selected": "未选择任何文件。",
     "unsupported_output_format": "不支持的输出格式：“{{format}}”。",
     "no_output_path": "未指定保存路径。",

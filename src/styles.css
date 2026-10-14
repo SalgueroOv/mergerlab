@@ -644,6 +644,11 @@ body {
   flex-shrink: 0;
 }
 
+.progress-note {
+  flex-shrink: 0;
+  color: var(--success);
+}
+
 .link-btn {
   border: none;
   background: transparent;

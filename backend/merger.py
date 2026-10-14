@@ -435,6 +435,11 @@ def merge_files(
     Los espacios al principio y al final de los nombres de columna se ignoran, para que
     `Nombre` y `Nombre ` se apilen en una sola columna. Las columnas enteras se mantienen como
     enteros (`Int64`) aunque falten en otros archivos, en vez de pasar a decimales (`1` -> `1.0`).
+
+    Si se añadió la columna de origen, su nombre real (con el sufijo, si lo lleva) queda en
+    `resultado.attrs["source_column"]`, para que quien llama pueda localizarla sin adivinar el
+    sufijo (p. ej. para ignorarla en `drop_duplicate_rows`). Sin columna de origen, esa clave no
+    existe en `attrs`.
     """
     if not file_paths:
         raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
@@ -470,6 +475,7 @@ def merge_files(
     if not frames:
         raise MergeError("Los archivos seleccionados no contienen datos para combinar.", code="no_data")
 
+    column_name = None
     if add_source_column:
         taken = {col for frame in frames for col in frame.columns}
         column_name = _unique_column_name(source_column_name or DEFAULT_SOURCE_COLUMN, taken)
@@ -478,7 +484,10 @@ def merge_files(
             for frame, source in zip(frames, frame_sources)
         ]
 
-    return pd.concat(frames, ignore_index=True, sort=False)
+    result = pd.concat(frames, ignore_index=True, sort=False)
+    if column_name is not None:
+        result.attrs["source_column"] = column_name
+    return result
 
 
 def _nullable_integers(df):
@@ -690,6 +699,33 @@ def _anti_join(frames, source_index):
     # `other_keys` no contiene nulos ni "", así que una clave vacía del origen nunca coincide.
     matched = source_df[source_key].isin(other_keys)
     return source_df.loc[~matched].reset_index(drop=True)
+
+
+def drop_duplicate_rows(df, ignore_columns=()):
+    """Quita las filas repetidas de `df` y devuelve `(df_sin_duplicados, filas_eliminadas)`.
+
+    Se aplica al resultado final (después de apilar o del join). Una fila es duplicada si es
+    idéntica a una anterior en todas las columnas, salvo las de `ignore_columns`; se conserva la
+    primera aparición, en el orden del resultado, y el índice se renumera desde 0. Las columnas
+    ignoradas (p. ej. la de archivo de origen, ver `merge_files`) no cuentan al comparar, pero se
+    conservan en el resultado con el valor de la fila que se queda. Los nombres de
+    `ignore_columns` que no estén en `df` se ignoran.
+
+    Sigue el criterio de `DataFrame.duplicated` de pandas: dos celdas vacías (nulas) se
+    consideran iguales. Los valores NO se convierten de tipo para comparar: el número `1` y el
+    texto `"1"` son distintos (puede pasar al apilar una columna que en un archivo se leyó como
+    número y en otro como texto; con "Leer todas las columnas como texto" ambos serían `"1"`).
+    """
+    ignored = set(ignore_columns)
+    subset = list(dict.fromkeys(c for c in df.columns if c not in ignored))
+    if df.empty or not subset:
+        return df.reset_index(drop=True), 0
+
+    duplicated = df.duplicated(subset=subset, keep="first")
+    removed = int(duplicated.sum())
+    if not removed:
+        return df.reset_index(drop=True), 0
+    return df.loc[~duplicated].reset_index(drop=True), removed
 
 
 def validate_output_extension(output_path, output_format):

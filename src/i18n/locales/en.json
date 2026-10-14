@@ -89,7 +89,8 @@
     "sourceColumnName": "source_file"
   },
   "readOptions": {
-    "allAsText": "Read all columns as text (keeps leading zeros)"
+    "allAsText": "Read all columns as text (keeps leading zeros)",
+    "removeDuplicates": "Remove duplicate rows"
   },
   "progress": {
     "completedPrefix": "Done — file saved to",
@@ -247,6 +248,8 @@
     "join_file_progress": "Combined {{filename}} ({{index}}/{{total}})",
     "saving_output": "Saving combined file...",
     "merge_done": "Combination completed.",
+    "merge_done_duplicates_one": "Combination completed. {{count}} duplicate row was removed.",
+    "merge_done_duplicates_other": "Combination completed. {{count}} duplicate rows were removed.",
     "no_files_selected": "No files were selected.",
     "unsupported_output_format": "Unsupported output format: '{{format}}'.",
     "no_output_path": "No save path was specified.",

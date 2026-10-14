@@ -113,6 +113,7 @@ const PREFERENCE_VALIDATORS = {
   outputCsvSeparator: (v) => [",", ";"].includes(v),
   mode: (v) => ["concat", "join"].includes(v),
   joinType: (v) => ["inner", "left", "right", "outer", "left_anti", "right_anti"].includes(v),
+  removeDuplicates: (v) => typeof v === "boolean",
 };
 
 function preferencesPath() {

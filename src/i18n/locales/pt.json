@@ -89,7 +89,8 @@
     "sourceColumnName": "arquivo_origem"
   },
   "readOptions": {
-    "allAsText": "Ler todas as colunas como texto (mantém zeros à esquerda)"
+    "allAsText": "Ler todas as colunas como texto (mantém zeros à esquerda)",
+    "removeDuplicates": "Remover linhas duplicadas"
   },
   "progress": {
     "completedPrefix": "Concluído — arquivo salvo em",
@@ -247,6 +248,8 @@
     "join_file_progress": "Combinado {{filename}} ({{index}}/{{total}})",
     "saving_output": "Salvando arquivo combinado...",
     "merge_done": "Combinação concluída.",
+    "merge_done_duplicates_one": "Combinação concluída. Foi removida {{count}} linha duplicada.",
+    "merge_done_duplicates_other": "Combinação concluída. Foram removidas {{count}} linhas duplicadas.",
     "no_files_selected": "Nenhum arquivo foi selecionado.",
     "unsupported_output_format": "Formato de saída não suportado: '{{format}}'.",
     "no_output_path": "Nenhum caminho de salvamento foi indicado.",

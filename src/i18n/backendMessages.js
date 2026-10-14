@@ -21,7 +21,9 @@ export function backendText(source, t, fallback = "") {
   const code = source.code;
   const params = source.params || {};
 
-  if (code && i18n.exists(`backend.${code}`)) {
+  // `exists` recibe `params` para reconocer también los códigos que solo tienen claves de plural
+  // (`_one`/`_other`...): sin `count`, i18next no las encuentra y se caería a `message` en español.
+  if (code && i18n.exists(`backend.${code}`, params)) {
     return t(`backend.${code}`, params);
   }
 

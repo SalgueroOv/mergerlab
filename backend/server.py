@@ -36,6 +36,7 @@ from merger import (  # noqa: E402
     OUTPUT_CSV_SEPARATORS,
     SUPPORTED_OUTPUT_FORMATS,
     MergeError,
+    drop_duplicate_rows,
     inspect_csv,
     join_files,
     list_sheets,
@@ -150,8 +151,10 @@ def merge():
     `_csv_separators_from`) y `output_csv_separator` (`","` por defecto, solo aplica si
     `output_format` es `"csv"`), `sheets` (`{ruta: hoja}` para leer solo una hoja de un Excel),
     `add_source_column` y `source_column_name` (solo modo `"concat"`:
-    añade una columna con el archivo de origen de cada fila), y `all_as_text` (leer todas las
-    celdas como texto). Devuelve `{"job_id": ...}` con 202 si todo es válido; el
+    añade una columna con el archivo de origen de cada fila), `all_as_text` (leer todas las
+    celdas como texto) y `remove_duplicates` (quitar del resultado final las filas repetidas, en
+    ambos modos; ver `merger.drop_duplicate_rows`, que ignora la columna de origen al comparar).
+    Devuelve `{"job_id": ...}` con 202 si todo es válido; el
     progreso y el resultado se consultan después con `GET /api/status/<job_id>`. El trabajo en
     sí (lectura, combinación y escritura) lo hace `_run_merge_job` en background para no
     bloquear la petición HTTP mientras se procesan archivos grandes.
@@ -170,6 +173,7 @@ def merge():
     if not isinstance(source_column_name, str) or not source_column_name.strip():
         source_column_name = DEFAULT_SOURCE_COLUMN
     all_as_text = bool(payload.get("all_as_text"))
+    remove_duplicates = bool(payload.get("remove_duplicates"))
     sheets = _sheets_from(payload)
 
     if not files:
@@ -251,6 +255,7 @@ def merge():
             source_column_name.strip(),
             all_as_text,
             sheets,
+            remove_duplicates,
         ),
         daemon=True,
     )
@@ -354,6 +359,7 @@ def _run_merge_job(
     source_column_name=DEFAULT_SOURCE_COLUMN,
     all_as_text=False,
     sheets=None,
+    remove_duplicates=False,
 ):
     """Ejecuta la combinación completa (lectura + join/concat + escritura) y actualiza `jobs[job_id]`.
 
@@ -361,6 +367,13 @@ def _run_merge_job(
     devuelve nada: todo el resultado (progreso, estado final, `result_path` o error) se comunica
     escribiendo en `jobs` a través de `_set_job`, que es lo que lee `GET /api/status/<job_id>`.
     La lectura ocupa el 80% del progreso reportado; la escritura, el 20% restante.
+
+    Con `remove_duplicates`, antes de escribir se quitan las filas repetidas del resultado con
+    `drop_duplicate_rows`, ignorando la columna de archivo de origen si `merge_files` la añadió
+    (su nombre real llega en `combined.attrs["source_column"]`). El estado final (`"done"`) lleva
+    siempre `params.duplicatesRemoved` (0 si la opción está desactivada o no había repetidas);
+    si es mayor que 0, `code` es `"merge_done_duplicates"` en vez de `"merge_done"` y `params`
+    lleva también `count` (el mismo número), que i18next usa para elegir singular o plural.
     """
     total_steps = len(files) + 1
 
@@ -398,6 +411,13 @@ def _run_merge_job(
                 sheets=sheets,
             )
 
+        duplicates_removed = 0
+        if remove_duplicates:
+            source_column = combined.attrs.get("source_column")
+            combined, duplicates_removed = drop_duplicate_rows(
+                combined, ignore_columns=[source_column] if source_column else ()
+            )
+
         _set_job(
             job_id,
             status="running",
@@ -408,13 +428,25 @@ def _run_merge_job(
         )
         result_path = write_output(combined, output_path, output_format, output_csv_separator)
 
+        params = {"duplicatesRemoved": duplicates_removed}
+        if duplicates_removed == 1:
+            message = "Combinación completada. Se quitó 1 fila duplicada."
+        elif duplicates_removed:
+            message = f"Combinación completada. Se quitaron {duplicates_removed} filas duplicadas."
+        else:
+            message = "Combinación completada."
+        if duplicates_removed:
+            code = "merge_done_duplicates"
+            params["count"] = duplicates_removed
+        else:
+            code = "merge_done"
         _set_job(
             job_id,
             status="done",
             progress=100,
-            message="Combinación completada.",
-            code="merge_done",
-            params={},
+            message=message,
+            code=code,
+            params=params,
             result_path=result_path,
         )
     except MergeError as exc:

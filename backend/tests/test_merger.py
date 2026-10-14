@@ -15,6 +15,7 @@ import merger
 from merger import (
     MergeError,
     detect_csv_separator,
+    drop_duplicate_rows,
     inspect_csv,
     join_files,
     list_sheets,
@@ -597,6 +598,14 @@ def test_merge_files_columna_de_origen_no_pisa_una_columna_existente(tmp_path):
     assert result["archivo_origen"].iloc[0] == "x"
     assert pd.isna(result["archivo_origen"].iloc[1])
     assert result["archivo_origen_2"].tolist() == ["a.csv", "b.csv"]
+    # el nombre real (con sufijo) queda expuesto para quien tenga que localizar la columna
+    assert result.attrs["source_column"] == "archivo_origen_2"
+
+
+def test_merge_files_sin_columna_de_origen_no_la_expone_en_attrs(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1]})
+
+    assert "source_column" not in merge_files([a]).attrs
 
 
 def test_merge_files_ignora_espacios_en_los_nombres_de_columna(tmp_path):
@@ -830,3 +839,93 @@ def test_xls_autentico_sigue_leyendose_con_xlrd(tmp_path):
     write_output(pd.DataFrame({"id": [1, 2]}), str(path), "xls")
 
     assert merge_files([str(path)])["id"].tolist() == [1, 2]
+
+
+# ---- drop_duplicate_rows (quitar filas duplicadas del resultado) ----
+
+
+def test_drop_duplicate_rows_quita_y_cuenta_duplicados_exactos_al_apilar(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 2], "nombre": ["Ana", "Beto"]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2, 3], "nombre": ["Beto", "Cora"]})
+
+    result, removed = drop_duplicate_rows(merge_files([a, b]))
+
+    assert removed == 1
+    assert result.values.tolist() == [[1, "Ana"], [2, "Beto"], [3, "Cora"]]
+    assert list(result.index) == [0, 1, 2]
+
+
+def test_drop_duplicate_rows_conserva_la_primera_aparicion_en_orden(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [3, 1, 3, 2, 1], "n": ["c", "a", "c", "b", "a"]})
+
+    result, removed = drop_duplicate_rows(merge_files([a]))
+
+    assert removed == 2
+    assert result.values.tolist() == [[3, "c"], [1, "a"], [2, "b"]]
+    # índice renumerado: no quedan huecos de las filas quitadas
+    assert list(result.index) == [0, 1, 2]
+
+
+def test_drop_duplicate_rows_ignora_la_columna_de_origen_al_comparar(tmp_path):
+    a = _write_csv(tmp_path / "enero.csv", {"id": [1, 2], "nombre": ["Ana", "Beto"]})
+    b = _write_csv(tmp_path / "febrero.csv", {"id": [1], "nombre": ["Ana"]})
+    combined = merge_files([a, b], add_source_column=True)
+
+    # Sin ignorarla, la fila repetida de febrero no es duplicada (cambia el archivo de origen).
+    assert drop_duplicate_rows(combined)[1] == 0
+
+    result, removed = drop_duplicate_rows(combined, ignore_columns=[combined.attrs["source_column"]])
+
+    assert removed == 1
+    assert list(result.columns) == ["archivo_origen", "id", "nombre"]
+    # la columna de origen se conserva con el valor de la fila que se queda (la primera)
+    assert result.values.tolist() == [["enero.csv", 1, "Ana"], ["enero.csv", 2, "Beto"]]
+
+
+def test_drop_duplicate_rows_considera_iguales_las_celdas_vacias(tmp_path):
+    path = tmp_path / "a.csv"
+    path.write_text("id,nota\n1,\n1,\n2,x\n", encoding="utf-8")
+
+    result, removed = drop_duplicate_rows(merge_files([str(path)]))
+
+    assert removed == 1
+    assert result["id"].tolist() == [1, 2]
+    # también un `None` y un `NaN` en la misma columna cuentan como la misma celda vacía
+    _, removed_mixed = drop_duplicate_rows(pd.DataFrame({"a": ["x", "x"], "b": [None, float("nan")]}))
+    assert removed_mixed == 1
+
+
+def test_drop_duplicate_rows_no_iguala_numero_y_texto(tmp_path):
+    # En "a" la columna x mezcla texto ("1", "z") y se lee como texto; en "b" solo tiene números y
+    # se lee como entero. Al apilar, la misma columna tiene el texto "1" y el número 1: son
+    # valores de tipo distinto y no se convierten para comparar.
+    a = _write_csv(tmp_path / "a.csv", {"x": ["1", "z"], "y": ["foo", "bar"]})
+    b = _write_csv(tmp_path / "b.csv", {"x": [1], "y": ["foo"]})
+    combined = merge_files([a, b])
+    assert isinstance(combined["x"].iloc[0], str)
+    assert not isinstance(combined["x"].iloc[2], str)
+
+    result, removed = drop_duplicate_rows(combined)
+
+    assert removed == 0
+    assert len(result) == 3
+
+
+def test_drop_duplicate_rows_sin_duplicados_devuelve_cero(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 2, 3], "n": ["a", "b", "c"]})
+    combined = merge_files([a])
+
+    result, removed = drop_duplicate_rows(combined)
+
+    assert removed == 0
+    pd.testing.assert_frame_equal(result, combined)
+
+
+def test_drop_duplicate_rows_tambien_en_el_resultado_de_un_join(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 1, 2], "n": ["a", "a", "b"]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [1, 2], "c": ["x", "y"]})
+
+    result, removed = drop_duplicate_rows(join_files([a, b], ["id", "id"], "left"))
+
+    assert removed == 1
+    assert result.values.tolist() == [["1", "a", "x"], ["2", "b", "y"]]

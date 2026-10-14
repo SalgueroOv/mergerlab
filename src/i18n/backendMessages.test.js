@@ -46,4 +46,23 @@ describe("backendText", () => {
       expect(i18next.exists(`backend.${code}`)).toBe(true);
     }
   });
+
+  it("traduce el estado final con filas duplicadas quitadas en singular y plural", async () => {
+    const done = (count) => ({
+      code: "merge_done_duplicates",
+      params: { duplicatesRemoved: count, count },
+      message: "respaldo",
+    });
+
+    expect(backendText(done(1), t)).toBe("Combination completed. 1 duplicate row was removed.");
+    expect(backendText(done(3), t)).toBe("Combination completed. 3 duplicate rows were removed.");
+
+    await i18next.changeLanguage("es");
+    try {
+      expect(backendText(done(1), t)).toBe("Combinación completada. Se quitó 1 fila duplicada.");
+      expect(backendText(done(3), t)).toBe("Combinación completada. Se quitaron 3 filas duplicadas.");
+    } finally {
+      await i18next.changeLanguage("en");
+    }
+  });
 });
