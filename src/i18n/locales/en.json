@@ -57,7 +57,12 @@
     "noColumns": "No readable columns",
     "chooseColumn": "Choose a column...",
     "keyAriaLabel": "Key column in {{file}}",
-    "note": "Each file can use a differently named column (for example \"ID_Cliente\" in one and \"Codigo Cliente\" in another): the app treats them as the same key when combining."
+    "note": "Each file can use a differently named column (for example \"ID_Cliente\" in one and \"Codigo Cliente\" in another): the app treats them as the same key when combining.",
+    "typeHints": {
+      "left_anti": "Rows from the first file with no match",
+      "right_anti": "Rows from the second file with no match"
+    },
+    "rightAntiTwoFiles": "“Right anti” only works with exactly two files."
   },
   "format": {
     "label": "Output format",
@@ -104,7 +109,8 @@
     "noDestination": "Choose a destination folder to save the result.",
     "joinMinFiles": "You need at least two files to do a join.",
     "readingColumns": "Reading file columns...",
-    "chooseKeyFor": "Choose the key column for: {{files}}."
+    "chooseKeyFor": "Choose the key column for: {{files}}.",
+    "rightAntiTwoFiles": "“Right anti” only works with exactly two files: remove files or choose another join type."
   },
   "status": {
     "startingMerge": "Starting combination...",
@@ -200,6 +206,14 @@
       "outer": {
         "title": "Outer join (full)",
         "description": "All rows from every file are kept, whether they match or not. Missing data is left blank. Example: everyone with health insurance OR a gym membership (or both)."
+      },
+      "left_anti": {
+        "title": "Left anti join (no match in the others)",
+        "description": "Only the rows of the first file whose key doesn't appear in any of the other files are kept, with the first file's columns and nothing else. Rows with an empty key are kept too. Example: everyone with health insurance but NO gym membership."
+      },
+      "right_anti": {
+        "title": "Right anti join (no match in the first)",
+        "description": "The mirror of left anti: only the rows of the second file whose key doesn't appear in the first are kept, with their own columns. Only works with exactly two files. Example: everyone with a gym membership but NO health insurance."
       }
     }
   },
@@ -261,6 +275,7 @@
     "sheet_not_found": "Sheet “{{sheet}}” does not exist in “{{filename}}”.",
     "csv_encoding_error": "Could not read '{{filename}}': the text uses an unrecognized encoding. Save it again as 'CSV UTF-8' and try again.",
     "invalid_csv_separator": "Invalid separator for '{{filename}}': '{{separator}}'. It must be a single character other than a quote.",
-    "unsupported_output_csv_separator": "Unsupported output separator: '{{separator}}'. Allowed separators: {{allowed}}."
+    "unsupported_output_csv_separator": "Unsupported output separator: '{{separator}}'. Allowed separators: {{allowed}}.",
+    "right_anti_two_files": "The 'Rows from the second file with no match' type (right anti) only works with exactly two files."
   }
 }

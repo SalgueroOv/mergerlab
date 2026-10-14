@@ -1,18 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-const JOIN_TYPES = ["inner", "left", "right", "outer"];
+const JOIN_TYPES = ["inner", "left", "right", "outer", "left_anti", "right_anti"];
 
 /** Diagrama de Venn de dos círculos, resaltando la zona que corresponde a cada tipo de join. */
 function VennDiagram({ type }) {
   const highlightA = type === "left" || type === "outer";
   const highlightB = type === "right" || type === "outer";
   const highlightIntersection = type === "inner";
+  // Los "anti" resaltan un círculo menos la intersección (la parte "sin coincidencia"): se
+  // pinta el círculo de origen con una máscara que tapa el otro círculo.
+  const antiSource = type === "left_anti" ? 46 : type === "right_anti" ? 74 : null;
+  const antiOther = type === "left_anti" ? 74 : 46;
 
   return (
     <svg className="venn" viewBox="0 0 120 76" width="90" height="57" aria-hidden="true">
       {highlightA && <circle cx="46" cy="38" r="28" fill="var(--accent)" fillOpacity="0.55" />}
       {highlightB && <circle cx="74" cy="38" r="28" fill="var(--accent)" fillOpacity="0.55" />}
+      {antiSource !== null && (
+        <>
+          <defs>
+            <mask id={`mask-${type}`}>
+              <rect x="0" y="0" width="120" height="76" fill="white" />
+              <circle cx={antiOther} cy="38" r="28" fill="black" />
+            </mask>
+          </defs>
+          <circle
+            cx={antiSource}
+            cy="38"
+            r="28"
+            fill="var(--accent)"
+            fillOpacity="0.55"
+            mask={`url(#mask-${type})`}
+          />
+        </>
+      )}
       {highlightIntersection && (
         <>
           <defs>
@@ -32,8 +54,9 @@ function VennDiagram({ type }) {
 }
 
 /**
- * Botón "?" junto a "Tipo de join" que abre un modal explicando los cuatro tipos de join
- * (inner/left/right/outer) con un diagrama de Venn y un ejemplo por cada uno. Sin props: solo
+ * Botón "?" junto a "Tipo de join" que abre un modal explicando los seis tipos de join
+ * (inner/left/right/outer/left anti/right anti) con un diagrama de Venn y un ejemplo por cada
+ * uno. Sin props: solo
  * gestiona su propio estado de abierto/cerrado.
  */
 export default function JoinTutorial() {

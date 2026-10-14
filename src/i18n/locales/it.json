@@ -57,7 +57,12 @@
     "noColumns": "Nessuna colonna leggibile",
     "chooseColumn": "Scegli una colonna...",
     "keyAriaLabel": "Colonna chiave in {{file}}",
-    "note": "Ogni file può usare una colonna con un nome diverso (ad esempio \"ID_Cliente\" in uno e \"Codigo Cliente\" nell'altro): l'app le tratta come la stessa chiave durante la combinazione."
+    "note": "Ogni file può usare una colonna con un nome diverso (ad esempio \"ID_Cliente\" in uno e \"Codigo Cliente\" nell'altro): l'app le tratta come la stessa chiave durante la combinazione.",
+    "typeHints": {
+      "left_anti": "Righe del primo file senza corrispondenza",
+      "right_anti": "Righe del secondo file senza corrispondenza"
+    },
+    "rightAntiTwoFiles": "«Right anti» funziona solo con esattamente due file."
   },
   "format": {
     "label": "Formato di output",
@@ -104,7 +109,8 @@
     "noDestination": "Scegli una cartella di destinazione per salvare il risultato.",
     "joinMinFiles": "Servono almeno due file per fare un join.",
     "readingColumns": "Lettura delle colonne dei file...",
-    "chooseKeyFor": "Scegli la colonna chiave per: {{files}}."
+    "chooseKeyFor": "Scegli la colonna chiave per: {{files}}.",
+    "rightAntiTwoFiles": "«Right anti» funziona solo con esattamente due file: rimuovi dei file o scegli un altro tipo di join."
   },
   "status": {
     "startingMerge": "Avvio della combinazione...",
@@ -200,6 +206,14 @@
       "outer": {
         "title": "Outer join (completo)",
         "description": "Rimangono tutte le righe di tutti i file, corrispondano o no. I dati mancanti restano vuoti. Esempio: tutti quelli con assicurazione sanitaria O abbonamento in palestra (o entrambi)."
+      },
+      "left_anti": {
+        "title": "Left anti join (senza corrispondenza negli altri)",
+        "description": "Rimangono solo le righe del primo file la cui chiave non compare in nessuno degli altri file, con le colonne del primo file e nient'altro. Rimangono anche le righe con la chiave vuota. Esempio: chi ha l'assicurazione sanitaria ma NON l'abbonamento in palestra."
+      },
+      "right_anti": {
+        "title": "Right anti join (senza corrispondenza nel primo)",
+        "description": "È lo specchio del left anti: rimangono solo le righe del secondo file la cui chiave non compare nel primo, con le loro colonne. Funziona solo con esattamente due file. Esempio: chi ha l'abbonamento in palestra ma NON l'assicurazione sanitaria."
       }
     }
   },
@@ -261,6 +275,7 @@
     "sheet_not_found": "Il foglio «{{sheet}}» non esiste in «{{filename}}».",
     "csv_encoding_error": "Impossibile leggere '{{filename}}': il testo usa una codifica non riconosciuta. Salvalo di nuovo come 'CSV UTF-8' e riprova.",
     "invalid_csv_separator": "Separatore non valido per '{{filename}}': '{{separator}}'. Deve essere un singolo carattere diverso dalle virgolette.",
-    "unsupported_output_csv_separator": "Separatore di output non supportato: '{{separator}}'. Separatori consentiti: {{allowed}}."
+    "unsupported_output_csv_separator": "Separatore di output non supportato: '{{separator}}'. Separatori consentiti: {{allowed}}.",
+    "right_anti_two_files": "Il tipo 'Righe del secondo file senza corrispondenza' (right anti) funziona solo con esattamente due file."
   }
 }

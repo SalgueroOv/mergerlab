@@ -37,7 +37,8 @@ Todas las versiones, con su registro de cambios, están en la
 ## Funcionalidades
 
 - **Combinar por clave (join)**: cruza archivos como un JOIN de SQL, con inner/left/right/outer,
-  incluso si la columna clave se llama distinto en cada archivo.
+  incluso si la columna clave se llama distinto en cada archivo. Los tipos "anti" sacan las filas
+  de un archivo que no están en los demás (útil para comparar listas).
 - **Apilar filas**: concatena archivos con las mismas columnas, uno debajo del otro (por ejemplo,
   ventas de varios meses).
 - Encadena tantos archivos como quieras, en el orden que elijas (arrastrar y soltar para

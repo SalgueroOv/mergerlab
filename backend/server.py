@@ -41,6 +41,7 @@ from merger import (  # noqa: E402
     list_sheets,
     merge_files,
     read_file_columns,
+    right_anti_two_files_error,
     validate_output_extension,
     write_output,
 )
@@ -144,7 +145,8 @@ def merge():
 
     Cuerpo esperado (JSON): `files` (lista de rutas), `output_format`, `output_path`, `mode`
     (`"concat"` o `"join"`), y si `mode` es `"join"` también `join_keys` (objeto
-    `{ruta: columna}`) y `join_type`. Opcionales: `csv_separators` (`{ruta: separador}`, ver
+    `{ruta: columna}`) y `join_type` (uno de `JOIN_TYPES`; `"right_anti"` exige exactamente dos
+    archivos). Opcionales: `csv_separators` (`{ruta: separador}`, ver
     `_csv_separators_from`) y `output_csv_separator` (`","` por defecto, solo aplica si
     `output_format` es `"csv"`), `sheets` (`{ruta: hoja}` para leer solo una hoja de un Excel),
     `add_source_column` y `source_column_name` (solo modo `"concat"`:
@@ -218,6 +220,9 @@ def merge():
                 code="unsupported_join_type",
                 params={"joinType": join_type},
             )
+        if join_type == "right_anti" and len(files) != 2:
+            exc = right_anti_two_files_error()
+            return _error_response(str(exc), 400, code=exc.code, params=exc.params)
 
     job_id = str(uuid.uuid4())
     with jobs_lock:

@@ -57,7 +57,12 @@
     "noColumns": "Keine lesbaren Spalten",
     "chooseColumn": "Spalte wählen...",
     "keyAriaLabel": "Schlüsselspalte in {{file}}",
-    "note": "Jede Datei kann eine unterschiedlich benannte Spalte verwenden (z. B. \"ID_Cliente\" in der einen und \"Codigo Cliente\" in der anderen): Die App behandelt sie beim Kombinieren als denselben Schlüssel."
+    "note": "Jede Datei kann eine unterschiedlich benannte Spalte verwenden (z. B. \"ID_Cliente\" in der einen und \"Codigo Cliente\" in der anderen): Die App behandelt sie beim Kombinieren als denselben Schlüssel.",
+    "typeHints": {
+      "left_anti": "Zeilen der ersten Datei ohne Übereinstimmung",
+      "right_anti": "Zeilen der zweiten Datei ohne Übereinstimmung"
+    },
+    "rightAntiTwoFiles": "„Right anti“ funktioniert nur mit genau zwei Dateien."
   },
   "format": {
     "label": "Ausgabeformat",
@@ -104,7 +109,8 @@
     "noDestination": "Wähle einen Zielordner, um das Ergebnis zu speichern.",
     "joinMinFiles": "Für einen Join werden mindestens zwei Dateien benötigt.",
     "readingColumns": "Spalten der Dateien werden gelesen...",
-    "chooseKeyFor": "Wähle die Schlüsselspalte für: {{files}}."
+    "chooseKeyFor": "Wähle die Schlüsselspalte für: {{files}}.",
+    "rightAntiTwoFiles": "„Right anti“ funktioniert nur mit genau zwei Dateien: Entferne Dateien oder wähle einen anderen Join-Typ."
   },
   "status": {
     "startingMerge": "Kombination wird gestartet...",
@@ -200,6 +206,14 @@
       "outer": {
         "title": "Outer Join (vollständig)",
         "description": "Alle Zeilen aller Dateien bleiben erhalten, ob sie übereinstimmen oder nicht. Fehlende Daten bleiben leer. Beispiel: alle mit Krankenversicherung ODER Fitnessstudio-Mitgliedschaft (oder beidem)."
+      },
+      "left_anti": {
+        "title": "Left Anti Join (ohne Treffer in den anderen)",
+        "description": "Es bleiben nur die Zeilen der ersten Datei, deren Schlüssel in keiner der anderen Dateien vorkommt, mit den Spalten der ersten Datei und sonst nichts. Zeilen mit leerem Schlüssel bleiben ebenfalls erhalten. Beispiel: alle mit Krankenversicherung, aber OHNE Fitnessstudio-Mitgliedschaft."
+      },
+      "right_anti": {
+        "title": "Right Anti Join (ohne Treffer in der ersten)",
+        "description": "Das Spiegelbild von Left Anti: Es bleiben nur die Zeilen der zweiten Datei, deren Schlüssel in der ersten nicht vorkommt, mit ihren eigenen Spalten. Funktioniert nur mit genau zwei Dateien. Beispiel: alle mit Fitnessstudio-Mitgliedschaft, aber OHNE Krankenversicherung."
       }
     }
   },
@@ -261,6 +275,7 @@
     "sheet_not_found": "Das Blatt „{{sheet}}“ existiert in „{{filename}}“ nicht.",
     "csv_encoding_error": "'{{filename}}' konnte nicht gelesen werden: Der Text verwendet eine unbekannte Kodierung. Speichere die Datei erneut als 'CSV UTF-8' und versuche es noch einmal.",
     "invalid_csv_separator": "Ungültiges Trennzeichen für '{{filename}}': '{{separator}}'. Es muss ein einzelnes Zeichen außer Anführungszeichen sein.",
-    "unsupported_output_csv_separator": "Nicht unterstütztes Ausgabe-Trennzeichen: '{{separator}}'. Erlaubte Trennzeichen: {{allowed}}."
+    "unsupported_output_csv_separator": "Nicht unterstütztes Ausgabe-Trennzeichen: '{{separator}}'. Erlaubte Trennzeichen: {{allowed}}.",
+    "right_anti_two_files": "Der Typ „Zeilen der zweiten Datei ohne Übereinstimmung“ (right anti) funktioniert nur mit genau zwei Dateien."
   }
 }

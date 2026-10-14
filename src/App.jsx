@@ -16,6 +16,7 @@ import { backendText } from "./i18n/backendMessages.js";
 import { ACCEPTED_INPUT_EXTENSIONS, extensionOf } from "./formatMeta.js";
 import {
   formatBytes,
+  isJoinTypeUnavailable,
   joinPath,
   normalizeColumnName,
   parseProcessed,
@@ -436,7 +437,10 @@ export default function App() {
   const canMerge =
     files.length > 0 &&
     !!destinationFolder &&
-    (mode === "concat" || (files.length >= 2 && missingJoinKeyFiles.length === 0));
+    (mode === "concat" ||
+      (files.length >= 2 &&
+        missingJoinKeyFiles.length === 0 &&
+        !isJoinTypeUnavailable(joinType, files.length)));
 
   // Devuelve { key, params } en vez de texto ya traducido, para que siga siendo correcto si el
   // usuario cambia de idioma mientras el botón de combinar está deshabilitado.
@@ -445,6 +449,7 @@ export default function App() {
     if (!destinationFolder) return { key: "blocked.noDestination" };
     if (mode === "join") {
       if (files.length < 2) return { key: "blocked.joinMinFiles" };
+      if (isJoinTypeUnavailable(joinType, files.length)) return { key: "blocked.rightAntiTwoFiles" };
       if (loadingColumns) return { key: "blocked.readingColumns" };
       if (columnsError) return { key: null, text: columnsError };
       if (missingJoinKeyFiles.length > 0) {
@@ -455,7 +460,7 @@ export default function App() {
       }
     }
     return null;
-  }, [files.length, destinationFolder, mode, loadingColumns, columnsError, missingJoinKeyFiles]);
+  }, [files.length, destinationFolder, mode, joinType, loadingColumns, columnsError, missingJoinKeyFiles]);
 
   const handleMerge = useCallback(async () => {
     if (!canMerge) return;

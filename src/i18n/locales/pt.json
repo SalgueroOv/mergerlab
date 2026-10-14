@@ -57,7 +57,12 @@
     "noColumns": "Nenhuma coluna legível",
     "chooseColumn": "Escolha uma coluna...",
     "keyAriaLabel": "Coluna-chave em {{file}}",
-    "note": "Cada arquivo pode usar uma coluna com nome diferente (por exemplo, \"ID_Cliente\" em um e \"Codigo Cliente\" em outro): o app as trata como a mesma chave ao combinar."
+    "note": "Cada arquivo pode usar uma coluna com nome diferente (por exemplo, \"ID_Cliente\" em um e \"Codigo Cliente\" em outro): o app as trata como a mesma chave ao combinar.",
+    "typeHints": {
+      "left_anti": "Linhas do primeiro arquivo sem correspondência",
+      "right_anti": "Linhas do segundo arquivo sem correspondência"
+    },
+    "rightAntiTwoFiles": "“Right anti” só funciona com exatamente dois arquivos."
   },
   "format": {
     "label": "Formato de saída",
@@ -104,7 +109,8 @@
     "noDestination": "Escolha uma pasta de destino para salvar o resultado.",
     "joinMinFiles": "São necessários pelo menos dois arquivos para fazer um join.",
     "readingColumns": "Lendo as colunas dos arquivos...",
-    "chooseKeyFor": "Escolha a coluna-chave para: {{files}}."
+    "chooseKeyFor": "Escolha a coluna-chave para: {{files}}.",
+    "rightAntiTwoFiles": "“Right anti” só funciona com exatamente dois arquivos: remova arquivos ou escolha outro tipo de join."
   },
   "status": {
     "startingMerge": "Iniciando a combinação...",
@@ -200,6 +206,14 @@
       "outer": {
         "title": "Outer join (completo)",
         "description": "Permanecem todas as linhas de todos os arquivos, coincidam ou não. Os dados que faltam ficam em branco. Exemplo: todos os que têm plano de saúde OU academia (ou ambos)."
+      },
+      "left_anti": {
+        "title": "Left anti join (sem correspondência nos demais)",
+        "description": "Permanecem apenas as linhas do primeiro arquivo cuja chave não aparece em nenhum dos demais arquivos, com as colunas do primeiro arquivo e nada mais. As linhas com a chave vazia também permanecem. Exemplo: quem tem plano de saúde mas NÃO tem academia."
+      },
+      "right_anti": {
+        "title": "Right anti join (sem correspondência no primeiro)",
+        "description": "É o espelho do left anti: permanecem apenas as linhas do segundo arquivo cuja chave não aparece no primeiro, com suas próprias colunas. Só funciona com exatamente dois arquivos. Exemplo: quem tem academia mas NÃO tem plano de saúde."
       }
     }
   },
@@ -261,6 +275,7 @@
     "sheet_not_found": "A planilha “{{sheet}}” não existe em “{{filename}}”.",
     "csv_encoding_error": "Não foi possível ler '{{filename}}': o texto usa uma codificação não reconhecida. Salve-o novamente como 'CSV UTF-8' e tente outra vez.",
     "invalid_csv_separator": "Separador inválido para '{{filename}}': '{{separator}}'. Deve ser um único caractere diferente de aspas.",
-    "unsupported_output_csv_separator": "Separador de saída não suportado: '{{separator}}'. Separadores permitidos: {{allowed}}."
+    "unsupported_output_csv_separator": "Separador de saída não suportado: '{{separator}}'. Separadores permitidos: {{allowed}}.",
+    "right_anti_two_files": "O tipo 'Linhas do segundo arquivo sem correspondência' (right anti) só funciona com exatamente dois arquivos."
   }
 }

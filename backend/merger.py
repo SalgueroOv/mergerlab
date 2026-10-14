@@ -9,7 +9,10 @@ import pandas as pd
 
 SUPPORTED_INPUT_EXTENSIONS = {".xlsx", ".xls", ".csv", ".ods"}
 SUPPORTED_OUTPUT_FORMATS = {"xlsx", "xls", "csv", "ods"}
-JOIN_TYPES = {"inner", "left", "right", "outer"}
+JOIN_TYPES = {"inner", "left", "right", "outer", "left_anti", "right_anti"}
+# Tipos "anti": devuelven las filas de un archivo cuya clave NO aparece en los demás (ver
+# `_anti_join`), en vez de cruzar columnas como los joins de pandas.
+ANTI_JOIN_TYPES = {"left_anti", "right_anti"}
 # Nombre por defecto de la columna que indica de qué archivo viene cada fila al apilar.
 DEFAULT_SOURCE_COLUMN = "archivo_origen"
 # Firma de los archivos OLE2 (Excel .xls auténtico); si un `.xls` no empieza así, en realidad es
@@ -553,6 +556,17 @@ def join_files(
     La columna clave de cada archivo se lee siempre como texto (así no pierde ceros a la izquierda
     ni se convierte en decimal por tener celdas vacías); con `all_as_text` se leen como texto
     todas las columnas.
+
+    Los tipos "anti" no cruzan columnas: devuelven las filas de un único archivo de origen cuya
+    clave no aparece en los demás (ver `_anti_join`). Con `"left_anti"` el origen es el primer
+    archivo y se descartan sus filas cuya clave esté en CUALQUIERA de los demás archivos (vale
+    con dos o más). Con `"right_anti"` el origen es el segundo archivo y se compara solo con el
+    primero, así que exige exactamente dos archivos (si no, `MergeError` con
+    `code="right_anti_two_files"`). El resultado tiene solo las columnas del archivo de origen,
+    en su orden original, y sus filas en el orden del archivo; puede quedar sin filas (no es un
+    error: se escribe solo con los encabezados). Una clave vacía no coincide con nada: las filas
+    del archivo de origen con la clave vacía se conservan, y las claves vacías de los demás
+    archivos no cuentan como coincidencia.
     """
     if not file_paths:
         raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
@@ -565,6 +579,8 @@ def join_files(
             code="unsupported_join_type_detail",
             params={"joinType": join_type, "allowed": ", ".join(sorted(JOIN_TYPES))},
         )
+    if join_type == "right_anti" and len(file_paths) != 2:
+        raise right_anti_two_files_error()
     if not join_keys or len(join_keys) != len(file_paths) or any(not k for k in join_keys):
         raise MergeError("Debés indicar una columna clave para cada archivo.", code="missing_join_key")
 
@@ -573,6 +589,8 @@ def join_files(
     total = len(file_paths)
     result = None
     canonical_key = None
+    # Solo para los tipos anti: (DataFrame, clave) de cada archivo leído, en orden.
+    anti_frames = []
 
     for index, (path, key) in enumerate(zip(file_paths, join_keys), start=1):
         ext = _extension_of(path)
@@ -598,7 +616,9 @@ def join_files(
         df = df.copy()
         df[key] = _stringify_key_column(df[key])
 
-        if result is None:
+        if join_type in ANTI_JOIN_TYPES:
+            anti_frames.append((df, key))
+        elif result is None:
             result = df
             canonical_key = key
         else:
@@ -626,10 +646,50 @@ def join_files(
                 params={"filename": filename, "index": index, "total": total},
             )
 
+    if join_type in ANTI_JOIN_TYPES:
+        source_index = 0 if join_type == "left_anti" else 1
+        result = _anti_join(anti_frames, source_index)
+
     if result is None or result.shape[1] == 0:
         raise MergeError("Los archivos seleccionados no contienen datos para combinar.", code="no_data")
 
     return result
+
+
+def right_anti_two_files_error():
+    """Construye (sin lanzarlo) el `MergeError` de `"right_anti"` con un número de archivos
+    distinto de dos. Es una función aparte porque lo usan `join_files` y la validación previa de
+    `/api/merge` en `server.py`, y así ambos devuelven el mismo mensaje y `code`."""
+    return MergeError(
+        "El tipo 'Filas del segundo archivo sin coincidencia' (right anti) solo funciona con "
+        "exactamente dos archivos.",
+        code="right_anti_two_files",
+    )
+
+
+def _anti_join(frames, source_index):
+    """Devuelve las filas de `frames[source_index]` cuya clave no aparece en ningún otro archivo.
+
+    `frames` es una lista de `(DataFrame, clave)` con la columna clave ya normalizada a texto por
+    `_stringify_key_column`. El resultado conserva solo las columnas del archivo de origen (en su
+    orden original) y sus filas en el orden del archivo, con el índice renumerado desde 0.
+
+    Las claves vacías no coinciden con nada: las filas del archivo de origen con la clave vacía
+    (nula, o texto vacío tras recortar espacios) se CONSERVAN en el resultado, y las claves vacías
+    de los demás archivos no cuentan como coincidencia (a diferencia de `pandas.merge`, que sí
+    empareja nulos entre sí).
+    """
+    source_df, source_key = frames[source_index]
+    other_keys = set()
+    for position, (df, key) in enumerate(frames):
+        if position == source_index:
+            continue
+        values = df[key].dropna()
+        other_keys.update(v for v in values if v != "")
+
+    # `other_keys` no contiene nulos ni "", así que una clave vacía del origen nunca coincide.
+    matched = source_df[source_key].isin(other_keys)
+    return source_df.loc[~matched].reset_index(drop=True)
 
 
 def validate_output_extension(output_path, output_format):

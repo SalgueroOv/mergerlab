@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatBytes,
+  isJoinTypeUnavailable,
   joinPath,
   normalizeColumnName,
   parseProcessed,
@@ -46,6 +47,15 @@ describe("parseProcessed", () => {
     expect(parseProcessed({ message: "Leído a.csv (2/5)" })).toBe(2);
     expect(parseProcessed({ message: "Guardando" })).toBeNull();
     expect(parseProcessed(null)).toBeNull();
+  });
+});
+
+describe("isJoinTypeUnavailable", () => {
+  it("solo bloquea right_anti con más de dos archivos", () => {
+    expect(isJoinTypeUnavailable("right_anti", 2)).toBe(false);
+    expect(isJoinTypeUnavailable("right_anti", 3)).toBe(true);
+    expect(isJoinTypeUnavailable("left_anti", 5)).toBe(false);
+    expect(isJoinTypeUnavailable("inner", 5)).toBe(false);
   });
 });
 

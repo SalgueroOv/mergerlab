@@ -222,6 +222,131 @@ def test_join_files_outer_conserva_filas_de_todos_los_archivos(tmp_path):
     assert sorted(result["id"].tolist()) == ["1", "2", "3"]
 
 
+# ---- join_files: tipos "anti" ----
+
+
+def test_join_files_left_anti_con_dos_archivos(tmp_path):
+    a = _write_csv(tmp_path / "seguro.csv", {"id": [1, 2, 3], "seguro": ["si", "si", "no"]})
+    b = _write_csv(tmp_path / "gimnasio.csv", {"id": [2, 4], "gimnasio": ["si", "si"]})
+
+    result = join_files([a, b], ["id", "id"], join_type="left_anti")
+
+    assert result["id"].tolist() == ["1", "3"]
+    assert result["seguro"].tolist() == ["si", "no"]
+
+
+def test_join_files_left_anti_con_tres_archivos_descarta_lo_que_aparece_en_cualquiera(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 2, 3, 4]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2]})
+    # La fila 3 solo aparece en el tercer archivo: también cuenta como coincidencia.
+    c = _write_csv(tmp_path / "c.csv", {"id": [3, 9]})
+
+    result = join_files([a, b, c], ["id", "id", "id"], join_type="left_anti")
+
+    assert result["id"].tolist() == ["1", "4"]
+
+
+def test_join_files_right_anti_con_dos_archivos(tmp_path):
+    a = _write_csv(tmp_path / "seguro.csv", {"id": [1, 2], "seguro": ["si", "no"]})
+    b = _write_csv(tmp_path / "gimnasio.csv", {"id": [5, 2, 4], "gimnasio": ["x", "y", "z"]})
+
+    result = join_files([a, b], ["id", "id"], join_type="right_anti")
+
+    # Filas del segundo archivo, en su orden original y solo con sus columnas.
+    assert list(result.columns) == ["id", "gimnasio"]
+    assert result["id"].tolist() == ["5", "4"]
+    assert result["gimnasio"].tolist() == ["x", "z"]
+
+
+def test_join_files_right_anti_con_tres_archivos_da_error(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2]})
+    c = _write_csv(tmp_path / "c.csv", {"id": [3]})
+
+    with pytest.raises(MergeError) as exc:
+        join_files([a, b, c], ["id", "id", "id"], join_type="right_anti")
+    assert exc.value.code == "right_anti_two_files"
+
+
+def test_join_files_anti_con_claves_de_distinto_nombre(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"ID_Cliente": [1, 2, 3], "x": ["a", "b", "c"]})
+    b = _write_csv(tmp_path / "b.csv", {"Codigo Cliente": [2, 3, 7], "y": ["p", "q", "r"]})
+
+    left = join_files([a, b], ["ID_Cliente", "Codigo Cliente"], join_type="left_anti")
+    right = join_files([a, b], ["ID_Cliente", "Codigo Cliente"], join_type="right_anti")
+
+    assert left["ID_Cliente"].tolist() == ["1"]
+    assert right["Codigo Cliente"].tolist() == ["7"]
+
+
+def test_join_files_anti_conserva_las_claves_vacias_del_archivo_de_origen(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("id,x\n1,a\n,b\n2,c\n", encoding="utf-8")
+    # El otro archivo también tiene una clave vacía: no cuenta como coincidencia.
+    b = tmp_path / "b.csv"
+    b.write_text("id,y\n1,p\n,q\n", encoding="utf-8")
+
+    result = join_files([str(a), str(b)], ["id", "id"], join_type="left_anti")
+
+    assert result["x"].tolist() == ["b", "c"]
+    assert pd.isna(result.loc[0, "id"])
+    assert result.loc[1, "id"] == "2"
+
+
+def test_join_files_anti_sin_filas_devuelve_solo_los_encabezados(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 2], "x": ["a", "b"]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2, 1], "y": ["p", "q"]})
+    out = tmp_path / "salida.csv"
+
+    result = join_files([a, b], ["id", "id"], join_type="left_anti")
+    write_output(result, str(out), "csv")
+
+    assert len(result) == 0
+    assert list(result.columns) == ["id", "x"]
+    written = pd.read_csv(out, encoding="utf-8-sig")
+    assert list(written.columns) == ["id", "x"]
+    assert len(written) == 0
+
+
+def test_join_files_anti_solo_lleva_las_columnas_del_archivo_de_origen(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"nombre": ["Ana", "Beto"], "id": [1, 2], "edad": [30, 40]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2], "nombre": ["Beto"], "ciudad": ["Lima"]})
+
+    result = join_files([a, b], ["id", "id"], join_type="left_anti")
+
+    # Mismo orden de columnas que el original, sin columnas del otro archivo ni sufijos.
+    assert list(result.columns) == ["nombre", "id", "edad"]
+    assert result.loc[0, "nombre"] == "Ana"
+    assert result.loc[0, "edad"] == 30
+
+
+def test_join_files_anti_conserva_ceros_a_la_izquierda_en_la_clave(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("dni,x\n00123,a\n00456,b\n", encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("dni,y\n00456,p\n123,q\n", encoding="utf-8")
+
+    result = join_files([str(a), str(b)], ["dni", "dni"], join_type="left_anti")
+
+    # "123" no coincide con "00123": la clave se compara como texto.
+    assert result["dni"].tolist() == ["00123"]
+
+
+def test_join_files_anti_reporta_progreso_por_archivo(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2]})
+    calls = []
+
+    join_files(
+        [a, b],
+        ["id", "id"],
+        join_type="left_anti",
+        progress_callback=lambda index, total, message, code, params: calls.append((index, code)),
+    )
+
+    assert calls == [(1, "join_file_progress"), (2, "join_file_progress")]
+
+
 # ---- write_output ----
 
 

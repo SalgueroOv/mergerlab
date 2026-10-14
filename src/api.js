@@ -71,7 +71,8 @@ async function requestJson(url, options) {
  * @param {boolean} [options.allAsText] leer todas las columnas como texto (ceros a la izquierda)
  * @param {"concat"|"join"} [options.mode]
  * @param {Record<string,string>} [options.joinKeys] `{ruta: columnaClave}`, solo en modo `"join"`
- * @param {string} [options.joinType] `"inner" | "left" | "right" | "outer"`, solo en modo `"join"`
+ * @param {string} [options.joinType] `"inner" | "left" | "right" | "outer" | "left_anti" |
+ *   "right_anti"`, solo en modo `"join"` (`"right_anti"` exige exactamente dos archivos)
  * @param {Record<string,string>} [options.csvSeparators] `{ruta: separador}` elegido a mano para
  *   algunos CSV; los que no aparecen se detectan automáticamente en el backend
  * @param {string} [options.outputCsvSeparator] `"," | ";"`, solo aplica si `outputFormat` es `"csv"`

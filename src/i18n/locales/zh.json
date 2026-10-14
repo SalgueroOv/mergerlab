@@ -56,7 +56,12 @@
     "noColumns": "没有可读取的列",
     "chooseColumn": "选择一列...",
     "keyAriaLabel": "{{file}} 中的关键列",
-    "note": "每个文件可以使用名称不同的列（例如一个文件中的 “ID_Cliente” 和另一个文件中的 “Codigo Cliente”）：合并时应用会将它们视为同一个键。"
+    "note": "每个文件可以使用名称不同的列（例如一个文件中的 “ID_Cliente” 和另一个文件中的 “Codigo Cliente”）：合并时应用会将它们视为同一个键。",
+    "typeHints": {
+      "left_anti": "第一个文件中无匹配的行",
+      "right_anti": "第二个文件中无匹配的行"
+    },
+    "rightAntiTwoFiles": "“Right anti”仅适用于恰好两个文件。"
   },
   "format": {
     "label": "输出格式",
@@ -102,7 +107,8 @@
     "noDestination": "请选择一个用于保存结果的目标文件夹。",
     "joinMinFiles": "进行 join 至少需要两个文件。",
     "readingColumns": "正在读取文件的列...",
-    "chooseKeyFor": "请为以下文件选择关键列：{{files}}。"
+    "chooseKeyFor": "请为以下文件选择关键列：{{files}}。",
+    "rightAntiTwoFiles": "“Right anti”仅适用于恰好两个文件：请移除多余的文件或选择其他 join 类型。"
   },
   "status": {
     "startingMerge": "正在开始合并...",
@@ -198,6 +204,14 @@
       "outer": {
         "title": "Outer join（全连接）",
         "description": "保留所有文件的全部行，无论是否匹配。缺失的数据留空。例如：拥有医疗保险或健身房会员资格（或两者都有）的所有人。"
+      },
+      "left_anti": {
+        "title": "Left anti join（在其他文件中无匹配）",
+        "description": "只保留第一个文件中键在其他任何文件中都不存在的行，并且只包含第一个文件的列。键为空的行也会保留。例如：有医疗保险但没有健身房会员资格的人。"
+      },
+      "right_anti": {
+        "title": "Right anti join（在第一个文件中无匹配）",
+        "description": "与 left anti 相反：只保留第二个文件中键在第一个文件中不存在的行，并只包含它自己的列。仅适用于恰好两个文件。例如：有健身房会员资格但没有医疗保险的人。"
       }
     }
   },
@@ -259,6 +273,7 @@
     "sheet_not_found": "“{{filename}}”中不存在工作表“{{sheet}}”。",
     "csv_encoding_error": "无法读取“{{filename}}”：文本使用了无法识别的编码。请将其重新另存为“CSV UTF-8”后再试。",
     "invalid_csv_separator": "“{{filename}}”的分隔符无效：“{{separator}}”。它必须是除引号以外的单个字符。",
-    "unsupported_output_csv_separator": "不支持的输出分隔符：“{{separator}}”。允许的分隔符：{{allowed}}。"
+    "unsupported_output_csv_separator": "不支持的输出分隔符：“{{separator}}”。允许的分隔符：{{allowed}}。",
+    "right_anti_two_files": "“第二个文件中无匹配的行”（right anti）类型仅适用于恰好两个文件。"
   }
 }

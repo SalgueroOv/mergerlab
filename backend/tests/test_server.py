@@ -121,6 +121,56 @@ def test_merge_join_conserva_ceros_en_la_clave(client, tmp_path):
     assert pd.read_csv(out, dtype=str)["dni"].tolist() == ["00123"]
 
 
+def test_merge_right_anti_con_tres_archivos_recibe_400(client, tmp_path):
+    paths = []
+    for name in ("a", "b", "c"):
+        path = tmp_path / f"{name}.csv"
+        path.write_text("id\n1\n", encoding="utf-8")
+        paths.append(str(path))
+    out = tmp_path / "salida.csv"
+
+    response = client.post(
+        "/api/merge",
+        json={
+            "files": paths,
+            "output_format": "csv",
+            "output_path": str(out),
+            "mode": "join",
+            "join_keys": {p: "id" for p in paths},
+            "join_type": "right_anti",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["code"] == "right_anti_two_files"
+    assert not out.exists()
+
+
+def test_merge_left_anti_escribe_las_filas_sin_coincidencia(client, tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("dni,nombre\n00123,Ana\n00456,Beto\n,Cora\n", encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("documento,ciudad\n00456,Lima\n", encoding="utf-8")
+    out = tmp_path / "salida.csv"
+
+    status = _run_merge(
+        client,
+        {
+            "files": [str(a), str(b)],
+            "output_format": "csv",
+            "output_path": str(out),
+            "mode": "join",
+            "join_keys": {str(a): "dni", str(b): "documento"},
+            "join_type": "left_anti",
+        },
+    )
+
+    assert status["status"] == "done", status
+    result = pd.read_csv(out, dtype=str, keep_default_na=False, encoding="utf-8-sig")
+    assert list(result.columns) == ["dni", "nombre"]
+    assert result.values.tolist() == [["00123", "Ana"], ["", "Cora"]]
+
+
 # ---- seguridad: token, CORS y extensión de salida ----
 
 

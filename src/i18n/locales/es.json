@@ -57,7 +57,12 @@
     "noColumns": "Sin columnas legibles",
     "chooseColumn": "Elige una columna...",
     "keyAriaLabel": "Columna clave en {{file}}",
-    "note": "Cada archivo puede usar una columna con nombre distinto (por ejemplo \"ID_Cliente\" en uno y \"Codigo Cliente\" en otro): la app las trata como la misma clave al combinar."
+    "note": "Cada archivo puede usar una columna con nombre distinto (por ejemplo \"ID_Cliente\" en uno y \"Codigo Cliente\" en otro): la app las trata como la misma clave al combinar.",
+    "typeHints": {
+      "left_anti": "Filas del primer archivo sin coincidencia",
+      "right_anti": "Filas del segundo archivo sin coincidencia"
+    },
+    "rightAntiTwoFiles": "«Right anti» solo funciona con exactamente dos archivos."
   },
   "format": {
     "label": "Formato de salida",
@@ -104,7 +109,8 @@
     "noDestination": "Elige una carpeta de destino para guardar el resultado.",
     "joinMinFiles": "Se necesitan al menos dos archivos para hacer un join.",
     "readingColumns": "Leyendo columnas de los archivos...",
-    "chooseKeyFor": "Elige la columna clave para: {{files}}."
+    "chooseKeyFor": "Elige la columna clave para: {{files}}.",
+    "rightAntiTwoFiles": "«Right anti» solo funciona con exactamente dos archivos: quita archivos o elige otro tipo de join."
   },
   "status": {
     "startingMerge": "Iniciando combinación...",
@@ -200,6 +206,14 @@
       "outer": {
         "title": "Outer join (completo)",
         "description": "Quedan todas las filas de todos los archivos, coincidan o no. Los datos que faltan quedan en blanco. Ejemplo: todos los que tienen seguro médico O gimnasio (o ambos)."
+      },
+      "left_anti": {
+        "title": "Left anti join (sin coincidencia en los demás)",
+        "description": "Quedan solo las filas del primer archivo cuya clave no aparece en ninguno de los demás archivos, con las columnas del primer archivo y nada más. Las filas con la clave vacía también quedan. Ejemplo: quiénes tienen seguro médico pero NO gimnasio."
+      },
+      "right_anti": {
+        "title": "Right anti join (sin coincidencia en el primero)",
+        "description": "Es el espejo del left anti: quedan solo las filas del segundo archivo cuya clave no aparece en el primero, con sus propias columnas. Solo funciona con exactamente dos archivos. Ejemplo: quiénes tienen gimnasio pero NO seguro médico."
       }
     }
   },
@@ -261,6 +275,7 @@
     "sheet_not_found": "La hoja «{{sheet}}» no existe en «{{filename}}».",
     "csv_encoding_error": "No se pudo leer '{{filename}}': el texto usa una codificación no reconocida. Guárdalo de nuevo como 'CSV UTF-8' e inténtalo otra vez.",
     "invalid_csv_separator": "Separador no válido para '{{filename}}': '{{separator}}'. Debe ser un único carácter distinto de comillas.",
-    "unsupported_output_csv_separator": "Separador de salida no soportado: '{{separator}}'. Separadores permitidos: {{allowed}}."
+    "unsupported_output_csv_separator": "Separador de salida no soportado: '{{separator}}'. Separadores permitidos: {{allowed}}.",
+    "right_anti_two_files": "El tipo 'Filas del segundo archivo sin coincidencia' (right anti) solo funciona con exactamente dos archivos."
   }
 }

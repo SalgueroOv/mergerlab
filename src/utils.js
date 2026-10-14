@@ -71,6 +71,19 @@ export function parseProcessed(status) {
   return match ? Number(match[1]) : null;
 }
 
+/**
+ * Indica si un tipo de join no se puede usar con `fileCount` archivos. Hoy solo afecta a
+ * `"right_anti"` (filas del segundo archivo sin coincidencia en el primero), que exige
+ * exactamente dos: con más, el backend lo rechaza (`right_anti_two_files`). Con menos de dos el
+ * join entero ya está bloqueado por otro motivo, así que eso no cuenta aquí.
+ * @param {string} joinType
+ * @param {number} fileCount
+ * @returns {boolean}
+ */
+export function isJoinTypeUnavailable(joinType, fileCount) {
+  return joinType === "right_anti" && fileCount > 2;
+}
+
 // Compara nombres de columna ignorando mayúsculas, acentos, espacios y guiones/guiones bajos,
 // para sugerir por defecto columnas que solo difieren "cosméticamente" entre archivos
 // (ej. "ID Cliente" / "id_cliente"). Nombres genuinamente distintos ("ID_Cliente" vs

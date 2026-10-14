@@ -112,7 +112,7 @@ const PREFERENCE_VALIDATORS = {
   outputFormat: (v) => ["xlsx", "xls", "csv", "ods"].includes(v),
   outputCsvSeparator: (v) => [",", ";"].includes(v),
   mode: (v) => ["concat", "join"].includes(v),
-  joinType: (v) => ["inner", "left", "right", "outer"].includes(v),
+  joinType: (v) => ["inner", "left", "right", "outer", "left_anti", "right_anti"].includes(v),
 };
 
 function preferencesPath() {

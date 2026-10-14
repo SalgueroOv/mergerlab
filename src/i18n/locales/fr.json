@@ -57,7 +57,12 @@
     "noColumns": "Aucune colonne lisible",
     "chooseColumn": "Choisir une colonne...",
     "keyAriaLabel": "Colonne clé dans {{file}}",
-    "note": "Chaque fichier peut utiliser une colonne au nom différent (par exemple \"ID_Cliente\" dans l'un et \"Codigo Cliente\" dans l'autre) : l'application les traite comme la même clé lors de la combinaison."
+    "note": "Chaque fichier peut utiliser une colonne au nom différent (par exemple \"ID_Cliente\" dans l'un et \"Codigo Cliente\" dans l'autre) : l'application les traite comme la même clé lors de la combinaison.",
+    "typeHints": {
+      "left_anti": "Lignes du premier fichier sans correspondance",
+      "right_anti": "Lignes du deuxième fichier sans correspondance"
+    },
+    "rightAntiTwoFiles": "« Right anti » ne fonctionne qu'avec exactement deux fichiers."
   },
   "format": {
     "label": "Format de sortie",
@@ -104,7 +109,8 @@
     "noDestination": "Choisissez un dossier de destination pour enregistrer le résultat.",
     "joinMinFiles": "Il faut au moins deux fichiers pour faire un join.",
     "readingColumns": "Lecture des colonnes des fichiers...",
-    "chooseKeyFor": "Choisissez la colonne clé pour : {{files}}."
+    "chooseKeyFor": "Choisissez la colonne clé pour : {{files}}.",
+    "rightAntiTwoFiles": "« Right anti » ne fonctionne qu'avec exactement deux fichiers : retirez des fichiers ou choisissez un autre type de join."
   },
   "status": {
     "startingMerge": "Démarrage de la combinaison...",
@@ -200,6 +206,14 @@
       "outer": {
         "title": "Outer join (complet)",
         "description": "Toutes les lignes de tous les fichiers sont conservées, qu'elles correspondent ou non. Les données manquantes restent vides. Exemple : tous ceux qui ont une assurance santé OU un abonnement salle de sport (ou les deux)."
+      },
+      "left_anti": {
+        "title": "Left anti join (sans correspondance dans les autres)",
+        "description": "Seules restent les lignes du premier fichier dont la clé n'apparaît dans aucun des autres fichiers, avec les colonnes du premier fichier et rien d'autre. Les lignes à clé vide sont aussi conservées. Exemple : ceux qui ont une assurance santé mais PAS d'abonnement salle de sport."
+      },
+      "right_anti": {
+        "title": "Right anti join (sans correspondance dans le premier)",
+        "description": "C'est le miroir du left anti : seules restent les lignes du deuxième fichier dont la clé n'apparaît pas dans le premier, avec leurs propres colonnes. Ne fonctionne qu'avec exactement deux fichiers. Exemple : ceux qui ont un abonnement salle de sport mais PAS d'assurance santé."
       }
     }
   },
@@ -261,6 +275,7 @@
     "sheet_not_found": "La feuille « {{sheet}} » n'existe pas dans « {{filename}} ».",
     "csv_encoding_error": "Impossible de lire '{{filename}}' : le texte utilise un encodage non reconnu. Enregistrez-le à nouveau au format 'CSV UTF-8' et réessayez.",
     "invalid_csv_separator": "Séparateur non valide pour '{{filename}}' : '{{separator}}'. Il doit s'agir d'un seul caractère autre que les guillemets.",
-    "unsupported_output_csv_separator": "Séparateur de sortie non pris en charge : '{{separator}}'. Séparateurs autorisés : {{allowed}}."
+    "unsupported_output_csv_separator": "Séparateur de sortie non pris en charge : '{{separator}}'. Séparateurs autorisés : {{allowed}}.",
+    "right_anti_two_files": "Le type « Lignes du deuxième fichier sans correspondance » (right anti) ne fonctionne qu'avec exactement deux fichiers."
   }
 }
