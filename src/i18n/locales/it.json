@@ -89,6 +89,7 @@
     "sourceColumnName": "file_origine"
   },
   "readOptions": {
+    "label": "Opzioni generali",
     "allAsText": "Leggi tutte le colonne come testo (mantiene gli zeri iniziali)",
     "removeDuplicates": "Rimuovi le righe duplicate",
     "includeReport": "Includi il rapporto della combinazione"
@@ -192,7 +193,7 @@
       },
       "joinType": {
         "title": "4. Tipo di join",
-        "body": "In modalità join scegli come incrociare i file: Inner, Left, Right o Outer. Se non sai quale usare, il pulsante \"?\" spiega ogni tipo con disegni ed esempi."
+        "body": "In modalità join scegli come incrociare i file: Inner, Left, Right, Outer o i tipi anti (Left anti e Right anti), che tengono solo le righe di un file la cui chiave non è nell'altro. Se non sai quale usare, il pulsante \"?\" spiega ogni tipo con disegni ed esempi."
       },
       "joinKey": {
         "title": "5. Colonna chiave per file",
@@ -202,16 +203,20 @@
         "title": "6. Configura l'output",
         "body": "Scegli il formato del file risultante, il suo nome e la cartella in cui salvarlo."
       },
+      "options": {
+        "title": "7. Opzioni generali",
+        "body": "Queste caselle valgono in entrambe le modalità: leggere tutte le colonne come testo (mantiene gli zeri iniziali), rimuovere le righe duplicate dal risultato e includere un rapporto della combinazione. Il pulsante \"?\" spiega ciascuna con esempi."
+      },
       "merge": {
-        "title": "7. Combina",
-        "body": "Quando il pulsante è abilitato, combina i file. Se è disabilitato, il testo sopra indicherà esattamente cosa manca."
+        "title": "8. Combina",
+        "body": "Quando il pulsante è abilitato, combina i file. Se è disabilitato, il testo sopra indicherà esattamente cosa manca. Con \"Anteprima\" vedi i totali e le prime righe del risultato prima di salvarlo."
       },
       "theme": {
-        "title": "8. Tema chiaro o scuro",
+        "title": "9. Tema chiaro o scuro",
         "body": "Per impostazione predefinita segue il tema del sistema operativo; scegli \"Chiaro\" o \"Scuro\" per impostarlo manualmente."
       },
       "help": {
-        "title": "9. Aiuto e versione",
+        "title": "10. Aiuto e versione",
         "body": "Qui trovi la versione, l'autore e un link per rivedere questo tour quando vuoi."
       }
     }
@@ -260,6 +265,35 @@
     "body2": "Usa questa modalità quando i file rappresentano lo stesso tipo di dati ripetuto nel tempo o per lotti (ad esempio, vendite di gennaio, febbraio e marzo con le stesse colonne), a differenza del join, che incrocia colonne diverse usando una chiave comune.",
     "sourceColumnTerm": "Aggiungi una colonna con il nome del file di origine",
     "sourceColumnNote": "aggiunge una colonna extra che indica da quale file proviene ogni riga, utile per rintracciarne l'origine dopo l'impilamento."
+  },
+  "optionsTutorial": {
+    "buttonLabel": "Cosa fa ogni opzione",
+    "title": "Opzioni generali",
+    "intro": "Queste caselle funzionano allo stesso modo in entrambe le modalità (join e impilamento) e puoi attivarne più di una alla volta.",
+    "sections": {
+      "allAsText": {
+        "title": "Leggi tutte le colonne come testo",
+        "body": "Legge ogni cella esattamente come è scritta, senza interpretarla come numero. Così si conservano gli zeri iniziali (00123 non diventa 123) e una colonna numerica con celle vuote non passa ai decimali (1 non diventa 1.0).",
+        "when": "Usala per codici, numeri di documento, CAP o telefoni che devono restare esattamente come sono. Tieni presente che nel risultato numeri e date vengono salvati come testo (per esempio, Excel non li somma direttamente). In modalità join non serve attivarla solo per la chiave: la colonna chiave di ogni file viene sempre letta come testo, anche con questa casella disattivata.",
+        "example": "Esempio: un .csv con il codice prodotto 00123. Senza l'opzione viene letto come il numero 123; con l'opzione resta 00123."
+      },
+      "removeDuplicates": {
+        "title": "Rimuovi le righe duplicate",
+        "body": "Dopo l'impilamento o il join, rimuove dal risultato finale le righe identiche in tutte le colonne e conserva solo la prima, nell'ordine del risultato. Due celle vuote contano come uguali. La colonna con il nome del file di origine (se la aggiungi impilando) non conta nel confronto.",
+        "when": "Usala quando i file si sovrappongono, per esempio esportazioni che ripetono record. Attenzione: il numero 1 e il testo \"1\" non sono uguali per questo confronto; se la stessa colonna viene letta come numero in un file e come testo in un altro, attiva anche \"Leggi tutte le colonne come testo\".",
+        "example": "Esempio: impili gennaio.xlsx e febbraio.xlsx e la riga «Ana García | Lima | 350» compare in entrambi. Nel risultato compare una sola volta, anche se hai aggiunto la colonna del file di origine (resta quella di gennaio.xlsx). L'anteprima e il rapporto indicano quante righe sono state rimosse."
+      },
+      "includeReport": {
+        "title": "Includi il rapporto della combinazione",
+        "body": "Salva insieme al risultato un riepilogo di come è stato ottenuto: data e ora, modalità di combinazione, tipo di join (solo nel join), righe e colonne del risultato, righe duplicate rimosse e se le opzioni erano attive (colonna del file di origine, tutto come testo, rimozione dei duplicati). Sotto c'è una tabella per file con nome, foglio letto e righe lette; nel join aggiunge la colonna chiave, le righe senza corrispondenza (la loro chiave non compare in nessun altro file, qualunque sia il tipo di join) e le righe con chiave vuota.",
+        "where": "Dove compare: in .xlsx, .ods e .xls, in un foglio aggiuntivo chiamato «{{sheetName}}», dopo il foglio dei dati. In .csv, che non ha fogli, in un file separato nella stessa cartella, <nome>_{{suffix}}.csv, con lo stesso separatore. Se quel file esiste già, l'app chiede prima di sovrascriverlo.",
+        "example": "Esempio: salvi in .csv con il nome «risultato» e vengono creati due file: risultato.csv e risultato_{{suffix}}.csv."
+      },
+      "preview": {
+        "title": "Pulsante «Anteprima»",
+        "body": "Calcola la combinazione completa con i file e le opzioni attuali, senza salvare nulla (non serve aver scelto la cartella di destinazione). Mostra i totali (righe, colonne e, se rimuovi i duplicati, quante righe sono state rimosse), una tabella per file con le righe lette (nel join anche le righe senza corrispondenza e con chiave vuota) e le prime 20 righe del risultato. Con file grandi può richiedere quasi lo stesso tempo della combinazione."
+      }
+    }
   },
   "splash": {
     "loading": "Caricamento…"

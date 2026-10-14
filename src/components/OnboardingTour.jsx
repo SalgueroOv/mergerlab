@@ -37,6 +37,13 @@ const STEP_DEFS = [
     titleKey: "tour.steps.configureOutput.title",
     bodyKey: "tour.steps.configureOutput.body",
   },
+  // Visible en los dos modos (a diferencia de los pasos del join, que en modo apilar no
+  // encuentran su elemento y muestran el tooltip centrado, sin resaltar nada).
+  {
+    selector: ".general-options-group",
+    titleKey: "tour.steps.options.title",
+    bodyKey: "tour.steps.options.body",
+  },
   { selector: ".footer-actions", titleKey: "tour.steps.merge.title", bodyKey: "tour.steps.merge.body" },
   { selector: ".theme-toggle", titleKey: "tour.steps.theme.title", bodyKey: "tour.steps.theme.body" },
   { selector: ".about-trigger-btn", titleKey: "tour.steps.help.title", bodyKey: "tour.steps.help.body" },

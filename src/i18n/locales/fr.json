@@ -89,6 +89,7 @@
     "sourceColumnName": "fichier_source"
   },
   "readOptions": {
+    "label": "Options générales",
     "allAsText": "Lire toutes les colonnes comme du texte (conserve les zéros initiaux)",
     "removeDuplicates": "Supprimer les lignes en double",
     "includeReport": "Inclure le rapport de la combinaison"
@@ -192,7 +193,7 @@
       },
       "joinType": {
         "title": "4. Type de join",
-        "body": "En mode join, vous choisissez comment les fichiers sont croisés : Inner, Left, Right ou Outer. Si vous ne savez pas lequel utiliser, le bouton « ? » explique chaque type avec des schémas et des exemples."
+        "body": "En mode join, vous choisissez comment les fichiers sont croisés : Inner, Left, Right, Outer ou les types anti (Left anti et Right anti), qui ne gardent que les lignes d'un fichier dont la clé n'est pas dans l'autre. Si vous ne savez pas lequel utiliser, le bouton « ? » explique chaque type avec des schémas et des exemples."
       },
       "joinKey": {
         "title": "5. Colonne clé par fichier",
@@ -202,16 +203,20 @@
         "title": "6. Configurez la sortie",
         "body": "Choisissez le format du fichier résultant, son nom et le dossier où l'enregistrer."
       },
+      "options": {
+        "title": "7. Options générales",
+        "body": "Ces cases s'appliquent dans les deux modes : lire toutes les colonnes comme du texte (conserve les zéros initiaux), supprimer les lignes en double du résultat et inclure un rapport de la combinaison. Le bouton « ? » explique chacune avec des exemples."
+      },
       "merge": {
-        "title": "7. Combiner",
-        "body": "Lorsque le bouton est activé, combinez les fichiers. S'il est désactivé, le texte au-dessus indiquera exactement ce qui manque."
+        "title": "8. Combiner",
+        "body": "Lorsque le bouton est activé, combinez les fichiers. S'il est désactivé, le texte au-dessus indiquera exactement ce qui manque. Avec « Aperçu », vous voyez les totaux et les premières lignes du résultat avant de l'enregistrer."
       },
       "theme": {
-        "title": "8. Thème clair ou sombre",
+        "title": "9. Thème clair ou sombre",
         "body": "Par défaut, il suit le thème du système d'exploitation ; choisissez \"Clair\" ou \"Sombre\" pour le fixer manuellement."
       },
       "help": {
-        "title": "9. Aide et version",
+        "title": "10. Aide et version",
         "body": "Vous trouverez ici la version, l'auteur et un lien pour revoir cette visite quand vous le souhaitez."
       }
     }
@@ -260,6 +265,35 @@
     "body2": "Utilisez ce mode lorsque les fichiers représentent le même type de données répété dans le temps ou par lot (par exemple, les ventes de janvier, février et mars avec les mêmes colonnes), contrairement au join, qui croise des colonnes différentes via une clé commune.",
     "sourceColumnTerm": "Ajouter une colonne avec le nom du fichier source",
     "sourceColumnNote": "ajoute une colonne supplémentaire indiquant de quel fichier provient chaque ligne, utile pour retrouver son origine après l'empilement."
+  },
+  "optionsTutorial": {
+    "buttonLabel": "Ce que fait chaque option",
+    "title": "Options générales",
+    "intro": "Ces cases fonctionnent de la même façon dans les deux modes (join et empilement) et vous pouvez en cocher plusieurs à la fois.",
+    "sections": {
+      "allAsText": {
+        "title": "Lire toutes les colonnes comme du texte",
+        "body": "Lit chaque cellule telle qu'elle est écrite, sans l'interpréter comme un nombre. Les zéros initiaux sont ainsi conservés (00123 ne devient pas 123) et une colonne numérique avec des cellules vides ne passe pas en décimales (1 ne devient pas 1.0).",
+        "when": "Utilisez-la pour des codes, numéros d'identité, codes postaux ou téléphones qui doivent rester exactement tels quels. Notez que, dans le résultat, les nombres et les dates sont alors enregistrés comme du texte (par exemple, Excel ne les additionne pas directement). En mode join, inutile de l'activer seulement pour la clé : la colonne clé de chaque fichier est toujours lue comme du texte, même si cette case est décochée.",
+        "example": "Exemple : un .csv avec le code produit 00123. Sans l'option, il est lu comme le nombre 123 ; avec l'option, il reste 00123."
+      },
+      "removeDuplicates": {
+        "title": "Supprimer les lignes en double",
+        "body": "Après l'empilement ou le join, supprime du résultat final les lignes identiques dans toutes leurs colonnes et ne garde que la première, dans l'ordre du résultat. Deux cellules vides sont considérées comme égales. La colonne avec le nom du fichier source (si vous l'ajoutez en empilant) n'est pas prise en compte dans la comparaison.",
+        "when": "Utilisez-la quand les fichiers se recoupent, par exemple des exports qui répètent des enregistrements. Attention : le nombre 1 et le texte « 1 » ne sont pas égaux pour cette comparaison ; si une même colonne est lue comme nombre dans un fichier et comme texte dans un autre, cochez aussi « Lire toutes les colonnes comme du texte ».",
+        "example": "Exemple : vous empilez janvier.xlsx et fevrier.xlsx et la ligne « Ana García | Lima | 350 » apparaît dans les deux. Dans le résultat, elle n'apparaît qu'une fois, même si vous avez ajouté la colonne du fichier source (c'est celle de janvier.xlsx qui est gardée). L'aperçu et le rapport indiquent combien de lignes ont été supprimées."
+      },
+      "includeReport": {
+        "title": "Inclure le rapport de la combinaison",
+        "body": "Enregistre avec le résultat un résumé de la façon dont il a été obtenu : date et heure, mode de combinaison, type de join (en join uniquement), lignes et colonnes du résultat, lignes en double supprimées et si les options étaient activées (colonne du fichier source, tout en texte, suppression des doublons). En dessous figure un tableau par fichier avec son nom, la feuille lue et les lignes lues ; en join, il ajoute la colonne clé, les lignes sans correspondance (leur clé n'apparaît dans aucun autre fichier, quel que soit le type de join) et les lignes à clé vide.",
+        "where": "Où il apparaît : en .xlsx, .ods et .xls, dans une feuille supplémentaire nommée « {{sheetName}} », après la feuille de données. En .csv, qui n'a pas de feuilles, dans un fichier séparé dans le même dossier, <nom>_{{suffix}}.csv, avec le même séparateur. Si ce fichier existe déjà, l'application demande avant de l'écraser.",
+        "example": "Exemple : vous enregistrez en .csv sous le nom « resultat » et deux fichiers sont créés : resultat.csv et resultat_{{suffix}}.csv."
+      },
+      "preview": {
+        "title": "Bouton « Aperçu »",
+        "body": "Calcule la combinaison complète avec les fichiers et les options actuels, sans rien enregistrer (il n'est pas nécessaire d'avoir choisi le dossier de destination). Il affiche les totaux (lignes, colonnes et, si vous supprimez les doublons, combien de lignes ont été supprimées), un tableau par fichier avec les lignes lues (en join, aussi les lignes sans correspondance et à clé vide) et les 20 premières lignes du résultat. Avec de gros fichiers, cela peut prendre presque autant de temps que la combinaison."
+      }
+    }
   },
   "splash": {
     "loading": "Chargement…"

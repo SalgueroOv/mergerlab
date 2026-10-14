@@ -89,6 +89,7 @@
     "sourceColumnName": "quelldatei"
   },
   "readOptions": {
+    "label": "Allgemeine Optionen",
     "allAsText": "Alle Spalten als Text lesen (führende Nullen bleiben erhalten)",
     "removeDuplicates": "Doppelte Zeilen entfernen",
     "includeReport": "Bericht zur Kombination beifügen"
@@ -192,7 +193,7 @@
       },
       "joinType": {
         "title": "4. Join-Typ",
-        "body": "Im Join-Modus wählst du, wie die Dateien verknüpft werden: Inner, Left, Right oder Outer. Wenn du unsicher bist, erklärt die Schaltfläche \"?\" jeden Typ mit Grafiken und Beispielen."
+        "body": "Im Join-Modus wählst du, wie die Dateien verknüpft werden: Inner, Left, Right, Outer oder die Anti-Typen (Left Anti und Right Anti), die nur die Zeilen einer Datei behalten, deren Schlüssel in der anderen nicht vorkommt. Wenn du unsicher bist, erklärt die Schaltfläche \"?\" jeden Typ mit Grafiken und Beispielen."
       },
       "joinKey": {
         "title": "5. Schlüsselspalte pro Datei",
@@ -202,16 +203,20 @@
         "title": "6. Ausgabe konfigurieren",
         "body": "Wähle das Format der Ergebnisdatei, ihren Namen und den Ordner, in dem sie gespeichert wird."
       },
+      "options": {
+        "title": "7. Allgemeine Optionen",
+        "body": "Diese Kontrollkästchen gelten in beiden Modi: alle Spalten als Text lesen (führende Nullen bleiben erhalten), doppelte Zeilen aus dem Ergebnis entfernen und einen Bericht zur Kombination beifügen. Die Schaltfläche \"?\" erklärt jede davon mit Beispielen."
+      },
       "merge": {
-        "title": "7. Kombinieren",
-        "body": "Sobald die Schaltfläche aktiviert ist, kombiniere die Dateien. Ist sie deaktiviert, zeigt der Text darüber genau an, was noch fehlt."
+        "title": "8. Kombinieren",
+        "body": "Sobald die Schaltfläche aktiviert ist, kombiniere die Dateien. Ist sie deaktiviert, zeigt der Text darüber genau an, was noch fehlt. Mit \"Vorschau\" siehst du die Summen und die ersten Zeilen des Ergebnisses, bevor du es speicherst."
       },
       "theme": {
-        "title": "8. Helles oder dunkles Design",
+        "title": "9. Helles oder dunkles Design",
         "body": "Standardmäßig folgt es dem Design des Betriebssystems; wähle \"Hell\" oder \"Dunkel\", um es manuell festzulegen."
       },
       "help": {
-        "title": "9. Hilfe und Version",
+        "title": "10. Hilfe und Version",
         "body": "Hier findest du die Version, den Autor und einen Link, um diese Tour jederzeit erneut anzusehen."
       }
     }
@@ -260,6 +265,35 @@
     "body2": "Verwende diesen Modus, wenn die Dateien dieselbe Art von Daten darstellen, die im Zeitverlauf oder stapelweise wiederholt werden (z. B. Verkäufe für Januar, Februar und März mit denselben Spalten) — im Gegensatz zum Join, der unterschiedliche Spalten über einen gemeinsamen Schlüssel verknüpft.",
     "sourceColumnTerm": "Spalte mit Name der Quelldatei hinzufügen",
     "sourceColumnNote": "fügt eine zusätzliche Spalte hinzu, die angibt, aus welcher Datei jede Zeile stammt — nützlich, um die Herkunft nach dem Stapeln nachzuverfolgen."
+  },
+  "optionsTutorial": {
+    "buttonLabel": "Was jede Option bewirkt",
+    "title": "Allgemeine Optionen",
+    "intro": "Diese Kontrollkästchen funktionieren in beiden Modi (Join und Stapeln) gleich, und du kannst mehrere gleichzeitig aktivieren.",
+    "sections": {
+      "allAsText": {
+        "title": "Alle Spalten als Text lesen",
+        "body": "Liest jede Zelle genau so, wie sie geschrieben ist, ohne sie als Zahl zu interpretieren. So bleiben führende Nullen erhalten (00123 wird nicht zu 123), und eine Zahlenspalte mit leeren Zellen wird nicht zu Dezimalzahlen (1 wird nicht zu 1.0).",
+        "when": "Nutze sie für Codes, Ausweisnummern, Postleitzahlen oder Telefonnummern, die genau so bleiben müssen. Beachte, dass Zahlen und Datumswerte im Ergebnis dann als Text gespeichert werden (Excel kann sie zum Beispiel nicht direkt summieren). Im Join-Modus brauchst du sie nicht nur wegen des Schlüssels: Die Schlüsselspalte jeder Datei wird immer als Text gelesen, auch wenn dieses Kästchen deaktiviert ist.",
+        "example": "Beispiel: eine .csv mit der Produktnummer 00123. Ohne die Option wird sie als Zahl 123 gelesen; mit der Option bleibt sie 00123."
+      },
+      "removeDuplicates": {
+        "title": "Doppelte Zeilen entfernen",
+        "body": "Entfernt nach dem Stapeln oder dem Join aus dem Endergebnis die Zeilen, die in allen Spalten identisch sind, und behält nur die erste, in der Reihenfolge des Ergebnisses. Zwei leere Zellen gelten als gleich. Die Spalte mit dem Namen der Quelldatei (falls du sie beim Stapeln hinzufügst) zählt beim Vergleich nicht.",
+        "when": "Nutze sie, wenn sich die Dateien überschneiden, zum Beispiel bei Exporten, die Datensätze wiederholen. Achtung: Die Zahl 1 und der Text \"1\" sind bei diesem Vergleich nicht gleich; wird dieselbe Spalte in einer Datei als Zahl und in einer anderen als Text gelesen, aktiviere zusätzlich \"Alle Spalten als Text lesen\".",
+        "example": "Beispiel: Du stapelst januar.xlsx und februar.xlsx, und die Zeile «Ana García | Lima | 350» kommt in beiden vor. Im Ergebnis steht sie nur einmal, auch wenn du die Spalte mit der Quelldatei hinzugefügt hast (es bleibt die aus januar.xlsx). Vorschau und Bericht zeigen, wie viele Zeilen entfernt wurden."
+      },
+      "includeReport": {
+        "title": "Bericht zur Kombination beifügen",
+        "body": "Speichert neben dem Ergebnis eine Zusammenfassung, wie es entstanden ist: Datum und Uhrzeit, Kombinationsmodus, Join-Typ (nur bei Join), Zeilen und Spalten des Ergebnisses, entfernte doppelte Zeilen und ob die Optionen aktiviert waren (Spalte mit Quelldatei, alles als Text, Duplikate entfernen). Darunter folgt eine Tabelle pro Datei mit Name, gelesenem Tabellenblatt und gelesenen Zeilen; beim Join kommen die Schlüsselspalte, die Zeilen ohne Treffer (ihr Schlüssel kommt in keiner anderen Datei vor, unabhängig vom Join-Typ) und die Zeilen mit leerem Schlüssel hinzu.",
+        "where": "Wo er erscheint: bei .xlsx, .ods und .xls in einem zusätzlichen Tabellenblatt namens «{{sheetName}}» nach dem Datenblatt. Bei .csv, das keine Tabellenblätter hat, in einer eigenen Datei im selben Ordner, <name>_{{suffix}}.csv, mit demselben Trennzeichen. Gibt es diese Datei schon, fragt die App vor dem Überschreiben nach.",
+        "example": "Beispiel: Du speicherst als .csv mit dem Namen «ergebnis», und es entstehen zwei Dateien: ergebnis.csv und ergebnis_{{suffix}}.csv."
+      },
+      "preview": {
+        "title": "Schaltfläche «Vorschau»",
+        "body": "Berechnet die vollständige Kombination mit den aktuellen Dateien und Optionen, ohne etwas zu speichern (ein Zielordner muss nicht gewählt sein). Sie zeigt die Summen (Zeilen, Spalten und, wenn du Duplikate entfernst, wie viele Zeilen entfernt wurden), eine Tabelle pro Datei mit den gelesenen Zeilen (beim Join auch die Zeilen ohne Treffer und mit leerem Schlüssel) und die ersten 20 Zeilen des Ergebnisses. Bei großen Dateien kann das fast so lange dauern wie das Kombinieren."
+      }
+    }
   },
   "splash": {
     "loading": "Wird geladen…"

@@ -247,11 +247,49 @@ archivo después de cada paso (usando `left_on`/`right_on` y completando huecos 
 columna clave final del resultado conserva el nombre de la clave elegida en el primer archivo.
 Ver el docstring de `join_files` en `backend/merger.py` para el detalle del algoritmo.
 
+## Flujo de una combinación: resultado, vista previa e informe
+
+Toda combinación pasa por `build_result(...)` en `backend/merger.py`, que lee cada archivo **una
+sola vez**, apila o cruza, quita duplicados si se pidió y devuelve `(df, stats)` sin escribir
+nada. Sobre ese núcleo hay dos endpoints con el mismo cuerpo JSON y la misma validación
+(`_combine_options_from` en `server.py`):
+
+| Endpoint            | Qué hace con el resultado                                                     | Estado final (`GET /api/status/<id>`)              |
+| ------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
+| `POST /api/merge`   | Lo escribe con `write_output` (y el informe, si se pidió)                     | `result_path` y, en CSV con informe, `report_path` |
+| `POST /api/preview` | No escribe nada; `build_preview` toma columnas y primeras 20 filas como texto | `preview: {columns, rows, stats}`                  |
+
+`/api/merge` añade además las comprobaciones de salida (formato, ruta, extensión, separador).
+Ambos se ejecutan como trabajos en background con el mismo mecanismo de progreso.
+
+- **`stats`** (camelCase, viaja al frontend): `mode`, `joinType`, `files` (por archivo `name`,
+  `sheet`, `rowsRead` y, en join, `keyColumn`, `unmatchedRows` = filas con clave no vacía que no
+  aparece en ningún otro archivo, `emptyKeyRows`), `resultRows`, `resultColumns`,
+  `duplicatesRemoved` y `options`. Lo usan la vista previa (`PreviewDialog.jsx`) y el informe.
+- **Join anti** (`left_anti`, `right_anti`): no cruzan columnas; `_anti_join` devuelve las filas
+  del archivo de origen (el primero, o el segundo en `right_anti`) cuya clave no está en los
+  demás, con solo sus columnas. `right_anti` exige exactamente 2 archivos
+  (`right_anti_two_files`); la UI lo bloquea con `isJoinTypeUnavailable` (`src/utils.js`). Las
+  claves vacías nunca coinciden.
+- **Quitar duplicados** (`drop_duplicate_rows`): filas idénticas en el resultado final, se
+  conserva la primera; la columna de archivo de origen se ignora al comparar (su nombre real
+  viaja en `df.attrs["source_column"]`). No convierte tipos: `1` y `"1"` son distintos.
+- **Informe** (`build_report` + `write_output(..., report=...)`): en xlsx/ods/xls es una hoja más
+  del libro; en CSV, un archivo `<nombre>_<sufijo>.csv` junto al resultado (`report_output_path`).
+  Los textos llegan traducidos desde el frontend en `report_labels` (`buildReportLabels` en
+  `src/utils.js`); si faltan se usan los de `DEFAULT_REPORT_LABELS`, que coinciden con
+  `es.json`. La confirmación de sobrescritura (`confirm-overwrite` en `electron/main.js`)
+  comprueba también el CSV del informe.
+- **Disponibilidad de los botones**: `combineReadiness` (`src/utils.js`) concentra las reglas de
+  "Combinar" y "Vista previa" (esta no exige carpeta de destino).
+
 ## Tutoriales y recorrido de bienvenida
 
 - **Tutoriales contextuales**: el botón "?" junto a "Tipo de join" y junto a "Opciones" (modo
   apilar) abre un modal con diagramas explicando cómo funciona cada modo
-  (`JoinTutorial.jsx` / `StackTutorial.jsx`).
+  (`JoinTutorial.jsx`, con una tarjeta por cada tipo de join incluidos los anti, y
+  `StackTutorial.jsx`). El "?" junto a "Opciones generales" (visible en ambos modos) explica
+  leer todo como texto, quitar duplicados, el informe y la vista previa (`OptionsTutorial.jsx`).
 - **Recorrido de bienvenida** (`OnboardingTour.jsx`): la primera vez que se abre la app (se
   guarda un flag en `localStorage`, clave `mergerlab.onboarding.completed`), se resaltan en
   secuencia los controles principales con un overlay tipo spotlight. Cualquier click dentro de

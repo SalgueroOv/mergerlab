@@ -89,6 +89,7 @@
     "sourceColumnName": "archivo_origen"
   },
   "readOptions": {
+    "label": "Opciones generales",
     "allAsText": "Leer todas las columnas como texto (conserva ceros a la izquierda)",
     "removeDuplicates": "Quitar filas duplicadas",
     "includeReport": "Incluir informe de la combinación"
@@ -192,7 +193,7 @@
       },
       "joinType": {
         "title": "4. Tipo de join",
-        "body": "En modo join eliges cómo se cruzan los archivos: Inner, Left, Right u Outer. Si no sabes cuál usar, el botón \"?\" explica cada tipo con dibujos y ejemplos."
+        "body": "En modo join eliges cómo se cruzan los archivos: Inner, Left, Right, Outer o los tipos anti (Left anti y Right anti), que dejan solo las filas de un archivo cuya clave no está en el otro. Si no sabes cuál usar, el botón \"?\" explica cada tipo con dibujos y ejemplos."
       },
       "joinKey": {
         "title": "5. Columna clave por archivo",
@@ -202,16 +203,20 @@
         "title": "6. Configura la salida",
         "body": "Elige el formato del archivo resultante, su nombre y la carpeta donde guardarlo."
       },
+      "options": {
+        "title": "7. Opciones generales",
+        "body": "Estas casillas sirven en los dos modos: leer todas las columnas como texto (conserva ceros a la izquierda), quitar las filas duplicadas del resultado e incluir un informe de la combinación. El botón \"?\" explica cada una con ejemplos."
+      },
       "merge": {
-        "title": "7. Combinar",
-        "body": "Cuando el botón esté habilitado, combina los archivos. Si está deshabilitado, arriba te va a decir exactamente qué falta."
+        "title": "8. Combinar",
+        "body": "Cuando el botón esté habilitado, combina los archivos. Si está deshabilitado, arriba te va a decir exactamente qué falta. Con \"Vista previa\" ves los totales y las primeras filas del resultado antes de guardarlo."
       },
       "theme": {
-        "title": "8. Tema claro u oscuro",
+        "title": "9. Tema claro u oscuro",
         "body": "Por defecto sigue el tema del sistema operativo; elige \"Claro\" u \"Oscuro\" para fijarlo manualmente."
       },
       "help": {
-        "title": "9. Ayuda y versión",
+        "title": "10. Ayuda y versión",
         "body": "Aquí encuentras la versión, el autor y un enlace para volver a ver este recorrido cuando quieras."
       }
     }
@@ -260,6 +265,35 @@
     "body2": "Usa este modo cuando los archivos representan el mismo tipo de datos repetido en el tiempo o por lote (por ejemplo, ventas de enero, febrero y marzo con las mismas columnas), a diferencia del join, que cruza columnas distintas usando una clave en común.",
     "sourceColumnTerm": "Añadir columna con nombre de archivo origen",
     "sourceColumnNote": "agrega una columna extra que indica de qué archivo vino cada fila, útil para rastrear el origen después de apilar."
+  },
+  "optionsTutorial": {
+    "buttonLabel": "Qué hace cada opción",
+    "title": "Opciones generales",
+    "intro": "Estas casillas funcionan igual en los dos modos (join y apilar) y puedes activar varias a la vez.",
+    "sections": {
+      "allAsText": {
+        "title": "Leer todas las columnas como texto",
+        "body": "Lee cada celda tal como está escrita, sin interpretarla como número. Así se conservan los ceros a la izquierda (00123 no pasa a 123) y una columna numérica con celdas vacías no pasa a decimales (1 no se convierte en 1.0).",
+        "when": "Úsala con códigos, DNI, códigos postales o teléfonos que deben quedar exactamente como están. Ten en cuenta que en el resultado los números y las fechas quedan guardados como texto (por ejemplo, Excel no los suma directamente). En modo join no hace falta activarla solo por la clave: la columna clave de cada archivo se lee siempre como texto, aunque esta casilla esté desactivada.",
+        "example": "Ejemplo: un .csv con el código de producto 00123. Sin la opción se lee como el número 123; con la opción queda 00123."
+      },
+      "removeDuplicates": {
+        "title": "Quitar filas duplicadas",
+        "body": "Después de apilar o de hacer el join, quita del resultado final las filas idénticas en todas sus columnas y conserva solo la primera, en el orden del resultado. Dos celdas vacías cuentan como iguales. La columna con el nombre del archivo de origen (si la añades al apilar) no cuenta al comparar.",
+        "when": "Úsala cuando los archivos se solapan, por ejemplo exportaciones que repiten registros. Ojo: el número 1 y el texto \"1\" no son iguales para esta comparación; si una misma columna se lee como número en un archivo y como texto en otro, activa también \"Leer todas las columnas como texto\".",
+        "example": "Ejemplo: apilas enero.xlsx y febrero.xlsx y la fila «Ana García | Lima | 350» aparece en los dos. En el resultado queda una sola vez, aunque hayas añadido la columna de archivo de origen (se conserva la de enero.xlsx). La vista previa y el informe indican cuántas filas se quitaron."
+      },
+      "includeReport": {
+        "title": "Incluir informe de la combinación",
+        "body": "Guarda junto al resultado un resumen de cómo se hizo: fecha y hora, modo de combinación, tipo de join (solo en join), filas y columnas del resultado, filas duplicadas quitadas y si estaban activadas las opciones (columna de archivo de origen, todo como texto, quitar duplicados). Debajo va una tabla por archivo con su nombre, la hoja leída y las filas leídas; en join añade la columna clave, las filas sin coincidencia (su clave no aparece en ningún otro archivo, sea cual sea el tipo de join) y las filas con la clave vacía.",
+        "where": "Dónde aparece: en .xlsx, .ods y .xls, en una hoja adicional llamada «{{sheetName}}», después de la hoja de datos. En .csv, que no tiene hojas, en un archivo aparte en la misma carpeta, <nombre>_{{suffix}}.csv, con el mismo separador. Si ese archivo ya existe, la app pregunta antes de sobrescribirlo.",
+        "example": "Ejemplo: guardas en .csv con el nombre «resultado» y se crean dos archivos: resultado.csv y resultado_{{suffix}}.csv."
+      },
+      "preview": {
+        "title": "Botón «Vista previa»",
+        "body": "Calcula la combinación completa con los archivos y las opciones actuales, sin guardar nada (no hace falta haber elegido la carpeta de destino). Muestra los totales (filas, columnas y, si quitas duplicados, cuántas filas se quitaron), una tabla por archivo con las filas leídas (en join, también las filas sin coincidencia y con clave vacía) y las primeras 20 filas del resultado. Con archivos grandes puede tardar casi lo mismo que combinar."
+      }
+    }
   },
   "splash": {
     "loading": "Cargando…"

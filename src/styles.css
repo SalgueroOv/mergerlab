@@ -945,6 +945,37 @@ body {
   margin-bottom: 6px;
 }
 
+/* ---- Modal (opciones generales) ---- */
+
+.options-tutorial-intro {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.options-tutorial-section {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.options-tutorial-section h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.options-tutorial-section p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.options-tutorial-section p:last-child {
+  margin-bottom: 0;
+}
+
 /* ---- Modal (vista previa del resultado) ---- */
 
 .modal-panel--wide {

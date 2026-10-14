@@ -4,6 +4,7 @@ import FileList from "./components/FileList.jsx";
 import FormatPicker from "./components/FormatPicker.jsx";
 import JoinPicker from "./components/JoinPicker.jsx";
 import StackTutorial from "./components/StackTutorial.jsx";
+import OptionsTutorial from "./components/OptionsTutorial.jsx";
 import ProgressBar from "./components/ProgressBar.jsx";
 import ErrorBanner from "./components/ErrorBanner.jsx";
 import AboutDialog from "./components/AboutDialog.jsx";
@@ -786,7 +787,11 @@ export default function App() {
               </div>
             </div>
 
-            <div className="field-group">
+            <div className="field-group general-options-group">
+              <div className="field-row">
+                <span className="field-label field-label--inline">{t("readOptions.label")}</span>
+                <OptionsTutorial />
+              </div>
               <label className="checkbox-row">
                 <input
                   type="checkbox"

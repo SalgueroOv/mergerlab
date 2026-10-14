@@ -89,6 +89,7 @@
     "sourceColumnName": "arquivo_origem"
   },
   "readOptions": {
+    "label": "Opções gerais",
     "allAsText": "Ler todas as colunas como texto (mantém zeros à esquerda)",
     "removeDuplicates": "Remover linhas duplicadas",
     "includeReport": "Incluir relatório da combinação"
@@ -192,7 +193,7 @@
       },
       "joinType": {
         "title": "4. Tipo de join",
-        "body": "No modo join você escolhe como os arquivos são cruzados: Inner, Left, Right ou Outer. Se não souber qual usar, o botão \"?\" explica cada tipo com desenhos e exemplos."
+        "body": "No modo join você escolhe como os arquivos são cruzados: Inner, Left, Right, Outer ou os tipos anti (Left anti e Right anti), que mantêm só as linhas de um arquivo cuja chave não está no outro. Se não souber qual usar, o botão \"?\" explica cada tipo com desenhos e exemplos."
       },
       "joinKey": {
         "title": "5. Coluna-chave por arquivo",
@@ -202,16 +203,20 @@
         "title": "6. Configure a saída",
         "body": "Escolha o formato do arquivo resultante, seu nome e a pasta onde salvá-lo."
       },
+      "options": {
+        "title": "7. Opções gerais",
+        "body": "Estas caixas valem nos dois modos: ler todas as colunas como texto (mantém zeros à esquerda), remover as linhas duplicadas do resultado e incluir um relatório da combinação. O botão \"?\" explica cada uma com exemplos."
+      },
       "merge": {
-        "title": "7. Combinar",
-        "body": "Quando o botão estiver habilitado, combine os arquivos. Se estiver desabilitado, o texto acima dirá exatamente o que está faltando."
+        "title": "8. Combinar",
+        "body": "Quando o botão estiver habilitado, combine os arquivos. Se estiver desabilitado, o texto acima dirá exatamente o que está faltando. Com \"Pré-visualizar\" você vê os totais e as primeiras linhas do resultado antes de salvá-lo."
       },
       "theme": {
-        "title": "8. Tema claro ou escuro",
+        "title": "9. Tema claro ou escuro",
         "body": "Por padrão, segue o tema do sistema operacional; escolha \"Claro\" ou \"Escuro\" para defini-lo manualmente."
       },
       "help": {
-        "title": "9. Ajuda e versão",
+        "title": "10. Ajuda e versão",
         "body": "Aqui você encontra a versão, o autor e um link para rever este tour quando quiser."
       }
     }
@@ -260,6 +265,35 @@
     "body2": "Use este modo quando os arquivos representam o mesmo tipo de dado repetido ao longo do tempo ou por lote (por exemplo, vendas de janeiro, fevereiro e março com as mesmas colunas), diferentemente do join, que cruza colunas diferentes usando uma chave em comum.",
     "sourceColumnTerm": "Adicionar coluna com o nome do arquivo de origem",
     "sourceColumnNote": "adiciona uma coluna extra indicando de qual arquivo veio cada linha, útil para rastrear a origem depois de empilhar."
+  },
+  "optionsTutorial": {
+    "buttonLabel": "O que cada opção faz",
+    "title": "Opções gerais",
+    "intro": "Estas caixas funcionam da mesma forma nos dois modos (join e empilhar) e você pode ativar várias ao mesmo tempo.",
+    "sections": {
+      "allAsText": {
+        "title": "Ler todas as colunas como texto",
+        "body": "Lê cada célula exatamente como está escrita, sem interpretá-la como número. Assim os zeros à esquerda são mantidos (00123 não vira 123) e uma coluna numérica com células vazias não passa a decimais (1 não vira 1.0).",
+        "when": "Use com códigos, documentos de identidade, CEPs ou telefones que precisam ficar exatamente como estão. Lembre-se de que, no resultado, números e datas ficam salvos como texto (por exemplo, o Excel não os soma diretamente). No modo join não é preciso ativá-la só por causa da chave: a coluna-chave de cada arquivo é sempre lida como texto, mesmo com esta caixa desativada.",
+        "example": "Exemplo: um .csv com o código de produto 00123. Sem a opção ele é lido como o número 123; com a opção continua 00123."
+      },
+      "removeDuplicates": {
+        "title": "Remover linhas duplicadas",
+        "body": "Depois de empilhar ou fazer o join, remove do resultado final as linhas idênticas em todas as colunas e mantém só a primeira, na ordem do resultado. Duas células vazias contam como iguais. A coluna com o nome do arquivo de origem (se você a adicionar ao empilhar) não entra na comparação.",
+        "when": "Use quando os arquivos se sobrepõem, por exemplo exportações que repetem registros. Atenção: o número 1 e o texto \"1\" não são iguais nesta comparação; se a mesma coluna for lida como número em um arquivo e como texto em outro, ative também \"Ler todas as colunas como texto\".",
+        "example": "Exemplo: você empilha janeiro.xlsx e fevereiro.xlsx e a linha «Ana García | Lima | 350» aparece nos dois. No resultado ela aparece uma vez só, mesmo que você tenha adicionado a coluna do arquivo de origem (fica a de janeiro.xlsx). A pré-visualização e o relatório mostram quantas linhas foram removidas."
+      },
+      "includeReport": {
+        "title": "Incluir relatório da combinação",
+        "body": "Salva junto com o resultado um resumo de como ele foi feito: data e hora, modo de combinação, tipo de join (só no join), linhas e colunas do resultado, linhas duplicadas removidas e se as opções estavam ativadas (coluna do arquivo de origem, tudo como texto, remover duplicadas). Abaixo vem uma tabela por arquivo com o nome, a planilha lida e as linhas lidas; no join ela acrescenta a coluna-chave, as linhas sem correspondência (a chave não aparece em nenhum outro arquivo, seja qual for o tipo de join) e as linhas com chave vazia.",
+        "where": "Onde aparece: em .xlsx, .ods e .xls, em uma planilha adicional chamada «{{sheetName}}», depois da planilha de dados. Em .csv, que não tem planilhas, em um arquivo separado na mesma pasta, <nome>_{{suffix}}.csv, com o mesmo separador. Se esse arquivo já existir, o app pergunta antes de substituí-lo.",
+        "example": "Exemplo: você salva em .csv com o nome «resultado» e são criados dois arquivos: resultado.csv e resultado_{{suffix}}.csv."
+      },
+      "preview": {
+        "title": "Botão «Pré-visualizar»",
+        "body": "Calcula a combinação completa com os arquivos e as opções atuais, sem salvar nada (não é preciso ter escolhido a pasta de destino). Mostra os totais (linhas, colunas e, se você remover duplicadas, quantas linhas foram removidas), uma tabela por arquivo com as linhas lidas (no join, também as linhas sem correspondência e com chave vazia) e as primeiras 20 linhas do resultado. Com arquivos grandes pode demorar quase o mesmo que combinar."
+      }
+    }
   },
   "splash": {
     "loading": "Carregando…"

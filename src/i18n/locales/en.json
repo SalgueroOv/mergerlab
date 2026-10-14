@@ -89,6 +89,7 @@
     "sourceColumnName": "source_file"
   },
   "readOptions": {
+    "label": "General options",
     "allAsText": "Read all columns as text (keeps leading zeros)",
     "removeDuplicates": "Remove duplicate rows",
     "includeReport": "Include combination report"
@@ -192,7 +193,7 @@
       },
       "joinType": {
         "title": "4. Join type",
-        "body": "In join mode you choose how the files are matched: Inner, Left, Right or Outer. If you are not sure which one to use, the \"?\" button explains each type with drawings and examples."
+        "body": "In join mode you choose how the files are matched: Inner, Left, Right, Outer or the anti types (Left anti and Right anti), which keep only the rows of one file whose key is not in the other. If you are not sure which one to use, the \"?\" button explains each type with drawings and examples."
       },
       "joinKey": {
         "title": "5. Key column per file",
@@ -202,16 +203,20 @@
         "title": "6. Configure the output",
         "body": "Choose the resulting file's format, its name and the folder where it will be saved."
       },
+      "options": {
+        "title": "7. General options",
+        "body": "These checkboxes apply in both modes: read all columns as text (keeps leading zeros), remove duplicate rows from the result and include a combination report. The \"?\" button explains each one with examples."
+      },
       "merge": {
-        "title": "7. Combine",
-        "body": "Once the button is enabled, combine the files. If it's disabled, the text above will tell you exactly what's missing."
+        "title": "8. Combine",
+        "body": "Once the button is enabled, combine the files. If it's disabled, the text above will tell you exactly what's missing. With \"Preview\" you see the totals and the first rows of the result before saving it."
       },
       "theme": {
-        "title": "8. Light or dark theme",
+        "title": "9. Light or dark theme",
         "body": "By default it follows the operating system's theme; choose \"Light\" or \"Dark\" to set it manually."
       },
       "help": {
-        "title": "9. Help and version",
+        "title": "10. Help and version",
         "body": "Here you'll find the version, the author, and a link to watch this tour again whenever you want."
       }
     }
@@ -260,6 +265,35 @@
     "body2": "Use this mode when the files represent the same kind of data repeated over time or in batches (for example, sales for January, February and March with the same columns), unlike a join, which crosses different columns using a shared key.",
     "sourceColumnTerm": "Add a column with the source file name",
     "sourceColumnNote": "adds an extra column indicating which file each row came from, useful for tracing its origin after stacking."
+  },
+  "optionsTutorial": {
+    "buttonLabel": "What each option does",
+    "title": "General options",
+    "intro": "These checkboxes work the same way in both modes (join and stack), and you can turn on several at once.",
+    "sections": {
+      "allAsText": {
+        "title": "Read all columns as text",
+        "body": "Reads every cell exactly as it is written, without interpreting it as a number. This keeps leading zeros (00123 does not become 123) and stops a numeric column with empty cells from turning into decimals (1 does not become 1.0).",
+        "when": "Use it for codes, ID numbers, postal codes or phone numbers that must stay exactly as they are. Keep in mind that numbers and dates are then saved as text in the result (for example, Excel will not add them up directly). In join mode you do not need it just for the key: each file's key column is always read as text, even with this checkbox off.",
+        "example": "Example: a .csv with the product code 00123. Without the option it is read as the number 123; with it, it stays 00123."
+      },
+      "removeDuplicates": {
+        "title": "Remove duplicate rows",
+        "body": "After stacking or joining, removes from the final result the rows that are identical in every column and keeps only the first one, in result order. Two empty cells count as equal. The source file name column (if you add it when stacking) is not taken into account when comparing.",
+        "when": "Use it when the files overlap, for example exports that repeat records. Note: the number 1 and the text \"1\" are not equal for this comparison; if the same column is read as a number in one file and as text in another, also turn on \"Read all columns as text\".",
+        "example": "Example: you stack january.xlsx and february.xlsx and the row «Ana García | Lima | 350» appears in both. It appears only once in the result, even if you added the source file column (the one from january.xlsx is kept). The preview and the report show how many rows were removed."
+      },
+      "includeReport": {
+        "title": "Include combination report",
+        "body": "Saves a summary of how the result was made next to it: date and time, combination mode, join type (join only), result rows and columns, duplicate rows removed, and whether the options were on (source file column, all as text, remove duplicates). Below that comes a table per file with its name, the sheet read and the rows read; in join it adds the key column, the rows without a match (their key does not appear in any other file, whatever the join type) and the rows with an empty key.",
+        "where": "Where it goes: in .xlsx, .ods and .xls, in an extra sheet named «{{sheetName}}», after the data sheet. In .csv, which has no sheets, in a separate file in the same folder, <name>_{{suffix}}.csv, with the same separator. If that file already exists, the app asks before overwriting it.",
+        "example": "Example: you save as .csv with the name «result» and two files are created: result.csv and result_{{suffix}}.csv."
+      },
+      "preview": {
+        "title": "«Preview» button",
+        "body": "Runs the full combination with the current files and options, without saving anything (you do not need to have chosen a destination folder). It shows the totals (rows, columns and, if you remove duplicates, how many rows were removed), a table per file with the rows read (in join, also the rows without a match and with an empty key) and the first 20 rows of the result. With large files it can take almost as long as combining."
+      }
+    }
   },
   "splash": {
     "loading": "Loading…"
