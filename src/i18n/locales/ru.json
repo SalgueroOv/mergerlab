@@ -112,6 +112,17 @@
     "unmatchedRows": "Строк без совпадений",
     "emptyKeyRows": "Строк с пустым ключом"
   },
+  "preview": {
+    "title": "Предпросмотр результата",
+    "filesHeading": "Прочитанные файлы",
+    "rowsHeading": "Первые строки результата",
+    "showingSome": "Показано {{shown}} из {{total}} строк",
+    "showingAll_one": "Показана {{count}} строка",
+    "showingAll_few": "Показаны {{count}} строки",
+    "showingAll_many": "Показано {{count}} строк",
+    "showingAll_other": "Показано {{count}} строк",
+    "empty": "В результате нет строк."
+  },
   "progress": {
     "completedPrefix": "Готово — файл сохранён в",
     "openFolder": "Открыть папку",
@@ -121,6 +132,8 @@
   "footer": {
     "mergeButton": "Объединить файлы",
     "processing": "Обработка...",
+    "previewButton": "Предпросмотр",
+    "previewing": "Вычисление...",
     "clear": "Очистить",
     "summary_one": "Загружен {{count}} файл · ~{{size}}",
     "summary_few": "Загружено {{count}} файла · ~{{size}}",
@@ -274,6 +287,7 @@
     "merge_done_duplicates_few": "Объединение завершено. Удалено {{count}} повторяющиеся строки.",
     "merge_done_duplicates_many": "Объединение завершено. Удалено {{count}} повторяющихся строк.",
     "merge_done_duplicates_other": "Объединение завершено. Удалено {{count}} повторяющихся строк.",
+    "preview_done": "Предпросмотр готов.",
     "no_files_selected": "Файлы не выбраны.",
     "unsupported_output_format": "Неподдерживаемый формат вывода: «{{format}}».",
     "no_output_path": "Не указан путь сохранения.",

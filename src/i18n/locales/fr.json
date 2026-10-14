@@ -110,6 +110,15 @@
     "unmatchedRows": "Lignes sans correspondance",
     "emptyKeyRows": "Lignes avec clé vide"
   },
+  "preview": {
+    "title": "Aperçu du résultat",
+    "filesHeading": "Fichiers lus",
+    "rowsHeading": "Premières lignes du résultat",
+    "showingSome": "Affichage de {{shown}} lignes sur {{total}}",
+    "showingAll_one": "Affichage de {{count}} ligne",
+    "showingAll_other": "Affichage de {{count}} lignes",
+    "empty": "Le résultat ne contient aucune ligne."
+  },
   "progress": {
     "completedPrefix": "Terminé — fichier enregistré dans",
     "openFolder": "Ouvrir le dossier",
@@ -119,6 +128,8 @@
   "footer": {
     "mergeButton": "Combiner les fichiers",
     "processing": "Traitement en cours...",
+    "previewButton": "Aperçu",
+    "previewing": "Calcul en cours...",
     "clear": "Effacer",
     "summary_one": "{{count}} fichier chargé · ~{{size}}",
     "summary_other": "{{count}} fichiers chargés · ~{{size}}"
@@ -268,6 +279,7 @@
     "merge_done": "Combinaison terminée.",
     "merge_done_duplicates_one": "Combinaison terminée. {{count}} ligne en double a été supprimée.",
     "merge_done_duplicates_other": "Combinaison terminée. {{count}} lignes en double ont été supprimées.",
+    "preview_done": "Aperçu prêt.",
     "no_files_selected": "Aucun fichier n'a été sélectionné.",
     "unsupported_output_format": "Format de sortie non pris en charge : '{{format}}'.",
     "no_output_path": "Aucun chemin d'enregistrement n'a été indiqué.",

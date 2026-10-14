@@ -16,6 +16,11 @@ los trabajos de combinación) llevan tanto `message` en español como, cuando el
 traducible, `code`/`params`: el frontend traduce con `code`/`params` vía i18next si los
 reconoce (ver `src/i18n/backendMessages.js`) y usa `message` como respaldo si no. Este
 contrato deliberadamente nunca rompe hacia atrás: `message` siempre está presente.
+
+Las combinaciones se hacen en trabajos en background: `POST /api/merge` lee, combina y escribe el
+resultado; `POST /api/preview` recibe el mismo cuerpo y hace la misma combinación completa, pero
+sin escribir ningún archivo (devuelve las columnas, las primeras filas y las estadísticas del
+resultado en el campo `preview` del estado final). Ambos se siguen con `GET /api/status/<id>`.
 """
 
 import hmac
@@ -37,6 +42,7 @@ from merger import (  # noqa: E402
     OUTPUT_CSV_SEPARATORS,
     SUPPORTED_OUTPUT_FORMATS,
     MergeError,
+    build_preview,
     build_report,
     build_result,
     inspect_csv,
@@ -110,7 +116,7 @@ def _set_job(job_id, **fields):
     """Actualiza (parcialmente) el estado del trabajo `job_id` en `jobs`, bajo `jobs_lock`.
 
     `fields` son los campos del diccionario de estado a sobrescribir (`status`, `progress`,
-    `message`, `code`, `params`, `result_path`, `report_path`); los que no se indiquen quedan
+    `message`, `code`, `params`, `result_path`, `report_path`, `preview`); los que no se indiquen quedan
     como estaban.
     """
     with jobs_lock:
@@ -161,6 +167,90 @@ def health():
     return jsonify({"status": "ok"})
 
 
+def _combine_options_from(payload):
+    """Lee y valida de un cuerpo JSON las opciones de la combinación en sí (todo menos la salida).
+
+    Es la validación común de `/api/merge` y `/api/preview`, para que ambos acepten y rechacen
+    exactamente lo mismo. Devuelve un diccionario con los argumentos de `merger.build_result`
+    (todos salvo `progress_callback`): `file_paths`, `mode`, `join_keys` (lista con la columna
+    clave de cada archivo, en el orden de `files`), `join_type`, `csv_separators`, `sheets`,
+    `add_source_column`, `source_column_name` (`DEFAULT_SOURCE_COLUMN` si no llega un texto no
+    vacío), `all_as_text` y `remove_duplicates`.
+
+    Lanza `MergeError` (con su `code`) si no hay archivos, si el modo no está soportado y, en modo
+    `"join"`, si hay menos de dos archivos, falta la clave de alguno, el tipo de join no está
+    soportado o es `"right_anti"` con un número de archivos distinto de dos.
+    """
+    files = payload.get("files") or []
+    mode = (payload.get("mode") or "concat").lower()
+    join_keys_by_path = payload.get("join_keys") or {}
+    join_type = (payload.get("join_type") or "inner").lower()
+    source_column_name = payload.get("source_column_name")
+    if not isinstance(source_column_name, str) or not source_column_name.strip():
+        source_column_name = DEFAULT_SOURCE_COLUMN
+
+    if not files:
+        raise MergeError("No se seleccionaron archivos.", code="no_files_selected")
+    if mode not in ("concat", "join"):
+        raise MergeError(
+            f"Modo de combinación no soportado: '{mode}'.", code="unsupported_mode", params={"mode": mode}
+        )
+
+    join_keys = [join_keys_by_path.get(f) for f in files]
+
+    if mode == "join":
+        if len(files) < 2:
+            raise MergeError("Se necesitan al menos dos archivos para hacer un join.", code="join_min_files")
+        if any(not k for k in join_keys):
+            raise MergeError("Debés indicar una columna clave para cada archivo.", code="missing_join_key")
+        if join_type not in JOIN_TYPES:
+            raise MergeError(
+                f"Tipo de join no soportado: '{join_type}'.",
+                code="unsupported_join_type",
+                params={"joinType": join_type},
+            )
+        if join_type == "right_anti" and len(files) != 2:
+            raise right_anti_two_files_error()
+
+    return {
+        "file_paths": files,
+        "mode": mode,
+        "join_keys": join_keys,
+        "join_type": join_type,
+        "csv_separators": _csv_separators_from(payload),
+        "sheets": _sheets_from(payload),
+        "add_source_column": bool(payload.get("add_source_column")),
+        "source_column_name": source_column_name.strip(),
+        "all_as_text": bool(payload.get("all_as_text")),
+        "remove_duplicates": bool(payload.get("remove_duplicates")),
+    }
+
+
+def _start_job(target, *args):
+    """Registra un trabajo nuevo en `jobs` y lo lanza en un hilo aparte con `target(job_id, *args)`.
+
+    Lo usan `/api/merge` y `/api/preview`. Devuelve la respuesta HTTP `{"job_id": ...}` con 202;
+    el progreso y el resultado se consultan después con `GET /api/status/<job_id>`.
+    """
+    job_id = str(uuid.uuid4())
+    with jobs_lock:
+        jobs[job_id] = {
+            "status": "pending",
+            "progress": 0,
+            "message": "En cola...",
+            "code": "queued",
+            "params": {},
+            "result_path": None,
+            "report_path": None,
+            "preview": None,
+        }
+
+    thread = threading.Thread(target=target, args=(job_id, *args), daemon=True)
+    thread.start()
+
+    return jsonify({"job_id": job_id}), 202
+
+
 @app.route("/api/merge", methods=["POST"])
 def merge():
     """Valida la petición de combinación y lanza el trabajo en un hilo aparte.
@@ -181,28 +271,21 @@ def merge():
     progreso y el resultado se consultan después con `GET /api/status/<job_id>`. El trabajo en
     sí (lectura, combinación y escritura) lo hace `_run_merge_job` en background para no
     bloquear la petición HTTP mientras se procesan archivos grandes.
+
+    Las opciones de la combinación en sí se validan con `_combine_options_from` (lo mismo que
+    `/api/preview`); aquí solo se añaden las comprobaciones de la salida.
     """
     payload = request.get_json(silent=True) or {}
-    files = payload.get("files") or []
     output_format = (payload.get("output_format") or "").lower()
     output_path = payload.get("output_path")
-    mode = (payload.get("mode") or "concat").lower()
-    join_keys_by_path = payload.get("join_keys") or {}
-    join_type = (payload.get("join_type") or "inner").lower()
-    csv_separators = _csv_separators_from(payload)
     output_csv_separator = payload.get("output_csv_separator") or ","
-    add_source_column = bool(payload.get("add_source_column"))
-    source_column_name = payload.get("source_column_name")
-    if not isinstance(source_column_name, str) or not source_column_name.strip():
-        source_column_name = DEFAULT_SOURCE_COLUMN
-    all_as_text = bool(payload.get("all_as_text"))
-    remove_duplicates = bool(payload.get("remove_duplicates"))
     include_report = bool(payload.get("include_report"))
     report_labels = _report_labels_from(payload)
-    sheets = _sheets_from(payload)
 
-    if not files:
-        return _error_response("No se seleccionaron archivos.", 400, code="no_files_selected")
+    try:
+        combine_options = _combine_options_from(payload)
+    except MergeError as exc:
+        return _error_response(str(exc), 400, code=exc.code, params=exc.params)
     if output_format not in SUPPORTED_OUTPUT_FORMATS:
         return _error_response(
             f"Formato de salida no soportado: '{output_format}'.",
@@ -223,73 +306,37 @@ def merge():
         validate_output_extension(output_path, output_format)
     except MergeError as exc:
         return _error_response(str(exc), 400, code=exc.code, params=exc.params)
-    if mode not in ("concat", "join"):
-        return _error_response(
-            f"Modo de combinación no soportado: '{mode}'.",
-            400,
-            code="unsupported_mode",
-            params={"mode": mode},
-        )
 
-    join_keys = [join_keys_by_path.get(f) for f in files]
-
-    if mode == "join":
-        if len(files) < 2:
-            return _error_response(
-                "Se necesitan al menos dos archivos para hacer un join.", 400, code="join_min_files"
-            )
-        if any(not k for k in join_keys):
-            return _error_response(
-                "Debés indicar una columna clave para cada archivo.", 400, code="missing_join_key"
-            )
-        if join_type not in JOIN_TYPES:
-            return _error_response(
-                f"Tipo de join no soportado: '{join_type}'.",
-                400,
-                code="unsupported_join_type",
-                params={"joinType": join_type},
-            )
-        if join_type == "right_anti" and len(files) != 2:
-            exc = right_anti_two_files_error()
-            return _error_response(str(exc), 400, code=exc.code, params=exc.params)
-
-    job_id = str(uuid.uuid4())
-    with jobs_lock:
-        jobs[job_id] = {
-            "status": "pending",
-            "progress": 0,
-            "message": "En cola...",
-            "code": "queued",
-            "params": {},
-            "result_path": None,
-            "report_path": None,
-        }
-
-    thread = threading.Thread(
-        target=_run_merge_job,
-        args=(
-            job_id,
-            files,
-            output_format,
-            output_path,
-            mode,
-            join_keys,
-            join_type,
-            csv_separators,
-            output_csv_separator,
-            add_source_column,
-            source_column_name.strip(),
-            all_as_text,
-            sheets,
-            remove_duplicates,
-            include_report,
-            report_labels,
-        ),
-        daemon=True,
+    return _start_job(
+        _run_merge_job,
+        combine_options,
+        output_format,
+        output_path,
+        output_csv_separator,
+        include_report,
+        report_labels,
     )
-    thread.start()
 
-    return jsonify({"job_id": job_id}), 202
+
+@app.route("/api/preview", methods=["POST"])
+def preview():
+    """Valida la petición de vista previa y lanza el trabajo en un hilo aparte.
+
+    Cuerpo esperado: el mismo que `/api/merge`, con la misma validación (`_combine_options_from`)
+    salvo la de la salida: `output_format`, `output_path`, `output_csv_separator`,
+    `include_report` y `report_labels` se ignoran si llegan. Devuelve `{"job_id": ...}` con 202 si
+    todo es válido. El trabajo (`_run_preview_job`) calcula la combinación completa con
+    `merger.build_result`, igual que al combinar, pero no escribe ningún archivo: cuando termina,
+    `GET /api/status/<job_id>` devuelve `status: "done"` y en `preview` las columnas, las
+    primeras filas ya como texto y las estadísticas del resultado (ver `merger.build_preview`).
+    """
+    payload = request.get_json(silent=True) or {}
+    try:
+        combine_options = _combine_options_from(payload)
+    except MergeError as exc:
+        return _error_response(str(exc), 400, code=exc.code, params=exc.params)
+
+    return _start_job(_run_preview_job, combine_options)
 
 
 @app.route("/api/columns", methods=["POST"])
@@ -373,33 +420,95 @@ def inspect_csv_files():
     return jsonify({"csv": result})
 
 
+def _build_result_for_job(job_id, combine_options, progress_share):
+    """Lee y combina los archivos de un trabajo con `merger.build_result`, informando del progreso.
+
+    `combine_options` son los argumentos de `build_result` tal como los devuelve
+    `_combine_options_from`; `progress_share` es el porcentaje del progreso total que ocupa esta
+    parte del trabajo (lo que quede hasta 100 es la escritura, si la hay). Devuelve `(df, stats)`.
+    """
+    total_steps = len(combine_options["file_paths"]) + 1
+
+    def progress_callback(index, total, message, code=None, params=None):
+        pct = (index / total_steps) * progress_share
+        _set_job(job_id, status="running", progress=pct, message=message, code=code, params=params or {})
+
+    _set_job(
+        job_id,
+        status="running",
+        progress=1,
+        message="Leyendo archivos...",
+        code="reading_files",
+        params={},
+    )
+    return build_result(progress_callback=progress_callback, **combine_options)
+
+
+def _fail_job(job_id, exc):
+    """Deja el trabajo `job_id` en estado `"error"` con el mensaje de `exc`.
+
+    Un `MergeError` se informa tal cual (con su `code`/`params`); cualquier otra excepción es un
+    fallo inesperado: se imprime la traza y se informa con un mensaje genérico. Se llama desde
+    el bloque `except` que capturó `exc` (por eso `traceback.print_exc` imprime su traza).
+    """
+    if isinstance(exc, MergeError):
+        _set_job(job_id, status="error", progress=0, message=str(exc), code=exc.code, params=exc.params)
+        return
+    traceback.print_exc()
+    _set_job(
+        job_id,
+        status="error",
+        progress=0,
+        message="Ocurrió un error inesperado al combinar los archivos.",
+        code="unexpected_merge_error",
+        params={},
+    )
+
+
+def _run_preview_job(job_id, combine_options):
+    """Calcula la combinación completa sin escribir nada y deja la vista previa en `jobs[job_id]`.
+
+    Pensada para correr en un hilo aparte (ver `preview`). Lee y combina con
+    `_build_result_for_job` exactamente igual que `_run_merge_job` (mismas opciones, mismo
+    `merger.build_result`), pero en vez de escribir el resultado guarda en el campo `preview` del
+    estado final lo que devuelve `merger.build_preview` (columnas, primeras filas como texto y
+    estadísticas). El estado final usa el `code` `"preview_done"`, distinto del de combinar.
+    """
+    try:
+        combined, stats = _build_result_for_job(job_id, combine_options, progress_share=95)
+        _set_job(
+            job_id,
+            status="done",
+            progress=100,
+            message="Vista previa lista.",
+            code="preview_done",
+            params={},
+            preview=build_preview(combined, stats),
+        )
+    except Exception as exc:
+        _fail_job(job_id, exc)
+
+
 def _run_merge_job(
     job_id,
-    files,
+    combine_options,
     output_format,
     output_path,
-    mode,
-    join_keys,
-    join_type,
-    csv_separators,
     output_csv_separator,
-    add_source_column=False,
-    source_column_name=DEFAULT_SOURCE_COLUMN,
-    all_as_text=False,
-    sheets=None,
-    remove_duplicates=False,
     include_report=False,
     report_labels=None,
 ):
     """Ejecuta la combinación completa (lectura + join/concat + escritura) y actualiza `jobs[job_id]`.
 
-    Pensada para correr en un hilo aparte (ver `merge`, que la lanza con `threading.Thread`), no
+    Pensada para correr en un hilo aparte (ver `merge`, que la lanza con `_start_job`), no
     devuelve nada: todo el resultado (progreso, estado final, `result_path` o error) se comunica
     escribiendo en `jobs` a través de `_set_job`, que es lo que lee `GET /api/status/<job_id>`.
     La lectura ocupa el 80% del progreso reportado; la escritura, el 20% restante.
 
-    La lectura, la combinación y el quitar duplicados los hace `merger.build_result` (el mismo
-    núcleo que puede usar cualquier otro uso sin escritura); aquí solo se escribe el resultado.
+    `combine_options` son las opciones de la combinación ya validadas (ver
+    `_combine_options_from`). La lectura, la combinación y el quitar duplicados los hace
+    `merger.build_result` (vía `_build_result_for_job`, el mismo núcleo que usa la vista previa,
+    `_run_preview_job`); aquí solo se escribe el resultado.
     Con `include_report` se escribe además el informe de la combinación (`merger.build_report`
     con las `stats` de `build_result` y los textos de `report_labels`): en CSV va en un archivo
     aparte cuya ruta queda en `report_path` del estado final (`None` en los demás casos).
@@ -411,34 +520,8 @@ def _run_merge_job(
     si es mayor que 0, `code` es `"merge_done_duplicates"` en vez de `"merge_done"` y `params`
     lleva también `count` (el mismo número), que i18next usa para elegir singular o plural.
     """
-    total_steps = len(files) + 1
-
-    def progress_callback(index, total, message, code=None, params=None):
-        pct = (index / total_steps) * 80
-        _set_job(job_id, status="running", progress=pct, message=message, code=code, params=params or {})
-
     try:
-        _set_job(
-            job_id,
-            status="running",
-            progress=1,
-            message="Leyendo archivos...",
-            code="reading_files",
-            params={},
-        )
-        combined, stats = build_result(
-            files,
-            mode=mode,
-            join_keys=join_keys,
-            join_type=join_type,
-            progress_callback=progress_callback,
-            csv_separators=csv_separators,
-            add_source_column=add_source_column,
-            source_column_name=source_column_name,
-            all_as_text=all_as_text,
-            sheets=sheets,
-            remove_duplicates=remove_duplicates,
-        )
+        combined, stats = _build_result_for_job(job_id, combine_options, progress_share=80)
         duplicates_removed = stats["duplicatesRemoved"]
         report = build_report(stats, report_labels) if include_report else None
 
@@ -475,18 +558,8 @@ def _run_merge_job(
             result_path=result_path,
             report_path=report_path,
         )
-    except MergeError as exc:
-        _set_job(job_id, status="error", progress=0, message=str(exc), code=exc.code, params=exc.params)
-    except Exception:
-        traceback.print_exc()
-        _set_job(
-            job_id,
-            status="error",
-            progress=0,
-            message="Ocurrió un error inesperado al combinar los archivos.",
-            code="unexpected_merge_error",
-            params={},
-        )
+    except Exception as exc:
+        _fail_job(job_id, exc)
 
 
 @app.route("/api/status/<job_id>", methods=["GET"])
@@ -494,10 +567,12 @@ def status(job_id):
     """Devuelve el estado actual del trabajo `job_id` (sondeado por el frontend cada 350 ms).
 
     Forma de la respuesta: `{job_id, status, progress, message, code, params, result_path,
-    report_path}`, donde `status` es `"pending" | "running" | "done" | "error"`. `result_path`
-    solo tiene valor cuando `status` es `"done"`; `report_path`, además, solo si se pidió el
-    informe y la salida es CSV (el informe va en un archivo aparte; en los demás formatos va
-    dentro del mismo libro y queda en `None`).
+    report_path, preview}`, donde `status` es `"pending" | "running" | "done" | "error"`.
+    `result_path` solo tiene valor cuando `status` es `"done"` en un trabajo de `/api/merge`;
+    `report_path`, además, solo si se pidió el informe y la salida es CSV (el informe va en un
+    archivo aparte; en los demás formatos va dentro del mismo libro y queda en `None`).
+    `preview` solo tiene valor cuando `status` es `"done"` en un trabajo de `/api/preview`:
+    `{"columns": [...], "rows": [[...], ...], "stats": {...}}` (ver `merger.build_preview`).
     """
     with jobs_lock:
         job = jobs.get(job_id)

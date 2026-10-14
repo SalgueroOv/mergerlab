@@ -110,6 +110,15 @@
     "unmatchedRows": "Filas sin coincidencia",
     "emptyKeyRows": "Filas con clave vacía"
   },
+  "preview": {
+    "title": "Vista previa del resultado",
+    "filesHeading": "Archivos leídos",
+    "rowsHeading": "Primeras filas del resultado",
+    "showingSome": "Mostrando {{shown}} de {{total}} filas",
+    "showingAll_one": "Mostrando {{count}} fila",
+    "showingAll_other": "Mostrando {{count}} filas",
+    "empty": "El resultado no tiene filas."
+  },
   "progress": {
     "completedPrefix": "Completado — archivo guardado en",
     "openFolder": "Abrir carpeta",
@@ -119,6 +128,8 @@
   "footer": {
     "mergeButton": "Combinar archivos",
     "processing": "Procesando...",
+    "previewButton": "Vista previa",
+    "previewing": "Calculando...",
     "clear": "Limpiar",
     "summary_one": "{{count}} archivo cargado · ~{{size}}",
     "summary_other": "{{count}} archivos cargados · ~{{size}}"
@@ -268,6 +279,7 @@
     "merge_done": "Combinación completada.",
     "merge_done_duplicates_one": "Combinación completada. Se quitó {{count}} fila duplicada.",
     "merge_done_duplicates_other": "Combinación completada. Se quitaron {{count}} filas duplicadas.",
+    "preview_done": "Vista previa lista.",
     "no_files_selected": "No se seleccionaron archivos.",
     "unsupported_output_format": "Formato de salida no soportado: '{{format}}'.",
     "no_output_path": "No se indicó la ruta de guardado.",

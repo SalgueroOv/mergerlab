@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import es from "./i18n/locales/es.json";
 import {
   buildReportLabels,
+  combineReadiness,
   formatBytes,
   isJoinTypeUnavailable,
   joinPath,
@@ -110,5 +111,70 @@ describe("buildReportLabels", () => {
     expect(missing).toEqual([]);
     expect(labels.sheetName).toBe("Informe");
     expect(labels.joinLeftAnti).toBe(es.joinTutorial.types.left_anti.title);
+  });
+});
+
+describe("combineReadiness", () => {
+  const base = {
+    fileCount: 2,
+    destinationFolder: "C:\\salida",
+    mode: "join",
+    joinType: "inner",
+    missingJoinKeyNames: [],
+    loadingColumns: false,
+    columnsError: null,
+  };
+
+  it("está listo con archivos, destino y claves", () => {
+    expect(combineReadiness(base)).toEqual({ ready: true, reason: null });
+    expect(combineReadiness({ ...base, mode: "concat", fileCount: 1 })).toEqual({
+      ready: true,
+      reason: null,
+    });
+  });
+
+  it("sin archivos bloquea, con o sin destino", () => {
+    expect(combineReadiness({ ...base, fileCount: 0 })).toEqual({
+      ready: false,
+      reason: { key: "blocked.noFiles" },
+    });
+    expect(combineReadiness({ ...base, fileCount: 0, requireDestination: false }).ready).toBe(false);
+  });
+
+  it("la carpeta de destino solo se exige si requireDestination", () => {
+    expect(combineReadiness({ ...base, destinationFolder: "" })).toEqual({
+      ready: false,
+      reason: { key: "blocked.noDestination" },
+    });
+    expect(combineReadiness({ ...base, destinationFolder: "", requireDestination: false })).toEqual({
+      ready: true,
+      reason: null,
+    });
+  });
+
+  it("en join exige dos archivos, un tipo disponible y todas las claves", () => {
+    expect(combineReadiness({ ...base, fileCount: 1 })).toEqual({
+      ready: false,
+      reason: { key: "blocked.joinMinFiles" },
+    });
+    expect(combineReadiness({ ...base, fileCount: 3, joinType: "right_anti" })).toEqual({
+      ready: false,
+      reason: { key: "blocked.rightAntiTwoFiles" },
+    });
+    expect(combineReadiness({ ...base, missingJoinKeyNames: ["a.csv", "b.csv"] })).toEqual({
+      ready: false,
+      reason: { key: "blocked.chooseKeyFor", params: { files: "a.csv, b.csv" } },
+    });
+  });
+
+  it("explica las columnas leyéndose o con error sin cambiar ready", () => {
+    expect(combineReadiness({ ...base, loadingColumns: true })).toEqual({
+      ready: true,
+      reason: { key: "blocked.readingColumns" },
+    });
+    expect(combineReadiness({ ...base, columnsError: "falló" })).toEqual({
+      ready: true,
+      reason: { key: null, text: "falló" },
+    });
   });
 });

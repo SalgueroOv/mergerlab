@@ -110,6 +110,15 @@
     "unmatchedRows": "Zeilen ohne Übereinstimmung",
     "emptyKeyRows": "Zeilen mit leerem Schlüssel"
   },
+  "preview": {
+    "title": "Vorschau des Ergebnisses",
+    "filesHeading": "Gelesene Dateien",
+    "rowsHeading": "Erste Zeilen des Ergebnisses",
+    "showingSome": "{{shown}} von {{total}} Zeilen werden angezeigt",
+    "showingAll_one": "{{count}} Zeile wird angezeigt",
+    "showingAll_other": "{{count}} Zeilen werden angezeigt",
+    "empty": "Das Ergebnis enthält keine Zeilen."
+  },
   "progress": {
     "completedPrefix": "Abgeschlossen — Datei gespeichert unter",
     "openFolder": "Ordner öffnen",
@@ -119,6 +128,8 @@
   "footer": {
     "mergeButton": "Dateien kombinieren",
     "processing": "Wird verarbeitet...",
+    "previewButton": "Vorschau",
+    "previewing": "Wird berechnet...",
     "clear": "Leeren",
     "summary_one": "{{count}} Datei geladen · ~{{size}}",
     "summary_other": "{{count}} Dateien geladen · ~{{size}}"
@@ -268,6 +279,7 @@
     "merge_done": "Kombination abgeschlossen.",
     "merge_done_duplicates_one": "Kombination abgeschlossen. {{count}} doppelte Zeile wurde entfernt.",
     "merge_done_duplicates_other": "Kombination abgeschlossen. {{count}} doppelte Zeilen wurden entfernt.",
+    "preview_done": "Vorschau bereit.",
     "no_files_selected": "Es wurden keine Dateien ausgewählt.",
     "unsupported_output_format": "Nicht unterstütztes Ausgabeformat: '{{format}}'.",
     "no_output_path": "Es wurde kein Speicherpfad angegeben.",

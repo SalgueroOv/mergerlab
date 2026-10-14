@@ -30,7 +30,12 @@ def anonymous_client():
 
 
 def _run_merge(client, payload):
-    response = client.post("/api/merge", json=payload)
+    return _run_job(client, "/api/merge", payload)
+
+
+def _run_job(client, endpoint, payload):
+    """Lanza un trabajo (`/api/merge` o `/api/preview`) y espera a que termine; devuelve su estado final."""
+    response = client.post(endpoint, json=payload)
     assert response.status_code == 202, response.get_json()
     job_id = response.get_json()["job_id"]
     for _ in range(100):
@@ -359,6 +364,161 @@ def test_report_labels_solo_acepta_claves_conocidas_con_texto():
     ) == {"sheetName": "Report"}
 
 
+# ---- vista previa del resultado (/api/preview) ----
+
+
+def _two_csv_with_many_rows(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("id,nombre\n" + "".join(f"{i},A{i}\n" for i in range(15)), encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("id,nombre\n" + "".join(f"{i},B{i}\n" for i in range(15, 30)), encoding="utf-8")
+    return str(a), str(b)
+
+
+def test_preview_al_apilar_devuelve_columnas_20_filas_y_las_estadisticas(client, tmp_path):
+    a, b = _two_csv_with_many_rows(tmp_path)
+
+    status = _run_job(
+        client,
+        "/api/preview",
+        {
+            "files": [a, b],
+            "mode": "concat",
+            "add_source_column": True,
+            "source_column_name": "source_file",
+        },
+    )
+
+    assert status["status"] == "done", status
+    assert status["code"] == "preview_done"
+    assert status["result_path"] is None
+    preview = status["preview"]
+    assert preview["columns"] == ["source_file", "id", "nombre"]
+    assert len(preview["rows"]) == 20
+    assert preview["rows"][0] == ["a.csv", "0", "A0"]
+    assert preview["rows"][19] == ["b.csv", "19", "B19"]
+    _, expected_stats = server.build_result(
+        [a, b], mode="concat", add_source_column=True, source_column_name="source_file"
+    )
+    assert preview["stats"] == expected_stats
+    assert preview["stats"]["resultRows"] == 30
+
+
+def test_preview_no_escribe_ningun_archivo_aunque_llegue_output_path(client, tmp_path):
+    a, b = _two_csv_with_many_rows(tmp_path)
+    out = tmp_path / "salida.csv"
+    before = sorted(p.name for p in tmp_path.iterdir())
+
+    status = _run_job(
+        client,
+        "/api/preview",
+        {
+            "files": [a, b],
+            "output_format": "csv",
+            "output_path": str(out),
+            "mode": "concat",
+            "include_report": True,
+        },
+    )
+
+    assert status["status"] == "done", status
+    assert not out.exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+
+def test_preview_sin_output_path_funciona(client, tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("id\n1\n2\n", encoding="utf-8")
+
+    status = _run_job(client, "/api/preview", {"files": [str(a)]})
+
+    assert status["status"] == "done", status
+    assert status["preview"]["columns"] == ["id"]
+    assert status["preview"]["rows"] == [["1"], ["2"]]
+
+
+def test_preview_formatea_las_celdas_como_texto(client, tmp_path):
+    xlsx = tmp_path / "a.xlsx"
+    pd.DataFrame(
+        {"fecha": [pd.Timestamp("2024-03-05"), pd.Timestamp("2024-03-06 10:20:30")], "n": [1, 2]}
+    ).to_excel(xlsx, index=False)
+    b = tmp_path / "b.csv"
+    # "n" con un hueco: pandas la lee como decimales (3.0)
+    b.write_text("n,m\n3,1.5\n,2\n", encoding="utf-8")
+
+    status = _run_job(client, "/api/preview", {"files": [str(xlsx), str(b)], "mode": "concat"})
+
+    assert status["status"] == "done", status
+    assert status["preview"]["columns"] == ["fecha", "n", "m"]
+    assert status["preview"]["rows"] == [
+        ["2024-03-05", "1", ""],
+        ["2024-03-06 10:20:30", "2", ""],
+        ["", "3", "1.5"],
+        ["", "", "2"],
+    ]
+
+
+def test_preview_refleja_las_filas_duplicadas_quitadas(client, tmp_path):
+    a, b = _two_csv_with_a_repeated_row(tmp_path)
+
+    status = _run_job(client, "/api/preview", {"files": [a, b], "mode": "concat", "remove_duplicates": True})
+
+    assert status["status"] == "done", status
+    assert status["preview"]["stats"]["duplicatesRemoved"] == 2
+    assert status["preview"]["stats"]["resultRows"] == 3
+    assert status["preview"]["rows"] == [["1", "Ana"], ["2", "Beto"], ["3", "Cora"]]
+
+
+def test_preview_join_devuelve_las_estadisticas_por_archivo(client, tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("dni,nombre\n00123,Ana\n00456,Beto\n,Cora\n", encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("documento,ciudad\n00456,Lima\n", encoding="utf-8")
+
+    status = _run_job(
+        client,
+        "/api/preview",
+        {
+            "files": [str(a), str(b)],
+            "mode": "join",
+            "join_keys": {str(a): "dni", str(b): "documento"},
+            "join_type": "left_anti",
+        },
+    )
+
+    assert status["status"] == "done", status
+    assert status["preview"]["rows"] == [["00123", "Ana"], ["", "Cora"]]
+    files = status["preview"]["stats"]["files"]
+    assert [f["keyColumn"] for f in files] == ["dni", "documento"]
+    assert files[0]["emptyKeyRows"] == 1
+
+
+@pytest.mark.parametrize(
+    ("payload", "code"),
+    [
+        ({"files": []}, "no_files_selected"),
+        ({"files": ["a.csv", "b.csv"], "mode": "join", "join_keys": {"a.csv": "id"}}, "missing_join_key"),
+        (
+            {
+                "files": ["a.csv", "b.csv", "c.csv"],
+                "mode": "join",
+                "join_keys": {"a.csv": "id", "b.csv": "id", "c.csv": "id"},
+                "join_type": "right_anti",
+            },
+            "right_anti_two_files",
+        ),
+    ],
+)
+def test_preview_usa_la_misma_validacion_que_merge(client, payload, code):
+    preview = client.post("/api/preview", json=payload)
+    merge = client.post("/api/merge", json={**payload, "output_format": "csv", "output_path": "x.csv"})
+
+    assert preview.status_code == 400
+    assert preview.get_json()["code"] == code
+    assert merge.status_code == 400
+    assert merge.get_json()["code"] == code
+
+
 # ---- seguridad: token, CORS y extensión de salida ----
 
 
@@ -369,6 +529,7 @@ def test_report_labels_solo_acepta_claves_conocidas_con_texto():
         ("post", "/api/inspect-csv"),
         ("post", "/api/columns"),
         ("post", "/api/merge"),
+        ("post", "/api/preview"),
         ("get", "/api/status/x"),
     ],
 )

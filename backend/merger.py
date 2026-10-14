@@ -6,7 +6,7 @@ import io
 import numbers
 import os
 from collections import Counter
-from datetime import datetime
+from datetime import date, datetime
 
 import numpy as np
 import pandas as pd
@@ -48,6 +48,8 @@ _CSV_SAMPLE_MAX_ROWS = 100
 _CSV_CONFIDENT_CONSISTENCY = 0.9
 # Filas de datos que devuelve `inspect_csv` como vista previa.
 CSV_PREVIEW_ROWS = 3
+# Filas del resultado que incluye la vista previa de la combinación (ver `build_preview`).
+RESULT_PREVIEW_ROWS = 20
 
 # Textos del informe de la combinación (ver `build_report`), en español. Son el respaldo de los
 # que manda el frontend en `report_labels` (ya traducidos al idioma de la app): cualquier clave
@@ -864,6 +866,47 @@ def build_result(
         "removeDuplicates": bool(remove_duplicates),
     }
     return df, stats
+
+
+def preview_cell_text(value):
+    """Convierte una celda del resultado en el texto que muestra la vista previa (ver `build_preview`).
+
+    Vacío para los nulos (`None`, `NaN`, `pd.NA`, `NaT`); los enteros sin decimales, también los
+    que pandas guardó como decimales por tener huecos en su columna (`1.0` -> `"1"`); el resto de
+    números con `str()`; las fechas en ISO (`AAAA-MM-DD` si la hora es 00:00:00, si no
+    `AAAA-MM-DD HH:MM:SS`), y cualquier otra cosa con `str()`. Siempre devuelve un `str` de
+    Python (nunca un tipo de numpy), así que el resultado se puede serializar a JSON.
+    """
+    if value is None or (pd.api.types.is_scalar(value) and pd.isna(value)):
+        return ""
+    if isinstance(value, (bool, np.bool_)):
+        return str(bool(value))
+    if isinstance(value, numbers.Integral):
+        return str(int(value))
+    if isinstance(value, numbers.Real):
+        number = float(value)
+        return str(int(number)) if number.is_integer() else str(number)
+    if isinstance(value, datetime):
+        if (value.hour, value.minute, value.second, value.microsecond) == (0, 0, 0, 0):
+            return value.strftime("%Y-%m-%d")
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)
+
+
+def build_preview(df, stats, max_rows=RESULT_PREVIEW_ROWS):
+    """Arma la vista previa de un resultado de `build_result`, lista para mandar como JSON.
+
+    Devuelve `{"columns": [...], "rows": [[...], ...], "stats": stats}`: los nombres de columna
+    como texto, las primeras `max_rows` filas con cada celda convertida por `preview_cell_text`
+    y las estadísticas tal cual (ya son serializables, ver `build_result`).
+    """
+    rows = [
+        [preview_cell_text(value) for value in row]
+        for row in df.head(max_rows).itertuples(index=False, name=None)
+    ]
+    return {"columns": [str(col) for col in df.columns], "rows": rows, "stats": stats}
 
 
 def right_anti_two_files_error():

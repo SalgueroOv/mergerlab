@@ -92,23 +92,55 @@ export async function startMerge(files, outputFormat, outputPath, options = {}) 
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      files,
+      ...combineBody(files, options),
       output_format: outputFormat,
       output_path: outputPath,
-      add_source_column: options.addSourceColumn ?? false,
-      source_column_name: options.sourceColumnName,
-      all_as_text: options.allAsText ?? false,
-      remove_duplicates: options.removeDuplicates ?? false,
       include_report: options.includeReport ?? false,
       report_labels: options.reportLabels ?? {},
-      sheets: options.sheets ?? {},
-      mode: options.mode ?? "concat",
-      join_keys: options.joinKeys ?? {},
-      join_type: options.joinType,
-      csv_separators: options.csvSeparators ?? {},
       output_csv_separator: options.outputCsvSeparator ?? ",",
     }),
   });
+}
+
+/**
+ * Lanza el cálculo de la vista previa del resultado en el backend (`POST /api/preview`): la misma
+ * combinación completa que `startMerge`, con las mismas opciones, pero sin escribir ningún archivo.
+ * Se sigue con `pollMergeStatus`; el estado final trae en `preview` las columnas, las primeras
+ * filas (ya como texto) y las estadísticas del resultado.
+ * @param {string[]} files rutas absolutas de los archivos de entrada, en el orden a combinar
+ * @param {object} [options] las mismas opciones de la combinación que `startMerge` (las de la
+ *   salida, si llegan, se ignoran)
+ * @returns {Promise<{job_id: string}>}
+ */
+export async function startPreview(files, options = {}) {
+  const base = await getApiBase();
+  return requestJson(`${base}/api/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(combineBody(files, options)),
+  });
+}
+
+/**
+ * Campos del cuerpo de `/api/merge` y `/api/preview` que describen la combinación en sí (todo
+ * menos la salida); ver las opciones de `startMerge`.
+ * @param {string[]} files
+ * @param {object} options
+ * @returns {object}
+ */
+function combineBody(files, options) {
+  return {
+    files,
+    add_source_column: options.addSourceColumn ?? false,
+    source_column_name: options.sourceColumnName,
+    all_as_text: options.allAsText ?? false,
+    remove_duplicates: options.removeDuplicates ?? false,
+    sheets: options.sheets ?? {},
+    mode: options.mode ?? "concat",
+    join_keys: options.joinKeys ?? {},
+    join_type: options.joinType,
+    csv_separators: options.csvSeparators ?? {},
+  };
 }
 
 /**
@@ -167,7 +199,8 @@ export async function inspectCsv(files, csvSeparators = {}) {
 /**
  * Consulta una vez el estado de un trabajo de combinación (`GET /api/status/<jobId>`).
  * @param {string} jobId
- * @returns {Promise<object>} `{job_id, status, progress, message, code, params, result_path}`
+ * @returns {Promise<object>} `{job_id, status, progress, message, code, params, result_path,
+ *   report_path, preview}`
  */
 export async function getMergeStatus(jobId) {
   const base = await getApiBase();

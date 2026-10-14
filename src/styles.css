@@ -482,32 +482,39 @@ body {
   background: var(--error-bg);
 }
 
-.csv-preview {
+/* Tablas de vista previa: la de un CSV (FileList) y las del resultado (PreviewDialog). */
+.csv-preview,
+.table-preview {
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 6px;
 }
 
-.csv-preview table {
+.csv-preview table,
+.table-preview table {
   border-collapse: collapse;
   font-size: 12px;
   width: 100%;
 }
 
 .csv-preview th,
-.csv-preview td {
+.csv-preview td,
+.table-preview th,
+.table-preview td {
   padding: 4px 8px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   white-space: nowrap;
 }
 
-.csv-preview th {
+.csv-preview th,
+.table-preview th {
   background: var(--bg);
   font-weight: 600;
 }
 
-.csv-preview tbody tr:last-child td {
+.csv-preview tbody tr:last-child td,
+.table-preview tbody tr:last-child td {
   border-bottom: none;
 }
 
@@ -936,6 +943,48 @@ body {
 
 .stack-tutorial-list li {
   margin-bottom: 6px;
+}
+
+/* ---- Modal (vista previa del resultado) ---- */
+
+.modal-panel--wide {
+  max-width: 860px;
+}
+
+.preview-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.preview-total {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-width: 140px;
+}
+
+.preview-total dt {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.preview-total dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.preview-heading {
+  margin: 16px 0 8px;
+  font-size: 13px;
+}
+
+.preview-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
 }
 
 /* ---- Banners ---- */

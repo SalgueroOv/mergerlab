@@ -109,6 +109,14 @@
     "unmatchedRows": "无匹配的行数",
     "emptyKeyRows": "键为空的行数"
   },
+  "preview": {
+    "title": "结果预览",
+    "filesHeading": "已读取的文件",
+    "rowsHeading": "结果的前几行",
+    "showingSome": "显示 {{total}} 行中的 {{shown}} 行",
+    "showingAll_other": "显示 {{count}} 行",
+    "empty": "结果没有任何行。"
+  },
   "progress": {
     "completedPrefix": "已完成 — 文件已保存到",
     "openFolder": "打开文件夹",
@@ -118,6 +126,8 @@
   "footer": {
     "mergeButton": "合并文件",
     "processing": "处理中...",
+    "previewButton": "预览",
+    "previewing": "正在计算...",
     "clear": "清空",
     "summary_other": "已加载 {{count}} 个文件 · ~{{size}}"
   },
@@ -265,6 +275,7 @@
     "saving_output": "正在保存合并后的文件...",
     "merge_done": "合并已完成。",
     "merge_done_duplicates_other": "合并已完成。已删除 {{count}} 行重复数据。",
+    "preview_done": "预览已就绪。",
     "no_files_selected": "未选择任何文件。",
     "unsupported_output_format": "不支持的输出格式：“{{format}}”。",
     "no_output_path": "未指定保存路径。",

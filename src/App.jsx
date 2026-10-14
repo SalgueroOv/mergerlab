@@ -11,13 +11,14 @@ import ThemeToggle from "./components/ThemeToggle.jsx";
 import LanguageToggle from "./components/LanguageToggle.jsx";
 import OnboardingTour, { hasSeenOnboarding } from "./components/OnboardingTour.jsx";
 import WindowDropOverlay from "./components/WindowDropOverlay.jsx";
-import { startMerge, pollMergeStatus, getColumns, getSheets, inspectCsv } from "./api.js";
+import PreviewDialog from "./components/PreviewDialog.jsx";
+import { startMerge, startPreview, pollMergeStatus, getColumns, getSheets, inspectCsv } from "./api.js";
 import { backendText } from "./i18n/backendMessages.js";
 import { ACCEPTED_INPUT_EXTENSIONS, extensionOf } from "./formatMeta.js";
 import {
   buildReportLabels,
+  combineReadiness,
   formatBytes,
-  isJoinTypeUnavailable,
   joinPath,
   normalizeColumnName,
   overwriteCheckPaths,
@@ -76,6 +77,13 @@ export default function App() {
   // idioma actual.
   const [doneNotice, setDoneNotice] = useState(null);
   const [backendError, setBackendError] = useState(null);
+  // Vista previa del resultado (`{columns, rows, stats}` de `/api/preview`): mientras no es null,
+  // el modal `PreviewDialog` está abierto. Al cerrarlo se descarta (cada clic recalcula).
+  const [preview, setPreview] = useState(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  // Número de la última vista previa pedida; sube también cuando cambia cualquier entrada, para
+  // descartar el resultado de una vista previa que se estaba calculando con datos ya obsoletos.
+  const previewRunRef = useRef(0);
   const [showTour, setShowTour] = useState(false);
   const [theme, setTheme] = useState("system");
   const [language, setLanguage] = useState(i18n.language);
@@ -451,38 +459,95 @@ export default function App() {
 
   const totalSize = useMemo(() => files.reduce((sum, f) => sum + (f.size || 0), 0), [files]);
 
-  const missingJoinKeyFiles = useMemo(
-    () => (mode === "join" ? files.filter((f) => !joinKeys[f.path]) : []),
+  const missingJoinKeyNames = useMemo(
+    () => (mode === "join" ? files.filter((f) => !joinKeys[f.path]).map((f) => f.name) : []),
     [mode, files, joinKeys]
   );
 
-  const canMerge =
-    files.length > 0 &&
-    !!destinationFolder &&
-    (mode === "concat" ||
-      (files.length >= 2 &&
-        missingJoinKeyFiles.length === 0 &&
-        !isJoinTypeUnavailable(joinType, files.length)));
+  // Mismas reglas para combinar y para la vista previa (ver `combineReadiness`), salvo la carpeta
+  // de destino, que la vista previa no necesita. `reason` es { key, params } en vez de texto ya
+  // traducido, para que siga siendo correcto si el usuario cambia de idioma mientras el botón de
+  // combinar está deshabilitado.
+  const readinessState = {
+    fileCount: files.length,
+    destinationFolder,
+    mode,
+    joinType,
+    missingJoinKeyNames,
+    loadingColumns,
+    columnsError,
+  };
+  const { ready: canMerge, reason: mergeBlockedReason } = combineReadiness(readinessState);
+  const { ready: canPreview } = combineReadiness({ ...readinessState, requireDestination: false });
 
-  // Devuelve { key, params } en vez de texto ya traducido, para que siga siendo correcto si el
-  // usuario cambia de idioma mientras el botón de combinar está deshabilitado.
-  const mergeBlockedReason = useMemo(() => {
-    if (files.length === 0) return { key: "blocked.noFiles" };
-    if (!destinationFolder) return { key: "blocked.noDestination" };
-    if (mode === "join") {
-      if (files.length < 2) return { key: "blocked.joinMinFiles" };
-      if (isJoinTypeUnavailable(joinType, files.length)) return { key: "blocked.rightAntiTwoFiles" };
-      if (loadingColumns) return { key: "blocked.readingColumns" };
-      if (columnsError) return { key: null, text: columnsError };
-      if (missingJoinKeyFiles.length > 0) {
-        return {
-          key: "blocked.chooseKeyFor",
-          params: { files: missingJoinKeyFiles.map((f) => f.name).join(", ") },
-        };
+  // Opciones de la combinación en sí (todo menos la salida): las mismas para combinar y para la
+  // vista previa, para que la vista previa muestre exactamente lo que se escribiría.
+  const combineOptions = useMemo(
+    () => ({
+      addSourceColumn,
+      sourceColumnName: t("stackOptions.sourceColumnName"),
+      allAsText,
+      removeDuplicates,
+      sheets: selectedSheets,
+      mode,
+      joinKeys: Object.fromEntries(files.map((f) => [f.path, joinKeys[f.path] || ""])),
+      joinType,
+      csvSeparators,
+    }),
+    [
+      addSourceColumn,
+      allAsText,
+      removeDuplicates,
+      selectedSheets,
+      mode,
+      files,
+      joinKeys,
+      joinType,
+      csvSeparators,
+      t,
+    ]
+  );
+
+  // Todo lo que define la vista previa, como texto: cuando cambia (archivos, orden, modo, claves,
+  // tipo de join, hojas, separadores, casillas o el idioma, que da nombre a la columna de origen),
+  // la vista previa que se estuviera calculando queda obsoleta y su resultado se descarta. No se
+  // recalcula sola. Si el modal está abierto, se deja como está hasta que el usuario lo cierre.
+  const previewInputsKey = JSON.stringify({
+    files: files.map((f) => f.path),
+    ...combineOptions,
+    includeReport,
+  });
+  useEffect(() => {
+    previewRunRef.current += 1;
+  }, [previewInputsKey]);
+
+  const handlePreview = useCallback(async () => {
+    if (!canPreview) return;
+
+    previewRunRef.current += 1;
+    const run = previewRunRef.current;
+    setIsPreviewing(true);
+    // Un error anterior ya no aplica a este intento; un "completado" de combinar se deja visible.
+    setProgressState((state) => (state === "error" ? "hidden" : state));
+
+    try {
+      const { job_id: jobId } = await startPreview(
+        files.map((f) => f.path),
+        combineOptions
+      );
+      const finalStatus = await pollMergeStatus(jobId, () => {});
+      if (run === previewRunRef.current) setPreview(finalStatus.preview);
+    } catch (err) {
+      if (run === previewRunRef.current) {
+        setStatusMessage(backendText(err, t, t("status.unexpectedError")));
+        setProgressState("error");
       }
+    } finally {
+      setIsPreviewing(false);
     }
-    return null;
-  }, [files.length, destinationFolder, mode, joinType, loadingColumns, columnsError, missingJoinKeyFiles]);
+  }, [canPreview, files, combineOptions, t]);
+
+  const handleClosePreview = useCallback(() => setPreview(null), []);
 
   const handleMerge = useCallback(async () => {
     if (!canMerge) return;
@@ -504,23 +569,14 @@ export default function App() {
     setStatusMessage(t("status.startingMerge"));
 
     try {
-      const joinKeysPayload = Object.fromEntries(files.map((f) => [f.path, joinKeys[f.path] || ""]));
       const { job_id: jobId } = await startMerge(
         files.map((f) => f.path),
         outputFormat,
         outputPath,
         {
-          addSourceColumn,
-          sourceColumnName: t("stackOptions.sourceColumnName"),
-          allAsText,
-          removeDuplicates,
+          ...combineOptions,
           includeReport,
           reportLabels: buildReportLabels(t),
-          sheets: selectedSheets,
-          mode,
-          joinKeys: joinKeysPayload,
-          joinType,
-          csvSeparators,
           outputCsvSeparator,
         }
       );
@@ -547,15 +603,8 @@ export default function App() {
     outputFormat,
     outputFileName,
     destinationFolder,
-    addSourceColumn,
-    allAsText,
-    removeDuplicates,
+    combineOptions,
     includeReport,
-    selectedSheets,
-    mode,
-    joinKeys,
-    joinType,
-    csvSeparators,
     outputCsvSeparator,
     t,
   ]);
@@ -811,10 +860,19 @@ export default function App() {
               <button
                 type="button"
                 className="btn primary"
-                disabled={isProcessing || !canMerge}
+                disabled={isProcessing || isPreviewing || !canMerge}
                 onClick={handleMerge}
               >
                 {isProcessing ? t("footer.processing") : t("footer.mergeButton")}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={isProcessing || isPreviewing || !canPreview}
+                aria-busy={isPreviewing}
+                onClick={handlePreview}
+              >
+                {isPreviewing ? t("footer.previewing") : t("footer.previewButton")}
               </button>
               <button
                 type="button"
@@ -831,6 +889,7 @@ export default function App() {
           </div>
         </footer>
       </div>
+      {preview && <PreviewDialog preview={preview} onClose={handleClosePreview} />}
       <OnboardingTour active={showTour} onFinish={() => setShowTour(false)} />
       <WindowDropOverlay active={isWindowDragOver} />
     </>

@@ -110,6 +110,15 @@
     "unmatchedRows": "Unmatched rows",
     "emptyKeyRows": "Rows with empty key"
   },
+  "preview": {
+    "title": "Result preview",
+    "filesHeading": "Files read",
+    "rowsHeading": "First rows of the result",
+    "showingSome": "Showing {{shown}} of {{total}} rows",
+    "showingAll_one": "Showing {{count}} row",
+    "showingAll_other": "Showing {{count}} rows",
+    "empty": "The result has no rows."
+  },
   "progress": {
     "completedPrefix": "Done — file saved to",
     "openFolder": "Open folder",
@@ -119,6 +128,8 @@
   "footer": {
     "mergeButton": "Combine files",
     "processing": "Processing...",
+    "previewButton": "Preview",
+    "previewing": "Calculating...",
     "clear": "Clear",
     "summary_one": "{{count}} file loaded · ~{{size}}",
     "summary_other": "{{count}} files loaded · ~{{size}}"
@@ -268,6 +279,7 @@
     "merge_done": "Combination completed.",
     "merge_done_duplicates_one": "Combination completed. {{count}} duplicate row was removed.",
     "merge_done_duplicates_other": "Combination completed. {{count}} duplicate rows were removed.",
+    "preview_done": "Preview ready.",
     "no_files_selected": "No files were selected.",
     "unsupported_output_format": "Unsupported output format: '{{format}}'.",
     "no_output_path": "No save path was specified.",

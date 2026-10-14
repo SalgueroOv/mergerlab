@@ -110,6 +110,15 @@
     "unmatchedRows": "Righe senza corrispondenza",
     "emptyKeyRows": "Righe con chiave vuota"
   },
+  "preview": {
+    "title": "Anteprima del risultato",
+    "filesHeading": "File letti",
+    "rowsHeading": "Prime righe del risultato",
+    "showingSome": "Visualizzate {{shown}} di {{total}} righe",
+    "showingAll_one": "Visualizzata {{count}} riga",
+    "showingAll_other": "Visualizzate {{count}} righe",
+    "empty": "Il risultato non contiene righe."
+  },
   "progress": {
     "completedPrefix": "Completato — file salvato in",
     "openFolder": "Apri cartella",
@@ -119,6 +128,8 @@
   "footer": {
     "mergeButton": "Combina file",
     "processing": "Elaborazione in corso...",
+    "previewButton": "Anteprima",
+    "previewing": "Calcolo in corso...",
     "clear": "Pulisci",
     "summary_one": "{{count}} file caricato · ~{{size}}",
     "summary_other": "{{count}} file caricati · ~{{size}}"
@@ -268,6 +279,7 @@
     "merge_done": "Combinazione completata.",
     "merge_done_duplicates_one": "Combinazione completata. È stata rimossa {{count}} riga duplicata.",
     "merge_done_duplicates_other": "Combinazione completata. Sono state rimosse {{count}} righe duplicate.",
+    "preview_done": "Anteprima pronta.",
     "no_files_selected": "Non è stato selezionato alcun file.",
     "unsupported_output_format": "Formato di output non supportato: '{{format}}'.",
     "no_output_path": "Non è stato indicato alcun percorso di salvataggio.",

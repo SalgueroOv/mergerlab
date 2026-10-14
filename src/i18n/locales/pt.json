@@ -110,6 +110,15 @@
     "unmatchedRows": "Linhas sem correspondência",
     "emptyKeyRows": "Linhas com chave vazia"
   },
+  "preview": {
+    "title": "Pré-visualização do resultado",
+    "filesHeading": "Arquivos lidos",
+    "rowsHeading": "Primeiras linhas do resultado",
+    "showingSome": "Mostrando {{shown}} de {{total}} linhas",
+    "showingAll_one": "Mostrando {{count}} linha",
+    "showingAll_other": "Mostrando {{count}} linhas",
+    "empty": "O resultado não tem linhas."
+  },
   "progress": {
     "completedPrefix": "Concluído — arquivo salvo em",
     "openFolder": "Abrir pasta",
@@ -119,6 +128,8 @@
   "footer": {
     "mergeButton": "Combinar arquivos",
     "processing": "Processando...",
+    "previewButton": "Pré-visualizar",
+    "previewing": "Calculando...",
     "clear": "Limpar",
     "summary_one": "{{count}} arquivo carregado · ~{{size}}",
     "summary_other": "{{count}} arquivos carregados · ~{{size}}"
@@ -268,6 +279,7 @@
     "merge_done": "Combinação concluída.",
     "merge_done_duplicates_one": "Combinação concluída. Foi removida {{count}} linha duplicada.",
     "merge_done_duplicates_other": "Combinação concluída. Foram removidas {{count}} linhas duplicadas.",
+    "preview_done": "Pré-visualização pronta.",
     "no_files_selected": "Nenhum arquivo foi selecionado.",
     "unsupported_output_format": "Formato de saída não suportado: '{{format}}'.",
     "no_output_path": "Nenhum caminho de salvamento foi indicado.",

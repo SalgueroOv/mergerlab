@@ -45,6 +45,10 @@ Todas las versiones, con su registro de cambios, están en la
   reordenar, o soltarlos directamente en cualquier parte de la ventana).
 - Exporta a `.xlsx`, `.xls`, `.csv` u `.ods`, sin importar en qué formato llegaron los archivos
   de entrada.
+- **Vista previa** antes de guardar: filas y columnas del resultado, filas leídas y sin
+  coincidencia por archivo, y las primeras 20 filas.
+- Opciones para quitar filas duplicadas e incluir un **informe** de la combinación (hoja extra
+  en Excel/ODS, o un CSV aparte).
 - Tutoriales integrados (con diagramas) para cada modo, y un recorrido de bienvenida la primera
   vez que se abre la app.
 - Tema claro/oscuro (o seguir al sistema) y 8 idiomas.

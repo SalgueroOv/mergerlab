@@ -8,6 +8,7 @@ mixtos) y que cada `MergeError` lleve el `code` correcto -- eso es lo que traduc
 silencio aunque el mensaje en español siga siendo correcto.
 """
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -1121,6 +1122,42 @@ def test_build_result_es_serializable_a_json(tmp_path):
     _, stats = merger.build_result([a, b, c], mode="join", join_keys=["id"] * 3, join_type="outer")
 
     assert json.loads(json.dumps(stats)) == stats
+
+
+# ---- vista previa del resultado (preview_cell_text / build_preview) ----
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (None, ""),
+        (float("nan"), ""),
+        (pd.NA, ""),
+        (pd.NaT, ""),
+        (np.int64(7), "7"),
+        (np.float64(3.0), "3"),
+        (2.5, "2.5"),
+        (np.True_, "True"),
+        ("00123", "00123"),
+        (pd.Timestamp("2024-03-05"), "2024-03-05"),
+        (pd.Timestamp("2024-03-05 14:30:09"), "2024-03-05 14:30:09"),
+    ],
+)
+def test_preview_cell_text(value, expected):
+    assert merger.preview_cell_text(value) == expected
+
+
+def test_build_preview_limita_las_filas_y_es_serializable_a_json():
+    import json
+
+    df = pd.DataFrame({"n": pd.array(range(30), dtype="Int64"), "x": [1.5] * 30})
+
+    preview = merger.build_preview(df, {"resultRows": 30})
+
+    assert preview["columns"] == ["n", "x"]
+    assert len(preview["rows"]) == merger.RESULT_PREVIEW_ROWS
+    assert preview["rows"][1] == ["1", "1.5"]
+    assert json.loads(json.dumps(preview)) == preview
 
 
 # ---- informe de la combinación (build_report / write_output con report) ----

@@ -84,6 +84,64 @@ export function isJoinTypeUnavailable(joinType, fileCount) {
   return joinType === "right_anti" && fileCount > 2;
 }
 
+/**
+ * Decide si se puede combinar (o calcular la vista previa) con la configuración actual y, si no,
+ * por qué. Reúne en un solo sitio las reglas del botón "Combinar" y de "Vista previa": la única
+ * diferencia es que la vista previa no escribe nada y no necesita carpeta de destino
+ * (`requireDestination: false`).
+ *
+ * `ready` y `reason` siguen reglas distintas a propósito: `ready` solo mira lo imprescindible para
+ * lanzar el trabajo (archivos, destino y, en join, dos o más archivos con su clave y un tipo de
+ * join disponible), mientras que `reason` además explica estados transitorios (columnas
+ * leyéndose o con error). `reason` es `{ key, params }` (clave de i18n, para que siga el idioma
+ * actual), `{ key: null, text }` (texto ya traducido del error de columnas) o `null`.
+ * @param {{
+ *   fileCount: number,
+ *   destinationFolder?: string,
+ *   requireDestination?: boolean,
+ *   mode: "concat"|"join",
+ *   joinType: string,
+ *   missingJoinKeyNames: string[],
+ *   loadingColumns: boolean,
+ *   columnsError: string|null,
+ * }} state `missingJoinKeyNames`: nombres de los archivos sin columna clave elegida (solo join)
+ * @returns {{ ready: boolean, reason: {key: string|null, params?: object, text?: string} | null }}
+ */
+export function combineReadiness({
+  fileCount,
+  destinationFolder = "",
+  requireDestination = true,
+  mode,
+  joinType,
+  missingJoinKeyNames,
+  loadingColumns,
+  columnsError,
+}) {
+  const missingDestination = requireDestination && !destinationFolder;
+  const isJoin = mode === "join";
+  const joinTypeUnavailable = isJoinTypeUnavailable(joinType, fileCount);
+
+  const ready =
+    fileCount > 0 &&
+    !missingDestination &&
+    (!isJoin || (fileCount >= 2 && missingJoinKeyNames.length === 0 && !joinTypeUnavailable));
+
+  let reason = null;
+  if (fileCount === 0) reason = { key: "blocked.noFiles" };
+  else if (missingDestination) reason = { key: "blocked.noDestination" };
+  else if (isJoin) {
+    if (fileCount < 2) reason = { key: "blocked.joinMinFiles" };
+    else if (joinTypeUnavailable) reason = { key: "blocked.rightAntiTwoFiles" };
+    else if (loadingColumns) reason = { key: "blocked.readingColumns" };
+    else if (columnsError) reason = { key: null, text: columnsError };
+    else if (missingJoinKeyNames.length > 0) {
+      reason = { key: "blocked.chooseKeyFor", params: { files: missingJoinKeyNames.join(", ") } };
+    }
+  }
+
+  return { ready, reason };
+}
+
 // Sufijo por defecto del archivo del informe CSV si el traducido queda vacío al limpiarlo; es el
 // mismo respaldo que usa el backend (`DEFAULT_REPORT_LABELS["fileSuffix"]` en merger.py).
 const DEFAULT_REPORT_FILE_SUFFIX = "informe";
