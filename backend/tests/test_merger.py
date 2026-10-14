@@ -712,6 +712,25 @@ def test_merge_files_enteros_con_huecos_tambien_en_xlsx_y_xls(tmp_path):
         assert back["cantidad"].iloc[0] == 5
 
 
+def test_write_output_xls_escribe_enteros_int64_como_numero_y_no_como_texto(tmp_path):
+    # pandas reconvierte "1" a número al releer, así que se mira el tipo real de la celda con xlrd:
+    # las columnas Int64 entregan numpy.int64, que antes se escribía como texto.
+    import xlrd
+
+    a = _write_csv(tmp_path / "a.csv", {"id": [1], "cantidad": [5], "precio": [1.5]})
+    b = _write_csv(tmp_path / "b.csv", {"id": [2]})
+    out = tmp_path / "salida.xls"
+    write_output(merge_files([a, b]), str(out), "xls")
+
+    sheet = xlrd.open_workbook(str(out)).sheet_by_index(0)
+    assert sheet.cell_type(1, 0) == xlrd.XL_CELL_NUMBER
+    assert sheet.cell_value(1, 0) == 1
+    assert sheet.cell_type(1, 1) == xlrd.XL_CELL_NUMBER
+    assert sheet.cell_type(1, 2) == xlrd.XL_CELL_NUMBER
+    assert sheet.cell_type(2, 0) == xlrd.XL_CELL_NUMBER
+    assert sheet.cell_type(2, 1) == xlrd.XL_CELL_EMPTY  # celda vacía: se escribe ""
+
+
 def test_merge_files_los_decimales_reales_no_se_tocan(tmp_path):
     a = _write_csv(tmp_path / "a.csv", {"precio": [1.5, 2.0]})
 

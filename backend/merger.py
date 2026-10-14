@@ -3,10 +3,12 @@
 import codecs
 import csv
 import io
+import numbers
 import os
 from collections import Counter
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 
 SUPPORTED_INPUT_EXTENSIONS = {".xlsx", ".xls", ".csv", ".ods"}
@@ -1162,11 +1164,19 @@ def write_output(df, output_path, output_format, csv_separator=",", report=None)
 
 def _write_xls_cell(sheet, row_index, col_index, value):
     """Escribe una celda en una hoja de `xlwt`: vacía si es nula, número si es numérica y texto
-    en cualquier otro caso."""
+    en cualquier otro caso.
+
+    Los números pueden llegar como tipos de numpy (`numpy.int64` en columnas `Int64`, ver
+    `_nullable_integers`), que no son `int` de Python: se reconocen con `numbers.Number` y se
+    convierten, porque si no `xlwt` los escribiría como texto."""
     if pd.isna(value):
         sheet.write(row_index, col_index, "")
-    elif isinstance(value, (int, float, bool)):
-        sheet.write(row_index, col_index, value)
+    elif isinstance(value, (bool, np.bool_)):
+        sheet.write(row_index, col_index, bool(value))
+    elif isinstance(value, numbers.Integral):
+        sheet.write(row_index, col_index, int(value))
+    elif isinstance(value, numbers.Number):
+        sheet.write(row_index, col_index, float(value))
     else:
         sheet.write(row_index, col_index, str(value))
 
