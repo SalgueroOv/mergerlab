@@ -929,3 +929,371 @@ def test_drop_duplicate_rows_tambien_en_el_resultado_de_un_join(tmp_path):
 
     assert removed == 1
     assert result.values.tolist() == [["1", "a", "x"], ["2", "b", "y"]]
+
+
+# ---- build_result (combinar + estadísticas) ----
+
+
+def _two_sheet_xlsx(path, first, second):
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        pd.DataFrame(first).to_excel(writer, sheet_name="Uno", index=False)
+        pd.DataFrame(second).to_excel(writer, sheet_name="Dos", index=False)
+    return str(path)
+
+
+def _spy_reads(monkeypatch):
+    """Cuenta las lecturas de cada archivo (`{ruta: veces}`) espiando `_read_spreadsheet`."""
+    calls = {}
+    original = merger._read_spreadsheet
+
+    def spy(path, *args, **kwargs):
+        calls[path] = calls.get(path, 0) + 1
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(merger, "_read_spreadsheet", spy)
+    return calls
+
+
+def test_build_result_estadisticas_al_apilar(tmp_path, monkeypatch):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 2], "nombre": ["Ana", "Beto"]})
+    # b: todas las hojas (2 + 1 filas); la fila (1, Ana) repite una de "a"
+    b = _two_sheet_xlsx(
+        tmp_path / "b.xlsx", {"id": [1, 3], "nombre": ["Ana", "Cora"]}, {"id": [4], "nombre": ["Dani"]}
+    )
+    # c: solo la hoja "Dos" (1 fila)
+    c = _two_sheet_xlsx(
+        tmp_path / "c.xlsx", {"id": [9, 9], "nombre": ["X", "Y"]}, {"id": [5], "nombre": ["Eva"]}
+    )
+    reads = _spy_reads(monkeypatch)
+
+    df, stats = merger.build_result(
+        [a, b, c], mode="concat", add_source_column=True, remove_duplicates=True, sheets={c: "Dos"}
+    )
+
+    assert reads == {a: 1, b: 1, c: 1}
+    assert stats == {
+        "mode": "concat",
+        "joinType": None,
+        "files": [
+            {"name": "a.csv", "sheet": None, "rowsRead": 2},
+            {"name": "b.xlsx", "sheet": None, "rowsRead": 3},
+            {"name": "c.xlsx", "sheet": "Dos", "rowsRead": 1},
+        ],
+        "resultRows": 5,
+        "resultColumns": 3,
+        "duplicatesRemoved": 1,
+        "options": {"addSourceColumn": True, "allAsText": False, "removeDuplicates": True},
+    }
+    assert len(df) == 5
+    assert list(df.columns) == ["archivo_origen", "id", "nombre"]
+
+
+def test_build_result_sin_quitar_duplicados_cuenta_cero(tmp_path):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 1]})
+
+    df, stats = merger.build_result([a], all_as_text=True)
+
+    assert stats["duplicatesRemoved"] == 0
+    assert stats["resultRows"] == 2
+    assert stats["options"] == {"addSourceColumn": False, "allAsText": True, "removeDuplicates": False}
+    assert len(df) == 2
+
+
+def _three_join_files(tmp_path):
+    """Tres CSV para el join por `id`, con las cuentas hechas a mano en cada test.
+
+    En qué archivos aparece cada clave: 1 -> {a}, 2 -> {a, b}, 3 -> {a, b, c}, 4 -> {a},
+    5 -> {b}, 6 -> {b, c}, 7 -> {c} (" 7 " se recorta). Claves vacías: una celda vacía en "a",
+    otra en "b" y una de solo espacios en "c".
+    """
+    a = tmp_path / "a.csv"
+    a.write_text("id,x\n1,a1\n2,a2\n3,a3\n4,a4\n,a5\n", encoding="utf-8")
+    b = tmp_path / "b.csv"
+    b.write_text("id,y\n2,b1\n3,b2\n5,b3\n6,b4\n,b5\n", encoding="utf-8")
+    c = tmp_path / "c.csv"
+    c.write_text('id,z\n3,c1\n6,c2\n" 7 ",c3\n"   ",c4\n', encoding="utf-8")
+    return str(a), str(b), str(c)
+
+
+# Esperado por archivo, igual para cualquier tipo de join (es una medida de la entrada):
+# a: sin coincidencia 1 y 4 (2), una vacía; b: sin coincidencia 5 (1), una vacía;
+# c: sin coincidencia 7 (1), una vacía (solo espacios).
+_THREE_JOIN_FILES_STATS = [
+    {"name": "a.csv", "sheet": None, "rowsRead": 5, "keyColumn": "id", "unmatchedRows": 2, "emptyKeyRows": 1},
+    {"name": "b.csv", "sheet": None, "rowsRead": 5, "keyColumn": "id", "unmatchedRows": 1, "emptyKeyRows": 1},
+    {"name": "c.csv", "sheet": None, "rowsRead": 4, "keyColumn": "id", "unmatchedRows": 1, "emptyKeyRows": 1},
+]
+
+
+def test_build_result_estadisticas_join_inner_con_tres_archivos(tmp_path, monkeypatch):
+    a, b, c = _three_join_files(tmp_path)
+    reads = _spy_reads(monkeypatch)
+
+    df, stats = merger.build_result([a, b, c], mode="join", join_keys=["id", "id", "id"], join_type="inner")
+
+    assert reads == {a: 1, b: 1, c: 1}
+    assert df["id"].tolist() == ["3"]
+    assert stats == {
+        "mode": "join",
+        "joinType": "inner",
+        "files": _THREE_JOIN_FILES_STATS,
+        "resultRows": 1,
+        "resultColumns": 4,
+        "duplicatesRemoved": 0,
+        "options": {"addSourceColumn": False, "allAsText": False, "removeDuplicates": False},
+    }
+
+
+def test_build_result_estadisticas_join_left_anti_con_tres_archivos(tmp_path, monkeypatch):
+    a, b, c = _three_join_files(tmp_path)
+    reads = _spy_reads(monkeypatch)
+
+    df, stats = merger.build_result(
+        [a, b, c],
+        mode="join",
+        join_keys=["id", "id", "id"],
+        join_type="left_anti",
+        # en join la columna de origen no se aplica: la opción efectiva es False
+        add_source_column=True,
+    )
+
+    assert reads == {a: 1, b: 1, c: 1}
+    assert df["x"].tolist() == ["a1", "a4", "a5"]
+    assert stats["joinType"] == "left_anti"
+    assert stats["files"] == _THREE_JOIN_FILES_STATS
+    assert (stats["resultRows"], stats["resultColumns"]) == (3, 2)
+    assert stats["options"]["addSourceColumn"] is False
+
+
+def test_build_result_join_con_claves_de_distinto_nombre_y_hoja(tmp_path):
+    a = tmp_path / "a.csv"
+    a.write_text("dni,n\n001,Ana\n002,Beto\n", encoding="utf-8")
+    b = _two_sheet_xlsx(tmp_path / "b.xlsx", {"otro": [1]}, {"documento": ["001", "009"], "c": ["x", "y"]})
+
+    _, stats = merger.build_result(
+        [str(a), b], mode="join", join_keys=["dni", "documento"], join_type="left", sheets={b: "Dos"}
+    )
+
+    assert stats["files"] == [
+        {
+            "name": "a.csv",
+            "sheet": None,
+            "rowsRead": 2,
+            "keyColumn": "dni",
+            "unmatchedRows": 1,
+            "emptyKeyRows": 0,
+        },
+        {
+            "name": "b.xlsx",
+            "sheet": "Dos",
+            "rowsRead": 2,
+            "keyColumn": "documento",
+            "unmatchedRows": 1,
+            "emptyKeyRows": 0,
+        },
+    ]
+
+
+def test_build_result_es_serializable_a_json(tmp_path):
+    import json
+
+    a, b, c = _three_join_files(tmp_path)
+
+    _, stats = merger.build_result([a, b, c], mode="join", join_keys=["id"] * 3, join_type="outer")
+
+    assert json.loads(json.dumps(stats)) == stats
+
+
+# ---- informe de la combinación (build_report / write_output con report) ----
+
+
+_FIXED_DATE = __import__("datetime").datetime(2026, 10, 14, 9, 5)
+
+_EN_LABELS = {
+    "sheetName": "Report",
+    "fileSuffix": "report",
+    "generatedAt": "Date and time",
+    "mode": "Mode",
+    "modeConcat": "Stack rows",
+    "modeJoin": "Join by key",
+    "joinType": "Join type",
+    "joinInner": "Inner join",
+    "joinLeftAnti": "Left anti join",
+    "resultRows": "Result rows",
+    "resultColumns": "Result columns",
+    "duplicatesRemoved": "Duplicate rows removed",
+    "addSourceColumn": "Add source column",
+    "allAsText": "All as text",
+    "removeDuplicates": "Remove duplicates",
+    "yes": "Yes",
+    "no": "No",
+    "file": "File",
+    "sheet": "Sheet",
+    "allSheets": "All",
+    "rowsRead": "Rows read",
+    "keyColumn": "Key column",
+    "unmatchedRows": "Unmatched rows",
+    "emptyKeyRows": "Empty key rows",
+}
+
+
+def _concat_report(tmp_path, labels=None):
+    a = _write_csv(tmp_path / "a.csv", {"id": [1, 2]})
+    b = _two_sheet_xlsx(tmp_path / "b.xlsx", {"id": [3]}, {"id": [4]})
+    df, stats = merger.build_result([a, b], remove_duplicates=True, sheets={b: "Dos"})
+    return df, merger.build_report(stats, labels, generated_at=_FIXED_DATE)
+
+
+def test_build_report_apilar_en_espanol_por_defecto(tmp_path):
+    _, report = _concat_report(tmp_path)
+
+    assert report["sheet_name"] == "Informe"
+    assert report["file_suffix"] == "informe"
+    assert report["rows"] == [
+        ["Fecha y hora", "2026-10-14 09:05"],
+        ["Modo de combinación", "Apilar filas"],
+        ["Filas del resultado", 3],
+        ["Columnas del resultado", 1],
+        ["Filas duplicadas quitadas", 0],
+        ["Añadir columna con nombre de archivo origen", "No"],
+        ["Leer todas las columnas como texto (conserva ceros a la izquierda)", "No"],
+        ["Quitar filas duplicadas", "Sí"],
+        [],
+        ["Archivo", "Hoja", "Filas leídas"],
+        ["a.csv", "Todas", 2],
+        ["b.xlsx", "Dos", 1],
+    ]
+
+
+def test_build_report_join_con_etiquetas_traducidas(tmp_path):
+    a, b, c = _three_join_files(tmp_path)
+    _, stats = merger.build_result([a, b, c], mode="join", join_keys=["id"] * 3, join_type="left_anti")
+
+    report = merger.build_report(stats, _EN_LABELS, generated_at=_FIXED_DATE)
+
+    assert report["rows"][:3] == [
+        ["Date and time", "2026-10-14 09:05"],
+        ["Mode", "Join by key"],
+        ["Join type", "Left anti join"],
+    ]
+    assert report["rows"][10:] == [
+        ["File", "Sheet", "Rows read", "Key column", "Unmatched rows", "Empty key rows"],
+        ["a.csv", "All", 5, "id", 2, 1],
+        ["b.csv", "All", 5, "id", 1, 1],
+        ["c.csv", "All", 4, "id", 1, 1],
+    ]
+    # el bloque resumen lleva en join una fila más (tipo de join) antes de la fila en blanco
+    assert report["rows"][9] == []
+
+
+def test_build_report_ignora_etiquetas_invalidas(tmp_path):
+    labels = {"sheetName": 42, "mode": "   ", "yes": None, "resultRows": "Rows", "inventada": "x"}
+
+    _, report = _concat_report(tmp_path, labels)
+
+    assert report["sheet_name"] == "Informe"
+    assert report["rows"][1] == ["Modo de combinación", "Apilar filas"]
+    assert report["rows"][2] == ["Rows", 3]
+    assert report["rows"][7] == ["Quitar filas duplicadas", "Sí"]
+
+
+def test_report_sheet_name_sanea_y_trunca():
+    assert merger.report_sheet_name("Informe: [enero]/a*b?c\\d") == "Informe eneroabcd"
+    long_name = "Relatório da combinação de arquivos 2026"
+    assert merger.report_sheet_name(long_name) == long_name[:31].strip()
+    assert len(merger.report_sheet_name("x" * 50)) == 31
+    assert merger.report_sheet_name("'Bericht'") == "Bericht"
+    # vacío tras limpiar, o igual que la hoja de datos: nombre por defecto
+    assert merger.report_sheet_name("[]:*?/\\") == "Informe"
+    assert merger.report_sheet_name("sheet1") == "Informe"
+    assert merger.report_sheet_name("Combinado", "Combinado") == "Informe"
+
+
+def test_write_output_xlsx_con_informe_en_una_segunda_hoja(tmp_path):
+    df, report = _concat_report(tmp_path, _EN_LABELS)
+    out = tmp_path / "salida.xlsx"
+
+    write_output(df, str(out), "xlsx", report=report)
+
+    assert pd.ExcelFile(out).sheet_names == ["Sheet1", "Report"]
+    assert pd.read_excel(out, sheet_name="Sheet1")["id"].tolist() == [1, 2, 4]
+    sheet = pd.read_excel(out, sheet_name="Report", header=None, dtype=object)
+    assert sheet.iloc[0].tolist()[:2] == ["Date and time", "2026-10-14 09:05"]
+    assert sheet.iloc[2].tolist()[:2] == ["Result rows", 3]
+    assert sheet.iloc[8].isna().all()
+    assert sheet.iloc[9].tolist() == ["File", "Sheet", "Rows read"]
+    assert sheet.iloc[10].tolist() == ["a.csv", "All", 2]
+    assert sheet.iloc[11].tolist() == ["b.xlsx", "Dos", 1]
+
+
+def test_write_output_ods_con_informe_en_una_segunda_hoja(tmp_path):
+    df, report = _concat_report(tmp_path)
+    out = tmp_path / "salida.ods"
+
+    write_output(df, str(out), "ods", report=report)
+
+    assert pd.ExcelFile(out, engine="odf").sheet_names == ["Sheet1", "Informe"]
+    sheet = pd.read_excel(out, sheet_name="Informe", header=None, engine="odf")
+    assert sheet.iloc[1].tolist()[:2] == ["Modo de combinación", "Apilar filas"]
+    assert sheet.iloc[-1].tolist() == ["b.xlsx", "Dos", 1]
+
+
+def test_write_output_xls_con_informe_en_una_segunda_hoja(tmp_path):
+    import xlrd
+
+    df, report = _concat_report(tmp_path, _EN_LABELS)
+    out = tmp_path / "salida.xls"
+
+    write_output(df, str(out), "xls", report=report)
+
+    book = xlrd.open_workbook(str(out))
+    assert book.sheet_names() == ["Combinado", "Report"]
+    data = book.sheet_by_name("Combinado")
+    assert data.nrows == 4 and data.cell_value(0, 0) == "id"
+    sheet = book.sheet_by_name("Report")
+    assert sheet.row_values(0)[:2] == ["Date and time", "2026-10-14 09:05"]
+    assert sheet.row_values(10)[:3] == ["a.csv", "All", 2]
+
+
+def test_write_output_csv_con_informe_en_un_archivo_aparte(tmp_path):
+    df, report = _concat_report(tmp_path, _EN_LABELS)
+    out = tmp_path / "salida.csv"
+
+    write_output(df, str(out), "csv", csv_separator=";", report=report)
+
+    report_path = tmp_path / "salida_report.csv"
+    assert merger.report_output_path(str(out), "csv", report) == str(report_path)
+    assert report_path.read_bytes().startswith(b"\xef\xbb\xbf")
+    lines = report_path.read_text(encoding="utf-8-sig").splitlines()
+    assert lines[0] == "Date and time;2026-10-14 09:05"
+    assert lines[2] == "Result rows;3"
+    assert lines[8] == ""
+    assert lines[9:] == ["File;Sheet;Rows read", "a.csv;All;2", "b.xlsx;Dos;1"]
+    # el CSV principal no cambia
+    assert out.read_text(encoding="utf-8-sig").splitlines() == ["id", "1", "2", "4"]
+
+
+def test_report_output_path_solo_en_csv(tmp_path):
+    _, report = _concat_report(tmp_path)
+
+    assert merger.report_output_path("/x/datos.csv", "csv", report) == "/x/datos_informe.csv"
+    assert merger.report_output_path("/x/datos.xlsx", "xlsx", report) is None
+    assert merger.report_output_path("/x/datos.csv", "csv", None) is None
+    # el sufijo se limpia igual que `sanitizeFileName` del frontend
+    report_raro = merger.build_report({"mode": "concat"}, {"fileSuffix": ' in<for>me:"1"?*| '})
+    assert merger.report_output_path("/x/datos.csv", "csv", report_raro) == "/x/datos_informe1.csv"
+
+
+@pytest.mark.parametrize("output_format", ["xlsx", "ods", "xls", "csv"])
+def test_write_output_sin_informe_escribe_un_solo_archivo_y_una_sola_hoja(tmp_path, output_format):
+    out_dir = tmp_path / "salida"
+    out_dir.mkdir()
+    out = out_dir / f"combinado.{output_format}"
+
+    write_output(pd.DataFrame({"id": [1, 2]}), str(out), output_format)
+
+    assert [p.name for p in out_dir.iterdir()] == [out.name]
+    if output_format in ("xlsx", "ods"):
+        assert pd.ExcelFile(out).sheet_names == ["Sheet1"]
+    elif output_format == "xls":
+        assert pd.ExcelFile(out, engine="xlrd").sheet_names == ["Combinado"]

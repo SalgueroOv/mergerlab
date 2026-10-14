@@ -15,10 +15,12 @@ import { startMerge, pollMergeStatus, getColumns, getSheets, inspectCsv } from "
 import { backendText } from "./i18n/backendMessages.js";
 import { ACCEPTED_INPUT_EXTENSIONS, extensionOf } from "./formatMeta.js";
 import {
+  buildReportLabels,
   formatBytes,
   isJoinTypeUnavailable,
   joinPath,
   normalizeColumnName,
+  overwriteCheckPaths,
   parseProcessed,
   pathName,
   sanitizeFileName,
@@ -40,6 +42,7 @@ export default function App() {
   const [addSourceColumn, setAddSourceColumn] = useState(false);
   const [allAsText, setAllAsText] = useState(false);
   const [removeDuplicates, setRemoveDuplicates] = useState(false);
+  const [includeReport, setIncludeReport] = useState(false);
   const [outputCsvSeparator, setOutputCsvSeparator] = useState(",");
 
   // csvSeparators: { [filePath]: separador } — solo los CSV cuyo separador eligió el usuario a
@@ -99,8 +102,8 @@ export default function App() {
   }, []);
 
   // Preferencias recordadas entre sesiones (carpeta de destino, formato, separador del CSV de
-  // salida, modo, tipo de join y quitar filas duplicadas). `prefsLoaded` evita guardar los
-  // valores por defecto antes de haber leído los guardados.
+  // salida, modo, tipo de join, quitar filas duplicadas e incluir el informe). `prefsLoaded`
+  // evita guardar los valores por defecto antes de haber leído los guardados.
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   useEffect(() => {
     window.electronAPI
@@ -112,6 +115,7 @@ export default function App() {
         if (prefs.mode) setMode(prefs.mode);
         if (prefs.joinType) setJoinType(prefs.joinType);
         if (typeof prefs.removeDuplicates === "boolean") setRemoveDuplicates(prefs.removeDuplicates);
+        if (typeof prefs.includeReport === "boolean") setIncludeReport(prefs.includeReport);
       })
       .finally(() => setPrefsLoaded(true));
   }, []);
@@ -125,8 +129,18 @@ export default function App() {
       mode,
       joinType,
       removeDuplicates,
+      includeReport,
     });
-  }, [prefsLoaded, destinationFolder, outputFormat, outputCsvSeparator, mode, joinType, removeDuplicates]);
+  }, [
+    prefsLoaded,
+    destinationFolder,
+    outputFormat,
+    outputCsvSeparator,
+    mode,
+    joinType,
+    removeDuplicates,
+    includeReport,
+  ]);
 
   const handleThemeChange = useCallback((value) => {
     setTheme(value);
@@ -476,8 +490,10 @@ export default function App() {
     const safeName = sanitizeFileName(outputFileName) || "combinado";
     const outputPath = joinPath(destinationFolder, `${safeName}.${outputFormat}`);
 
-    // Si el archivo de salida ya existe, el proceso principal pregunta antes de reemplazarlo.
-    if (!(await window.electronAPI.confirmOverwrite(outputPath))) return;
+    // Si el archivo de salida (o, en CSV con informe, el archivo aparte del informe) ya existe, el
+    // proceso principal pregunta antes de reemplazarlo.
+    const pathsToCheck = overwriteCheckPaths(outputPath, outputFormat, includeReport, t("report.fileSuffix"));
+    if (!(await window.electronAPI.confirmOverwrite(pathsToCheck))) return;
 
     setIsProcessing(true);
     setProgressState("running");
@@ -498,6 +514,8 @@ export default function App() {
           sourceColumnName: t("stackOptions.sourceColumnName"),
           allAsText,
           removeDuplicates,
+          includeReport,
+          reportLabels: buildReportLabels(t),
           sheets: selectedSheets,
           mode,
           joinKeys: joinKeysPayload,
@@ -532,6 +550,7 @@ export default function App() {
     addSourceColumn,
     allAsText,
     removeDuplicates,
+    includeReport,
     selectedSheets,
     mode,
     joinKeys,
@@ -736,6 +755,15 @@ export default function App() {
                   onChange={(e) => setRemoveDuplicates(e.target.checked)}
                 />
                 {t("readOptions.removeDuplicates")}
+              </label>
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={includeReport}
+                  disabled={isProcessing}
+                  onChange={(e) => setIncludeReport(e.target.checked)}
+                />
+                {t("readOptions.includeReport")}
               </label>
             </div>
 

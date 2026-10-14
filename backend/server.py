@@ -31,17 +31,18 @@ from flask import Flask, jsonify, request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from merger import (  # noqa: E402
+    DEFAULT_REPORT_LABELS,
     DEFAULT_SOURCE_COLUMN,
     JOIN_TYPES,
     OUTPUT_CSV_SEPARATORS,
     SUPPORTED_OUTPUT_FORMATS,
     MergeError,
-    drop_duplicate_rows,
+    build_report,
+    build_result,
     inspect_csv,
-    join_files,
     list_sheets,
-    merge_files,
     read_file_columns,
+    report_output_path,
     right_anti_two_files_error,
     validate_output_extension,
     write_output,
@@ -86,11 +87,31 @@ def _sheets_from(payload):
     return {path: name for path, name in raw.items() if isinstance(name, str) and name}
 
 
+def _report_labels_from(payload):
+    """Extrae de un cuerpo JSON el campo opcional `report_labels` (`{clave: texto}`, los textos
+    del informe de la combinación ya traducidos al idioma de la app).
+
+    Solo se conservan las claves conocidas (las de `merger.DEFAULT_REPORT_LABELS`) con un texto
+    no vacío; todo lo demás (otro tipo de valor, claves desconocidas, un `report_labels` que no
+    es un objeto) se descarta en silencio, y `merger.build_report` usa el texto en español para
+    lo que falte.
+    """
+    raw = payload.get("report_labels")
+    if not isinstance(raw, dict):
+        return {}
+    return {
+        key: value
+        for key, value in raw.items()
+        if key in DEFAULT_REPORT_LABELS and isinstance(value, str) and value.strip()
+    }
+
+
 def _set_job(job_id, **fields):
     """Actualiza (parcialmente) el estado del trabajo `job_id` en `jobs`, bajo `jobs_lock`.
 
     `fields` son los campos del diccionario de estado a sobrescribir (`status`, `progress`,
-    `message`, `code`, `params`, `result_path`); los que no se indiquen quedan como estaban.
+    `message`, `code`, `params`, `result_path`, `report_path`); los que no se indiquen quedan
+    como estaban.
     """
     with jobs_lock:
         jobs[job_id].update(fields)
@@ -152,9 +173,11 @@ def merge():
     `output_format` es `"csv"`), `sheets` (`{ruta: hoja}` para leer solo una hoja de un Excel),
     `add_source_column` y `source_column_name` (solo modo `"concat"`:
     añade una columna con el archivo de origen de cada fila), `all_as_text` (leer todas las
-    celdas como texto) y `remove_duplicates` (quitar del resultado final las filas repetidas, en
-    ambos modos; ver `merger.drop_duplicate_rows`, que ignora la columna de origen al comparar).
-    Devuelve `{"job_id": ...}` con 202 si todo es válido; el
+    celdas como texto), `remove_duplicates` (quitar del resultado final las filas repetidas, en
+    ambos modos; ver `merger.drop_duplicate_rows`, que ignora la columna de origen al comparar),
+    `include_report` (añadir el informe de la combinación: hoja adicional, o archivo aparte en
+    CSV; ver `merger.build_report`) y `report_labels` (sus textos traducidos, ver
+    `_report_labels_from`). Devuelve `{"job_id": ...}` con 202 si todo es válido; el
     progreso y el resultado se consultan después con `GET /api/status/<job_id>`. El trabajo en
     sí (lectura, combinación y escritura) lo hace `_run_merge_job` en background para no
     bloquear la petición HTTP mientras se procesan archivos grandes.
@@ -174,6 +197,8 @@ def merge():
         source_column_name = DEFAULT_SOURCE_COLUMN
     all_as_text = bool(payload.get("all_as_text"))
     remove_duplicates = bool(payload.get("remove_duplicates"))
+    include_report = bool(payload.get("include_report"))
+    report_labels = _report_labels_from(payload)
     sheets = _sheets_from(payload)
 
     if not files:
@@ -237,6 +262,7 @@ def merge():
             "code": "queued",
             "params": {},
             "result_path": None,
+            "report_path": None,
         }
 
     thread = threading.Thread(
@@ -256,6 +282,8 @@ def merge():
             all_as_text,
             sheets,
             remove_duplicates,
+            include_report,
+            report_labels,
         ),
         daemon=True,
     )
@@ -360,6 +388,8 @@ def _run_merge_job(
     all_as_text=False,
     sheets=None,
     remove_duplicates=False,
+    include_report=False,
+    report_labels=None,
 ):
     """Ejecuta la combinación completa (lectura + join/concat + escritura) y actualiza `jobs[job_id]`.
 
@@ -367,6 +397,12 @@ def _run_merge_job(
     devuelve nada: todo el resultado (progreso, estado final, `result_path` o error) se comunica
     escribiendo en `jobs` a través de `_set_job`, que es lo que lee `GET /api/status/<job_id>`.
     La lectura ocupa el 80% del progreso reportado; la escritura, el 20% restante.
+
+    La lectura, la combinación y el quitar duplicados los hace `merger.build_result` (el mismo
+    núcleo que puede usar cualquier otro uso sin escritura); aquí solo se escribe el resultado.
+    Con `include_report` se escribe además el informe de la combinación (`merger.build_report`
+    con las `stats` de `build_result` y los textos de `report_labels`): en CSV va en un archivo
+    aparte cuya ruta queda en `report_path` del estado final (`None` en los demás casos).
 
     Con `remove_duplicates`, antes de escribir se quitan las filas repetidas del resultado con
     `drop_duplicate_rows`, ignorando la columna de archivo de origen si `merge_files` la añadió
@@ -390,33 +426,21 @@ def _run_merge_job(
             code="reading_files",
             params={},
         )
-        if mode == "join":
-            combined = join_files(
-                files,
-                join_keys,
-                join_type,
-                progress_callback=progress_callback,
-                csv_separators=csv_separators,
-                all_as_text=all_as_text,
-                sheets=sheets,
-            )
-        else:
-            combined = merge_files(
-                files,
-                progress_callback=progress_callback,
-                csv_separators=csv_separators,
-                add_source_column=add_source_column,
-                source_column_name=source_column_name,
-                all_as_text=all_as_text,
-                sheets=sheets,
-            )
-
-        duplicates_removed = 0
-        if remove_duplicates:
-            source_column = combined.attrs.get("source_column")
-            combined, duplicates_removed = drop_duplicate_rows(
-                combined, ignore_columns=[source_column] if source_column else ()
-            )
+        combined, stats = build_result(
+            files,
+            mode=mode,
+            join_keys=join_keys,
+            join_type=join_type,
+            progress_callback=progress_callback,
+            csv_separators=csv_separators,
+            add_source_column=add_source_column,
+            source_column_name=source_column_name,
+            all_as_text=all_as_text,
+            sheets=sheets,
+            remove_duplicates=remove_duplicates,
+        )
+        duplicates_removed = stats["duplicatesRemoved"]
+        report = build_report(stats, report_labels) if include_report else None
 
         _set_job(
             job_id,
@@ -426,7 +450,8 @@ def _run_merge_job(
             code="saving_output",
             params={},
         )
-        result_path = write_output(combined, output_path, output_format, output_csv_separator)
+        result_path = write_output(combined, output_path, output_format, output_csv_separator, report=report)
+        report_path = report_output_path(result_path, output_format, report)
 
         params = {"duplicatesRemoved": duplicates_removed}
         if duplicates_removed == 1:
@@ -448,6 +473,7 @@ def _run_merge_job(
             code=code,
             params=params,
             result_path=result_path,
+            report_path=report_path,
         )
     except MergeError as exc:
         _set_job(job_id, status="error", progress=0, message=str(exc), code=exc.code, params=exc.params)
@@ -467,9 +493,11 @@ def _run_merge_job(
 def status(job_id):
     """Devuelve el estado actual del trabajo `job_id` (sondeado por el frontend cada 350 ms).
 
-    Forma de la respuesta: `{job_id, status, progress, message, code, params, result_path}`,
-    donde `status` es `"pending" | "running" | "done" | "error"`. `result_path` solo tiene valor
-    cuando `status` es `"done"`.
+    Forma de la respuesta: `{job_id, status, progress, message, code, params, result_path,
+    report_path}`, donde `status` es `"pending" | "running" | "done" | "error"`. `result_path`
+    solo tiene valor cuando `status` es `"done"`; `report_path`, además, solo si se pidió el
+    informe y la salida es CSV (el informe va en un archivo aparte; en los demás formatos va
+    dentro del mismo libro y queda en `None`).
     """
     with jobs_lock:
         job = jobs.get(job_id)

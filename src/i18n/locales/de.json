@@ -90,7 +90,25 @@
   },
   "readOptions": {
     "allAsText": "Alle Spalten als Text lesen (führende Nullen bleiben erhalten)",
-    "removeDuplicates": "Doppelte Zeilen entfernen"
+    "removeDuplicates": "Doppelte Zeilen entfernen",
+    "includeReport": "Bericht zur Kombination beifügen"
+  },
+  "report": {
+    "sheetName": "Bericht",
+    "fileSuffix": "bericht",
+    "generatedAt": "Datum und Uhrzeit",
+    "resultRows": "Zeilen im Ergebnis",
+    "resultColumns": "Spalten im Ergebnis",
+    "duplicatesRemoved": "Entfernte doppelte Zeilen",
+    "yes": "Ja",
+    "no": "Nein",
+    "file": "Datei",
+    "sheet": "Blatt",
+    "allSheets": "Alle",
+    "rowsRead": "Gelesene Zeilen",
+    "keyColumn": "Schlüsselspalte",
+    "unmatchedRows": "Zeilen ohne Übereinstimmung",
+    "emptyKeyRows": "Zeilen mit leerem Schlüssel"
   },
   "progress": {
     "completedPrefix": "Abgeschlossen — Datei gespeichert unter",

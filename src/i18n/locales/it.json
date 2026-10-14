@@ -90,7 +90,25 @@
   },
   "readOptions": {
     "allAsText": "Leggi tutte le colonne come testo (mantiene gli zeri iniziali)",
-    "removeDuplicates": "Rimuovi le righe duplicate"
+    "removeDuplicates": "Rimuovi le righe duplicate",
+    "includeReport": "Includi il rapporto della combinazione"
+  },
+  "report": {
+    "sheetName": "Rapporto",
+    "fileSuffix": "rapporto",
+    "generatedAt": "Data e ora",
+    "resultRows": "Righe del risultato",
+    "resultColumns": "Colonne del risultato",
+    "duplicatesRemoved": "Righe duplicate rimosse",
+    "yes": "Sì",
+    "no": "No",
+    "file": "File",
+    "sheet": "Foglio",
+    "allSheets": "Tutti",
+    "rowsRead": "Righe lette",
+    "keyColumn": "Colonna chiave",
+    "unmatchedRows": "Righe senza corrispondenza",
+    "emptyKeyRows": "Righe con chiave vuota"
   },
   "progress": {
     "completedPrefix": "Completato — file salvato in",

@@ -72,6 +72,11 @@ async function requestJson(url, options) {
  * @param {boolean} [options.removeDuplicates] quitar del resultado final las filas repetidas (en
  *   ambos modos; al apilar se ignora la columna de archivo de origen al comparar). El estado final
  *   informa de cuántas se quitaron en `params.duplicatesRemoved`
+ * @param {boolean} [options.includeReport] añadir el informe de la combinación (hoja adicional en
+ *   xlsx/ods/xls; archivo aparte `<nombre>_<sufijo>.csv` en CSV, cuya ruta llega en `report_path`
+ *   del estado final)
+ * @param {Record<string,string>} [options.reportLabels] textos del informe en el idioma de la app
+ *   (ver `buildReportLabels` en `utils.js`); lo que falte sale en español
  * @param {"concat"|"join"} [options.mode]
  * @param {Record<string,string>} [options.joinKeys] `{ruta: columnaClave}`, solo en modo `"join"`
  * @param {string} [options.joinType] `"inner" | "left" | "right" | "outer" | "left_anti" |
@@ -94,6 +99,8 @@ export async function startMerge(files, outputFormat, outputPath, options = {}) 
       source_column_name: options.sourceColumnName,
       all_as_text: options.allAsText ?? false,
       remove_duplicates: options.removeDuplicates ?? false,
+      include_report: options.includeReport ?? false,
+      report_labels: options.reportLabels ?? {},
       sheets: options.sheets ?? {},
       mode: options.mode ?? "concat",
       join_keys: options.joinKeys ?? {},

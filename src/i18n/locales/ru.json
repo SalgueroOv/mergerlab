@@ -92,7 +92,25 @@
   },
   "readOptions": {
     "allAsText": "Читать все столбцы как текст (сохраняет ведущие нули)",
-    "removeDuplicates": "Удалить повторяющиеся строки"
+    "removeDuplicates": "Удалить повторяющиеся строки",
+    "includeReport": "Добавить отчёт об объединении"
+  },
+  "report": {
+    "sheetName": "Отчёт",
+    "fileSuffix": "отчёт",
+    "generatedAt": "Дата и время",
+    "resultRows": "Строк в результате",
+    "resultColumns": "Столбцов в результате",
+    "duplicatesRemoved": "Удалено повторяющихся строк",
+    "yes": "Да",
+    "no": "Нет",
+    "file": "Файл",
+    "sheet": "Лист",
+    "allSheets": "Все",
+    "rowsRead": "Прочитано строк",
+    "keyColumn": "Ключевой столбец",
+    "unmatchedRows": "Строк без совпадений",
+    "emptyKeyRows": "Строк с пустым ключом"
   },
   "progress": {
     "completedPrefix": "Готово — файл сохранён в",

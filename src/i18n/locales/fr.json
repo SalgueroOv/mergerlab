@@ -90,7 +90,25 @@
   },
   "readOptions": {
     "allAsText": "Lire toutes les colonnes comme du texte (conserve les zéros initiaux)",
-    "removeDuplicates": "Supprimer les lignes en double"
+    "removeDuplicates": "Supprimer les lignes en double",
+    "includeReport": "Inclure le rapport de la combinaison"
+  },
+  "report": {
+    "sheetName": "Rapport",
+    "fileSuffix": "rapport",
+    "generatedAt": "Date et heure",
+    "resultRows": "Lignes du résultat",
+    "resultColumns": "Colonnes du résultat",
+    "duplicatesRemoved": "Lignes en double supprimées",
+    "yes": "Oui",
+    "no": "Non",
+    "file": "Fichier",
+    "sheet": "Feuille",
+    "allSheets": "Toutes",
+    "rowsRead": "Lignes lues",
+    "keyColumn": "Colonne clé",
+    "unmatchedRows": "Lignes sans correspondance",
+    "emptyKeyRows": "Lignes avec clé vide"
   },
   "progress": {
     "completedPrefix": "Terminé — fichier enregistré dans",

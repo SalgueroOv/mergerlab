@@ -270,6 +270,95 @@ def test_merge_quita_filas_duplicadas_en_un_join(client, tmp_path):
     assert result.values.tolist() == [["001", "Ana", "Lima"], ["002", "Beto", "Quito"]]
 
 
+# ---- informe de la combinación ----
+
+
+def test_merge_con_informe_en_csv_devuelve_report_path(client, tmp_path):
+    a, b = _two_csv_with_a_repeated_row(tmp_path)
+    out = tmp_path / "salida.csv"
+
+    status = _run_merge(
+        client,
+        {
+            "files": [a, b],
+            "output_format": "csv",
+            "output_csv_separator": ";",
+            "output_path": str(out),
+            "mode": "concat",
+            "remove_duplicates": True,
+            "include_report": True,
+            "report_labels": {"fileSuffix": "report", "resultRows": "Result rows", "file": "File"},
+        },
+    )
+
+    assert status["status"] == "done", status
+    report_path = tmp_path / "salida_report.csv"
+    assert status["report_path"] == str(report_path)
+    assert report_path.exists()
+    lines = report_path.read_text(encoding="utf-8-sig").splitlines()
+    assert "Result rows;3" in lines
+    # lo que no llegó en report_labels sale en español
+    assert "Filas duplicadas quitadas;2" in lines
+    assert lines[-3:] == ["File;Hoja;Filas leídas", "a.csv;Todas;3", "b.csv;Todas;2"]
+
+
+def test_merge_con_informe_en_xlsx_no_tiene_report_path(client, tmp_path):
+    a, b = _two_csv_with_a_repeated_row(tmp_path)
+    out = tmp_path / "salida.xlsx"
+
+    status = _run_merge(
+        client,
+        {
+            "files": [a, b],
+            "output_format": "xlsx",
+            "output_path": str(out),
+            "mode": "join",
+            "join_keys": {a: "id", b: "id"},
+            "join_type": "inner",
+            "include_report": True,
+            # basura: se ignora lo que no es una clave conocida con un texto
+            "report_labels": {"sheetName": ["x"], "inventada": "x", "joinInner": 3},
+        },
+    )
+
+    assert status["status"] == "done", status
+    assert status["report_path"] is None
+    assert pd.ExcelFile(out).sheet_names == ["Sheet1", "Informe"]
+    sheet = pd.read_excel(out, sheet_name="Informe", header=None)
+    assert sheet.iloc[2].tolist()[:2] == ["Tipo de join", "Inner join (intersección)"]
+
+
+def test_merge_sin_informe_escribe_solo_el_resultado(client, tmp_path):
+    a, b = _two_csv_with_a_repeated_row(tmp_path)
+    out_dir = tmp_path / "salida"
+    out_dir.mkdir()
+    out = out_dir / "combinado.csv"
+
+    status = _run_merge(
+        client,
+        {
+            "files": [a, b],
+            "output_format": "csv",
+            "output_path": str(out),
+            "mode": "concat",
+            "report_labels": {"fileSuffix": "report"},
+        },
+    )
+
+    assert status["status"] == "done", status
+    assert status["report_path"] is None
+    assert [p.name for p in out_dir.iterdir()] == ["combinado.csv"]
+
+
+def test_report_labels_solo_acepta_claves_conocidas_con_texto():
+    assert server._report_labels_from({}) == {}
+    assert server._report_labels_from({"report_labels": "Informe"}) == {}
+    assert server._report_labels_from({"report_labels": ["Informe"]}) == {}
+    assert server._report_labels_from(
+        {"report_labels": {"sheetName": "Report", "yes": "", "no": 0, "otra": "x", "file": {"a": 1}}}
+    ) == {"sheetName": "Report"}
+
+
 # ---- seguridad: token, CORS y extensión de salida ----
 
 

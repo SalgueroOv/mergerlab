@@ -89,7 +89,25 @@
   },
   "readOptions": {
     "allAsText": "将所有列按文本读取（保留前导零）",
-    "removeDuplicates": "删除重复行"
+    "removeDuplicates": "删除重复行",
+    "includeReport": "包含合并报告"
+  },
+  "report": {
+    "sheetName": "报告",
+    "fileSuffix": "报告",
+    "generatedAt": "日期和时间",
+    "resultRows": "结果行数",
+    "resultColumns": "结果列数",
+    "duplicatesRemoved": "已删除的重复行数",
+    "yes": "是",
+    "no": "否",
+    "file": "文件",
+    "sheet": "工作表",
+    "allSheets": "全部",
+    "rowsRead": "读取的行数",
+    "keyColumn": "关键列",
+    "unmatchedRows": "无匹配的行数",
+    "emptyKeyRows": "键为空的行数"
   },
   "progress": {
     "completedPrefix": "已完成 — 文件已保存到",

@@ -114,6 +114,7 @@ const PREFERENCE_VALIDATORS = {
   mode: (v) => ["concat", "join"].includes(v),
   joinType: (v) => ["inner", "left", "right", "outer", "left_anti", "right_anti"].includes(v),
   removeDuplicates: (v) => typeof v === "boolean",
+  includeReport: (v) => typeof v === "boolean",
 };
 
 function preferencesPath() {
@@ -286,12 +287,16 @@ const UPDATE_DIALOG_TEXT = {
 };
 
 // Textos del diálogo de confirmación al sobrescribir el archivo de salida (diálogo nativo,
-// mismo motivo que UPDATE_DIALOG_TEXT). `{n}` se sustituye por el nombre del archivo.
+// mismo motivo que UPDATE_DIALOG_TEXT). `{n}` se sustituye por el nombre del archivo; las
+// variantes `messageMany`/`detailMany` se usan cuando ya existe más de uno (p. ej. el CSV de salida
+// y su informe aparte) y `{n}` es la lista de nombres.
 const OVERWRITE_DIALOG_TEXT = {
   es: {
     title: "Archivo existente",
     message: "Ya existe «{n}» en la carpeta de destino.",
     detail: "Si continúas, se reemplazará su contenido.",
+    messageMany: "Ya existen estos archivos en la carpeta de destino: {n}.",
+    detailMany: "Si continúas, se reemplazará su contenido.",
     replace: "Reemplazar",
     cancel: "Cancelar",
   },
@@ -299,6 +304,8 @@ const OVERWRITE_DIALOG_TEXT = {
     title: "File already exists",
     message: "“{n}” already exists in the destination folder.",
     detail: "If you continue, its contents will be replaced.",
+    messageMany: "These files already exist in the destination folder: {n}.",
+    detailMany: "If you continue, their contents will be replaced.",
     replace: "Replace",
     cancel: "Cancel",
   },
@@ -306,6 +313,8 @@ const OVERWRITE_DIALOG_TEXT = {
     title: "Datei vorhanden",
     message: "„{n}“ existiert bereits im Zielordner.",
     detail: "Wenn Sie fortfahren, wird der Inhalt ersetzt.",
+    messageMany: "Diese Dateien existieren bereits im Zielordner: {n}.",
+    detailMany: "Wenn Sie fortfahren, wird ihr Inhalt ersetzt.",
     replace: "Ersetzen",
     cancel: "Abbrechen",
   },
@@ -313,6 +322,8 @@ const OVERWRITE_DIALOG_TEXT = {
     title: "Fichier existant",
     message: "« {n} » existe déjà dans le dossier de destination.",
     detail: "Si vous continuez, son contenu sera remplacé.",
+    messageMany: "Ces fichiers existent déjà dans le dossier de destination : {n}.",
+    detailMany: "Si vous continuez, leur contenu sera remplacé.",
     replace: "Remplacer",
     cancel: "Annuler",
   },
@@ -320,6 +331,8 @@ const OVERWRITE_DIALOG_TEXT = {
     title: "File esistente",
     message: "«{n}» esiste già nella cartella di destinazione.",
     detail: "Se continui, il contenuto verrà sostituito.",
+    messageMany: "Questi file esistono già nella cartella di destinazione: {n}.",
+    detailMany: "Se continui, il loro contenuto verrà sostituito.",
     replace: "Sostituisci",
     cancel: "Annulla",
   },
@@ -327,6 +340,8 @@ const OVERWRITE_DIALOG_TEXT = {
     title: "Arquivo existente",
     message: "“{n}” já existe na pasta de destino.",
     detail: "Se continuar, o conteúdo será substituído.",
+    messageMany: "Estes arquivos já existem na pasta de destino: {n}.",
+    detailMany: "Se continuar, o conteúdo deles será substituído.",
     replace: "Substituir",
     cancel: "Cancelar",
   },
@@ -334,6 +349,8 @@ const OVERWRITE_DIALOG_TEXT = {
     title: "Файл уже существует",
     message: "Файл «{n}» уже есть в папке назначения.",
     detail: "Если продолжить, его содержимое будет заменено.",
+    messageMany: "Эти файлы уже есть в папке назначения: {n}.",
+    detailMany: "Если продолжить, их содержимое будет заменено.",
     replace: "Заменить",
     cancel: "Отмена",
   },
@@ -341,6 +358,8 @@ const OVERWRITE_DIALOG_TEXT = {
     title: "文件已存在",
     message: "目标文件夹中已存在“{n}”。",
     detail: "继续将替换其内容。",
+    messageMany: "目标文件夹中已存在以下文件：{n}。",
+    detailMany: "继续将替换它们的内容。",
     replace: "替换",
     cancel: "取消",
   },
@@ -772,21 +791,35 @@ ipcMain.handle("set-preferences", async (_event, partial) => {
 });
 
 /**
- * Si `filePath` ya existe, pregunta con un diálogo nativo si se puede reemplazar.
- * @returns {Promise<boolean>} `true` si se puede escribir (no existía o el usuario aceptó)
+ * Si alguna de las rutas indicadas ya existe, pregunta con un único diálogo nativo si se pueden
+ * reemplazar. Acepta una ruta (lo de siempre: el archivo de salida) o una lista de rutas (el
+ * archivo de salida y, en CSV con informe, el archivo aparte del informe); el diálogo nombra solo
+ * las que existen. Lo que no sea texto se ignora.
+ * @returns {Promise<boolean>} `true` si se puede escribir (no existía ninguna o el usuario aceptó)
  */
-ipcMain.handle("confirm-overwrite", async (_event, filePath) => {
-  try {
-    await fs.access(filePath);
-  } catch {
-    return true;
+ipcMain.handle("confirm-overwrite", async (_event, filePaths) => {
+  const candidates = (Array.isArray(filePaths) ? filePaths : [filePaths]).filter(
+    (p) => typeof p === "string" && p
+  );
+  const existing = [];
+  for (const filePath of candidates) {
+    try {
+      await fs.access(filePath);
+      existing.push(filePath);
+    } catch {
+      // No existe: no hay nada que reemplazar.
+    }
   }
+  if (existing.length === 0) return true;
+
   const text = OVERWRITE_DIALOG_TEXT[currentLanguage] || OVERWRITE_DIALOG_TEXT.es;
+  const names = existing.map((p) => path.basename(p));
+  const many = names.length > 1;
   const { response } = await dialog.showMessageBox(mainWindow, {
     type: "warning",
     title: text.title,
-    message: text.message.replace("{n}", path.basename(filePath)),
-    detail: text.detail,
+    message: many ? text.messageMany.replace("{n}", names.join(", ")) : text.message.replace("{n}", names[0]),
+    detail: many ? text.detailMany : text.detail,
     buttons: [text.replace, text.cancel],
     defaultId: 1,
     cancelId: 1,

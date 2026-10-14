@@ -90,7 +90,25 @@
   },
   "readOptions": {
     "allAsText": "Read all columns as text (keeps leading zeros)",
-    "removeDuplicates": "Remove duplicate rows"
+    "removeDuplicates": "Remove duplicate rows",
+    "includeReport": "Include combination report"
+  },
+  "report": {
+    "sheetName": "Report",
+    "fileSuffix": "report",
+    "generatedAt": "Date and time",
+    "resultRows": "Result rows",
+    "resultColumns": "Result columns",
+    "duplicatesRemoved": "Duplicate rows removed",
+    "yes": "Yes",
+    "no": "No",
+    "file": "File",
+    "sheet": "Sheet",
+    "allSheets": "All",
+    "rowsRead": "Rows read",
+    "keyColumn": "Key column",
+    "unmatchedRows": "Unmatched rows",
+    "emptyKeyRows": "Rows with empty key"
   },
   "progress": {
     "completedPrefix": "Done — file saved to",

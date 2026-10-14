@@ -90,7 +90,25 @@
   },
   "readOptions": {
     "allAsText": "Leer todas las columnas como texto (conserva ceros a la izquierda)",
-    "removeDuplicates": "Quitar filas duplicadas"
+    "removeDuplicates": "Quitar filas duplicadas",
+    "includeReport": "Incluir informe de la combinación"
+  },
+  "report": {
+    "sheetName": "Informe",
+    "fileSuffix": "informe",
+    "generatedAt": "Fecha y hora",
+    "resultRows": "Filas del resultado",
+    "resultColumns": "Columnas del resultado",
+    "duplicatesRemoved": "Filas duplicadas quitadas",
+    "yes": "Sí",
+    "no": "No",
+    "file": "Archivo",
+    "sheet": "Hoja",
+    "allSheets": "Todas",
+    "rowsRead": "Filas leídas",
+    "keyColumn": "Columna clave",
+    "unmatchedRows": "Filas sin coincidencia",
+    "emptyKeyRows": "Filas con clave vacía"
   },
   "progress": {
     "completedPrefix": "Completado — archivo guardado en",

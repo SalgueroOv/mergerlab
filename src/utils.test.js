@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
+import es from "./i18n/locales/es.json";
 import {
+  buildReportLabels,
   formatBytes,
   isJoinTypeUnavailable,
   joinPath,
   normalizeColumnName,
+  overwriteCheckPaths,
   parseProcessed,
   pathName,
+  reportCsvPath,
   sanitizeFileName,
 } from "./utils.js";
 
@@ -68,5 +72,43 @@ describe("normalizeColumnName", () => {
 
   it("no iguala nombres genuinamente distintos", () => {
     expect(normalizeColumnName("ID_Cliente")).not.toBe(normalizeColumnName("Codigo Cliente"));
+  });
+});
+
+describe("reportCsvPath", () => {
+  it("pone el sufijo antes de la extensión, en la misma carpeta", () => {
+    expect(reportCsvPath("C:\\datos\\combinado.csv", "informe")).toBe("C:\\datos\\combinado_informe.csv");
+    expect(reportCsvPath("/home/ana/v1.2/salida.csv", "report")).toBe("/home/ana/v1.2/salida_report.csv");
+  });
+
+  it("limpia el sufijo como el backend y usa 'informe' si queda vacío", () => {
+    expect(reportCsvPath("/x/datos.csv", ' in<for>me:"1"?*| ')).toBe("/x/datos_informe1.csv");
+    expect(reportCsvPath("/x/datos.csv", "?*")).toBe("/x/datos_informe.csv");
+    expect(reportCsvPath("/x/datos.csv", undefined)).toBe("/x/datos_informe.csv");
+  });
+});
+
+describe("overwriteCheckPaths", () => {
+  it("añade el archivo del informe solo en CSV con el informe activado", () => {
+    expect(overwriteCheckPaths("/x/a.csv", "csv", true, "report")).toEqual(["/x/a.csv", "/x/a_report.csv"]);
+    expect(overwriteCheckPaths("/x/a.csv", "csv", false, "report")).toEqual(["/x/a.csv"]);
+    expect(overwriteCheckPaths("/x/a.xlsx", "xlsx", true, "report")).toEqual(["/x/a.xlsx"]);
+    expect(overwriteCheckPaths("/x/a.ods", "ods", true, "report")).toEqual(["/x/a.ods"]);
+  });
+});
+
+describe("buildReportLabels", () => {
+  // t mínimo que busca la clave en es.json; si no existe devuelve una marca reconocible.
+  const t = (key) =>
+    key.split(".").reduce((node, part) => (node ? node[part] : undefined), es) ?? `FALTA:${key}`;
+
+  it("todas las etiquetas existen en los locales", () => {
+    const labels = buildReportLabels(t);
+    const missing = Object.entries(labels).filter(
+      ([, value]) => typeof value !== "string" || value.startsWith("FALTA:")
+    );
+    expect(missing).toEqual([]);
+    expect(labels.sheetName).toBe("Informe");
+    expect(labels.joinLeftAnti).toBe(es.joinTutorial.types.left_anti.title);
   });
 });

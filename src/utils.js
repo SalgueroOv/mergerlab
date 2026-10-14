@@ -84,6 +84,80 @@ export function isJoinTypeUnavailable(joinType, fileCount) {
   return joinType === "right_anti" && fileCount > 2;
 }
 
+// Sufijo por defecto del archivo del informe CSV si el traducido queda vacío al limpiarlo; es el
+// mismo respaldo que usa el backend (`DEFAULT_REPORT_LABELS["fileSuffix"]` en merger.py).
+const DEFAULT_REPORT_FILE_SUFFIX = "informe";
+
+/**
+ * Ruta del archivo aparte del informe de la combinación cuando la salida es CSV:
+ * `<nombre>_<sufijo>.csv`, junto al resultado. Calcula lo mismo que `report_output_path` en
+ * `backend/merger.py` (que limpia el sufijo igual que `sanitizeFileName`), para poder preguntar
+ * antes de sobrescribirlo.
+ * @param {string} outputPath ruta del CSV principal
+ * @param {string} suffix sufijo traducido (`report.fileSuffix`)
+ * @returns {string}
+ */
+export function reportCsvPath(outputPath, suffix) {
+  const cleanSuffix = sanitizeFileName(suffix || "") || DEFAULT_REPORT_FILE_SUFFIX;
+  const root = outputPath.replace(/\.[^.\\/]*$/, "");
+  return `${root}_${cleanSuffix}.csv`;
+}
+
+/**
+ * Rutas que hay que comprobar antes de combinar, para pedir confirmación si alguna ya existe:
+ * siempre el archivo de salida y, si el formato es CSV y el informe está activado, también el
+ * archivo aparte del informe (en los demás formatos el informe va dentro del mismo libro).
+ * @param {string} outputPath
+ * @param {string} outputFormat `"xlsx" | "xls" | "csv" | "ods"`
+ * @param {boolean} includeReport
+ * @param {string} reportSuffix sufijo traducido del archivo del informe
+ * @returns {string[]}
+ */
+export function overwriteCheckPaths(outputPath, outputFormat, includeReport, reportSuffix) {
+  if (includeReport && outputFormat === "csv") return [outputPath, reportCsvPath(outputPath, reportSuffix)];
+  return [outputPath];
+}
+
+/**
+ * Textos del informe de la combinación en el idioma actual, para `report_labels` de
+ * `/api/merge` (claves de `DEFAULT_REPORT_LABELS` en `backend/merger.py`). Los nombres del modo,
+ * del tipo de join y de las opciones reutilizan los textos que el usuario ve en la pantalla.
+ * @param {(key: string) => string} t función de traducción de i18next
+ * @returns {Record<string, string>}
+ */
+export function buildReportLabels(t) {
+  return {
+    sheetName: t("report.sheetName"),
+    fileSuffix: t("report.fileSuffix"),
+    generatedAt: t("report.generatedAt"),
+    mode: t("mode.label"),
+    modeConcat: t("mode.concat.label"),
+    modeJoin: t("mode.join.label"),
+    joinType: t("join.typeLabel"),
+    joinInner: t("joinTutorial.types.inner.title"),
+    joinLeft: t("joinTutorial.types.left.title"),
+    joinRight: t("joinTutorial.types.right.title"),
+    joinOuter: t("joinTutorial.types.outer.title"),
+    joinLeftAnti: t("joinTutorial.types.left_anti.title"),
+    joinRightAnti: t("joinTutorial.types.right_anti.title"),
+    resultRows: t("report.resultRows"),
+    resultColumns: t("report.resultColumns"),
+    duplicatesRemoved: t("report.duplicatesRemoved"),
+    addSourceColumn: t("stackOptions.sourceColumn"),
+    allAsText: t("readOptions.allAsText"),
+    removeDuplicates: t("readOptions.removeDuplicates"),
+    yes: t("report.yes"),
+    no: t("report.no"),
+    file: t("report.file"),
+    sheet: t("report.sheet"),
+    allSheets: t("report.allSheets"),
+    rowsRead: t("report.rowsRead"),
+    keyColumn: t("report.keyColumn"),
+    unmatchedRows: t("report.unmatchedRows"),
+    emptyKeyRows: t("report.emptyKeyRows"),
+  };
+}
+
 // Compara nombres de columna ignorando mayúsculas, acentos, espacios y guiones/guiones bajos,
 // para sugerir por defecto columnas que solo difieren "cosméticamente" entre archivos
 // (ej. "ID Cliente" / "id_cliente"). Nombres genuinamente distintos ("ID_Cliente" vs

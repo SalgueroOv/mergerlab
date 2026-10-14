@@ -4,6 +4,8 @@ import codecs
 import csv
 import io
 import os
+from collections import Counter
+from datetime import datetime
 
 import pandas as pd
 
@@ -44,6 +46,65 @@ _CSV_SAMPLE_MAX_ROWS = 100
 _CSV_CONFIDENT_CONSISTENCY = 0.9
 # Filas de datos que devuelve `inspect_csv` como vista previa.
 CSV_PREVIEW_ROWS = 3
+
+# Textos del informe de la combinación (ver `build_report`), en español. Son el respaldo de los
+# que manda el frontend en `report_labels` (ya traducidos al idioma de la app): cualquier clave
+# que no llegue, o que llegue con un valor no válido, usa el texto de aquí. Sus claves son además
+# la lista cerrada de claves que acepta `server.py` en `report_labels`.
+DEFAULT_REPORT_LABELS = {
+    # Nombre de la hoja del informe (xlsx/ods/xls) y sufijo del archivo aparte (csv).
+    "sheetName": "Informe",
+    "fileSuffix": "informe",
+    # Bloque resumen (etiqueta / valor).
+    "generatedAt": "Fecha y hora",
+    "mode": "Modo de combinación",
+    "modeConcat": "Apilar filas",
+    "modeJoin": "Combinar por clave (join)",
+    "joinType": "Tipo de join",
+    "joinInner": "Inner join (intersección)",
+    "joinLeft": "Left join (izquierda)",
+    "joinRight": "Right join (derecha)",
+    "joinOuter": "Outer join (completo)",
+    "joinLeftAnti": "Left anti join (sin coincidencia en los demás)",
+    "joinRightAnti": "Right anti join (sin coincidencia en el primero)",
+    "resultRows": "Filas del resultado",
+    "resultColumns": "Columnas del resultado",
+    "duplicatesRemoved": "Filas duplicadas quitadas",
+    "addSourceColumn": "Añadir columna con nombre de archivo origen",
+    "allAsText": "Leer todas las columnas como texto (conserva ceros a la izquierda)",
+    "removeDuplicates": "Quitar filas duplicadas",
+    "yes": "Sí",
+    "no": "No",
+    # Tabla por archivo.
+    "file": "Archivo",
+    "sheet": "Hoja",
+    "allSheets": "Todas",
+    "rowsRead": "Filas leídas",
+    "keyColumn": "Columna clave",
+    "unmatchedRows": "Filas sin coincidencia",
+    "emptyKeyRows": "Filas con clave vacía",
+}
+# Clave de `DEFAULT_REPORT_LABELS` con el nombre de cada tipo de join.
+_JOIN_TYPE_LABEL_KEYS = {
+    "inner": "joinInner",
+    "left": "joinLeft",
+    "right": "joinRight",
+    "outer": "joinOuter",
+    "left_anti": "joinLeftAnti",
+    "right_anti": "joinRightAnti",
+}
+# Reglas de Excel para los nombres de hoja: como mucho 31 caracteres y sin estos caracteres.
+_EXCEL_SHEET_NAME_MAX = 31
+_EXCEL_SHEET_NAME_INVALID = set("[]:*?/\\")
+# Caracteres no válidos en nombres de archivo de Windows (el SO más restrictivo de los
+# soportados). Es el mismo conjunto que quita `sanitizeFileName` en `src/utils.js`: el frontend
+# calcula la misma ruta del informe CSV para preguntar antes de sobrescribirlo.
+_INVALID_FILENAME_CHARS = set('\\/:*?"<>|')
+# Nombre de la hoja de datos al escribir con `DataFrame.to_excel` (xlsx/ods): el de pandas por
+# defecto, que es el que se usa desde siempre.
+_DATA_SHEET_NAME = "Sheet1"
+# Nombre de la hoja de datos en `.xls` (ver `_write_xls`).
+_XLS_DATA_SHEET_NAME = "Combinado"
 
 
 class MergeError(Exception):
@@ -412,6 +473,7 @@ def merge_files(
     source_column_name=DEFAULT_SOURCE_COLUMN,
     all_as_text=False,
     sheets=None,
+    stats=None,
 ):
     """Lee todos los archivos indicados (en el orden dado) y los concatena en un único DataFrame.
 
@@ -440,6 +502,10 @@ def merge_files(
     `resultado.attrs["source_column"]`, para que quien llama pueda localizarla sin adivinar el
     sufijo (p. ej. para ignorarla en `drop_duplicate_rows`). Sin columna de origen, esa clave no
     existe en `attrs`.
+
+    Si se pasa `stats` (un diccionario), se le añade `stats["files"]`: una lista, en el orden de
+    `file_paths`, con `{"name", "sheet", "rowsRead"}` de cada archivo (ver `build_result`). Se
+    calcula con lo que ya se leyó para combinar, sin volver a abrir ningún archivo.
     """
     if not file_paths:
         raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
@@ -448,6 +514,7 @@ def merge_files(
     sheets = sheets or {}
     frames = []
     frame_sources = []
+    file_stats = []
     total = len(file_paths)
 
     for index, path in enumerate(file_paths, start=1):
@@ -455,12 +522,15 @@ def merge_files(
         if ext not in SUPPORTED_INPUT_EXTENSIONS:
             raise _unsupported_format_error(ext, path)
 
+        rows_read = 0
         for sheet_df in _read_spreadsheet(
             path, csv_separators.get(path), all_as_text=all_as_text, sheet=sheets.get(path)
         ):
+            rows_read += len(sheet_df)
             if sheet_df.shape[1] > 0:
                 frames.append(_nullable_integers(_strip_column_names(sheet_df)))
                 frame_sources.append(os.path.basename(path))
+        file_stats.append(_file_stats(path, sheets.get(path), rows_read))
 
         if progress_callback:
             filename = os.path.basename(path)
@@ -487,7 +557,14 @@ def merge_files(
     result = pd.concat(frames, ignore_index=True, sort=False)
     if column_name is not None:
         result.attrs["source_column"] = column_name
+    if stats is not None:
+        stats["files"] = file_stats
     return result
+
+
+def _file_stats(path, sheet, rows_read):
+    """Arma la entrada de `stats["files"]` de un archivo (ver `build_result`)."""
+    return {"name": os.path.basename(path), "sheet": sheet or None, "rowsRead": int(rows_read)}
 
 
 def _nullable_integers(df):
@@ -538,6 +615,7 @@ def join_files(
     csv_separators=None,
     all_as_text=False,
     sheets=None,
+    stats=None,
 ):
     """Combina los archivos indicados uniéndolos por una columna clave (equivalente a un JOIN SQL).
 
@@ -576,6 +654,10 @@ def join_files(
     error: se escribe solo con los encabezados). Una clave vacía no coincide con nada: las filas
     del archivo de origen con la clave vacía se conservan, y las claves vacías de los demás
     archivos no cuentan como coincidencia.
+
+    Si se pasa `stats` (un diccionario), se le añade `stats["files"]` igual que en `merge_files`,
+    y cada elemento lleva además `keyColumn`, `unmatchedRows` y `emptyKeyRows` (ver
+    `_key_match_stats`), calculados sobre las claves ya normalizadas, sin releer los archivos.
     """
     if not file_paths:
         raise MergeError("No se proporcionaron archivos para combinar.", code="no_files_selected")
@@ -600,6 +682,9 @@ def join_files(
     canonical_key = None
     # Solo para los tipos anti: (DataFrame, clave) de cada archivo leído, en orden.
     anti_frames = []
+    # Solo si se piden `stats`: entrada de cada archivo y su columna clave ya normalizada.
+    file_stats = []
+    key_columns = []
 
     for index, (path, key) in enumerate(zip(file_paths, join_keys), start=1):
         ext = _extension_of(path)
@@ -624,6 +709,9 @@ def join_files(
 
         df = df.copy()
         df[key] = _stringify_key_column(df[key])
+        if stats is not None:
+            file_stats.append({**_file_stats(path, sheets.get(path), len(df)), "keyColumn": key})
+            key_columns.append(df[key])
 
         if join_type in ANTI_JOIN_TYPES:
             anti_frames.append((df, key))
@@ -662,7 +750,118 @@ def join_files(
     if result is None or result.shape[1] == 0:
         raise MergeError("Los archivos seleccionados no contienen datos para combinar.", code="no_data")
 
+    if stats is not None:
+        for entry, counts in zip(file_stats, _key_match_stats(key_columns)):
+            entry.update(counts)
+        stats["files"] = file_stats
     return result
+
+
+def _empty_key_mask(keys):
+    """Máscara de las claves vacías de una columna clave ya normalizada por
+    `_stringify_key_column`: nulas, o texto vacío tras recortar espacios."""
+    return keys.isna() | (keys == "")
+
+
+def _key_match_stats(key_columns):
+    """Cuenta, para cada columna clave de `key_columns` (una por archivo, en orden y ya
+    normalizada por `_stringify_key_column`), cuántas filas no tienen coincidencia y cuántas
+    tienen la clave vacía. Devuelve una lista de `{"unmatchedRows", "emptyKeyRows"}`.
+
+    `unmatchedRows` son las filas con clave NO vacía que no aparece en NINGÚN otro archivo (da
+    igual el tipo de join: es una medida de los datos de entrada, no del resultado). Las claves
+    vacías no coinciden con nada (mismo criterio que `_anti_join`), así que no cuentan ahí sino en
+    `emptyKeyRows`. Para no comparar cada archivo con todos los demás, se cuenta en cuántos
+    archivos distintos aparece cada clave: una fila no tiene coincidencia si su clave solo está en
+    su propio archivo.
+    """
+    present = [set(keys[~_empty_key_mask(keys)]) for keys in key_columns]
+    files_per_key = Counter(key for keys in present for key in keys)
+    shared = {key for key, count in files_per_key.items() if count > 1}
+
+    result = []
+    for keys in key_columns:
+        empty = _empty_key_mask(keys)
+        unmatched = ~empty & ~keys.isin(shared)
+        result.append({"unmatchedRows": int(unmatched.sum()), "emptyKeyRows": int(empty.sum())})
+    return result
+
+
+def build_result(
+    file_paths,
+    mode="concat",
+    join_keys=None,
+    join_type="inner",
+    progress_callback=None,
+    csv_separators=None,
+    add_source_column=False,
+    source_column_name=DEFAULT_SOURCE_COLUMN,
+    all_as_text=False,
+    sheets=None,
+    remove_duplicates=False,
+):
+    """Combina los archivos (apilar o join) y calcula sus estadísticas, sin escribir nada.
+
+    Es el núcleo común de la combinación: lo usa `_run_merge_job` en `server.py` antes de
+    escribir el resultado, y sirve igual para cualquier otro uso que necesite el resultado sin
+    guardarlo (p. ej. una vista previa). Devuelve `(df, stats)`:
+
+    - `df`: el resultado final, ya sin filas duplicadas si `remove_duplicates` (ver
+      `drop_duplicate_rows`, que ignora la columna de archivo de origen al comparar).
+    - `stats`: diccionario serializable a JSON (claves en camelCase, viaja al frontend) con
+      `mode` (`"concat"`/`"join"`), `joinType` (`None` al apilar), `files` (lista en el orden de
+      entrada de `{name, sheet, rowsRead}`, y en join además `keyColumn`, `unmatchedRows` y
+      `emptyKeyRows`; ver `merge_files`/`join_files`), `resultRows`/`resultColumns` (del
+      resultado final), `duplicatesRemoved` (0 si la opción está desactivada) y `options`
+      (`{addSourceColumn, allAsText, removeDuplicates}`, booleanos; `addSourceColumn` es la
+      opción efectiva, así que en join siempre es `False`).
+
+    `mode` es `"join"` o cualquier otro valor para apilar (la validación del modo la hace quien
+    llama). `join_keys` es la lista de columnas clave por archivo (solo join). El resto de
+    parámetros se pasa tal cual a `merge_files`/`join_files`. Cada archivo se lee una sola vez.
+    """
+    is_join = mode == "join"
+    stats = {"mode": "join" if is_join else "concat", "joinType": join_type if is_join else None}
+
+    if is_join:
+        df = join_files(
+            file_paths,
+            join_keys,
+            join_type,
+            progress_callback=progress_callback,
+            csv_separators=csv_separators,
+            all_as_text=all_as_text,
+            sheets=sheets,
+            stats=stats,
+        )
+    else:
+        df = merge_files(
+            file_paths,
+            progress_callback=progress_callback,
+            csv_separators=csv_separators,
+            add_source_column=add_source_column,
+            source_column_name=source_column_name,
+            all_as_text=all_as_text,
+            sheets=sheets,
+            stats=stats,
+        )
+
+    duplicates_removed = 0
+    if remove_duplicates:
+        source_column = df.attrs.get("source_column")
+        df, duplicates_removed = drop_duplicate_rows(
+            df, ignore_columns=[source_column] if source_column else ()
+        )
+
+    stats["resultRows"] = int(len(df))
+    stats["resultColumns"] = int(df.shape[1])
+    stats["duplicatesRemoved"] = int(duplicates_removed)
+    stats["options"] = {
+        "addSourceColumn": bool(add_source_column) and not is_join,
+        "allAsText": bool(all_as_text),
+        "removeDuplicates": bool(remove_duplicates),
+    }
+    return df, stats
 
 
 def right_anti_two_files_error():
@@ -728,6 +927,127 @@ def drop_duplicate_rows(df, ignore_columns=()):
     return df.loc[~duplicated].reset_index(drop=True), removed
 
 
+def _report_text(labels, key):
+    """Devuelve el texto `key` de `labels`, o el de `DEFAULT_REPORT_LABELS` si falta o no es un
+    texto con contenido (así un `report_labels` incompleto o con basura nunca rompe el informe)."""
+    value = (labels or {}).get(key)
+    if isinstance(value, str) and value.strip():
+        return value
+    return DEFAULT_REPORT_LABELS[key]
+
+
+def report_sheet_name(label, data_sheet_name=_DATA_SHEET_NAME):
+    """Convierte `label` en un nombre de hoja válido para Excel/ODS.
+
+    Quita los caracteres prohibidos (`[]:*?/\\`), los espacios de los extremos y los apóstrofos
+    del principio y del final (Excel tampoco los admite ahí), y lo corta a 31 caracteres. Si queda
+    vacío, o coincide (sin distinguir mayúsculas) con el de la hoja de datos `data_sheet_name`, se
+    usa el nombre por defecto de `DEFAULT_REPORT_LABELS`.
+    """
+    cleaned = "".join(ch for ch in str(label) if ch not in _EXCEL_SHEET_NAME_INVALID)
+    cleaned = cleaned.strip().strip("'").strip()[:_EXCEL_SHEET_NAME_MAX].strip()
+    if not cleaned or cleaned.lower() == data_sheet_name.lower():
+        return DEFAULT_REPORT_LABELS["sheetName"]
+    return cleaned
+
+
+def _report_file_suffix(label):
+    """Limpia el sufijo del archivo del informe CSV igual que `sanitizeFileName` en el frontend
+    (quita los caracteres no válidos en nombres de archivo y los espacios de los extremos); si
+    queda vacío se usa el de `DEFAULT_REPORT_LABELS`."""
+    cleaned = "".join(ch for ch in str(label) if ch not in _INVALID_FILENAME_CHARS).strip()
+    return cleaned or DEFAULT_REPORT_LABELS["fileSuffix"]
+
+
+def build_report(stats, labels=None, generated_at=None):
+    """Arma el informe de la combinación a partir de las `stats` de `build_result`.
+
+    `labels` son los textos ya traducidos (claves de `DEFAULT_REPORT_LABELS`); los que falten o no
+    sean texto se toman de `DEFAULT_REPORT_LABELS`. `generated_at` (`datetime`, por defecto la
+    hora local actual) es la fecha y hora que se muestra, en formato `AAAA-MM-DD HH:MM`.
+
+    Devuelve un diccionario con `rows` (lista de filas, cada una una lista de celdas, lista para
+    escribir sin encabezado: primero el bloque resumen etiqueta/valor, luego una fila en blanco y
+    luego la tabla por archivo con su encabezado), `sheet_name` (nombre de hoja ya saneado, ver
+    `report_sheet_name`) y `file_suffix` (sufijo del archivo aparte en CSV, ver
+    `report_output_path`). Se pasa tal cual a `write_output`.
+    """
+
+    def text(key):
+        return _report_text(labels, key)
+
+    def yes_no(value):
+        return text("yes") if value else text("no")
+
+    generated_at = generated_at or datetime.now()
+    is_join = stats.get("mode") == "join"
+    options = stats.get("options") or {}
+
+    rows = [
+        [text("generatedAt"), generated_at.strftime("%Y-%m-%d %H:%M")],
+        [text("mode"), text("modeJoin" if is_join else "modeConcat")],
+    ]
+    if is_join:
+        join_label_key = _JOIN_TYPE_LABEL_KEYS.get(stats.get("joinType"))
+        rows.append([text("joinType"), text(join_label_key) if join_label_key else stats.get("joinType")])
+    rows += [
+        [text("resultRows"), stats.get("resultRows", 0)],
+        [text("resultColumns"), stats.get("resultColumns", 0)],
+        [text("duplicatesRemoved"), stats.get("duplicatesRemoved", 0)],
+        [text("addSourceColumn"), yes_no(options.get("addSourceColumn"))],
+        [text("allAsText"), yes_no(options.get("allAsText"))],
+        [text("removeDuplicates"), yes_no(options.get("removeDuplicates"))],
+        [],
+    ]
+
+    header = [text("file"), text("sheet"), text("rowsRead")]
+    if is_join:
+        header += [text("keyColumn"), text("unmatchedRows"), text("emptyKeyRows")]
+    rows.append(header)
+    for entry in stats.get("files") or []:
+        row = [entry.get("name"), entry.get("sheet") or text("allSheets"), entry.get("rowsRead", 0)]
+        if is_join:
+            row += [entry.get("keyColumn"), entry.get("unmatchedRows", 0), entry.get("emptyKeyRows", 0)]
+        rows.append(row)
+
+    return {
+        "rows": rows,
+        "sheet_name": report_sheet_name(text("sheetName")),
+        "file_suffix": _report_file_suffix(text("fileSuffix")),
+    }
+
+
+def report_output_path(output_path, output_format, report):
+    """Ruta del archivo aparte del informe, o `None` si el informe va dentro del mismo libro.
+
+    Solo el CSV (que no tiene hojas) lleva el informe en otro archivo, junto al resultado:
+    `<nombre>_<sufijo>.csv` (sufijo de `report["file_suffix"]`). En el resto de formatos, y sin
+    informe, devuelve `None`.
+    """
+    if not report or output_format.lower() != "csv":
+        return None
+    root = os.path.splitext(output_path)[0]
+    return f"{root}_{report['file_suffix']}.csv"
+
+
+def _write_report_csv(rows, path, csv_separator):
+    """Escribe las filas del informe en un CSV con el mismo formato que el principal (UTF-8 con
+    BOM y `csv_separator`). Usa `csv.writer` porque las filas no tienen todas el mismo largo."""
+    with open(path, "w", newline="", encoding="utf-8-sig") as fh:
+        writer = csv.writer(fh, delimiter=csv_separator, lineterminator=os.linesep)
+        writer.writerows(["" if cell is None else cell for cell in row] for row in rows)
+
+
+def _write_excel_with_report(df, output_path, engine, report):
+    """Escribe `df` (hoja de datos con el nombre de siempre) y el informe en una hoja adicional
+    del mismo libro `.xlsx`/`.ods`, sin encabezado (las filas del informe ya traen sus títulos)."""
+    with pd.ExcelWriter(output_path, engine=engine) as writer:
+        df.to_excel(writer, sheet_name=_DATA_SHEET_NAME, index=False)
+        pd.DataFrame(report["rows"]).to_excel(
+            writer, sheet_name=report["sheet_name"], index=False, header=False
+        )
+
+
 def validate_output_extension(output_path, output_format):
     """Comprueba que la extensión de `output_path` coincide con `output_format`.
 
@@ -745,12 +1065,17 @@ def validate_output_extension(output_path, output_format):
         )
 
 
-def write_output(df, output_path, output_format, csv_separator=","):
+def write_output(df, output_path, output_format, csv_separator=",", report=None):
     """Guarda `df` en `output_path` con el formato `output_format` (`xlsx`, `xls`, `csv` u `ods`).
 
     Los `.csv` se escriben en UTF-8 con BOM (sin él, Excel los abre como Windows-1252 y rompe
     las tildes) y con `csv_separator` como separador (uno de `OUTPUT_CSV_SEPARATORS`: `;` es el
     que espera Excel en configuraciones regionales que usan la coma como separador decimal).
+
+    `report` (opcional) es el informe de la combinación tal como lo devuelve `build_report`. En
+    `xlsx`/`ods`/`xls` va en una hoja adicional, después de la de datos; en `csv`, en un archivo
+    aparte con el mismo separador y codificación (ruta en `report_output_path`). Sin `report` la
+    salida es exactamente la de siempre.
 
     Valida antes de escribir que el formato esté soportado, que la carpeta de destino exista y
     que haya permisos de escritura, y traduce `PermissionError` (p. ej. archivo abierto en otro
@@ -799,23 +1124,31 @@ def write_output(df, output_path, output_format, csv_separator=","):
             params={"rows": len(df), "limit": XLSX_MAX_ROWS},
         )
 
+    # Archivo que se está escribiendo, para que el error de archivo bloqueado nombre el correcto
+    # (el principal o, en CSV, el del informe).
+    current_path = output_path
     try:
         if output_format == "csv":
             df.to_csv(output_path, index=False, sep=csv_separator, encoding="utf-8-sig")
-        elif output_format == "xlsx":
-            df.to_excel(output_path, index=False, engine="openpyxl")
-        elif output_format == "ods":
-            df.to_excel(output_path, index=False, engine="odf")
+            if report:
+                current_path = report_output_path(output_path, output_format, report)
+                _write_report_csv(report["rows"], current_path, csv_separator)
+        elif output_format in ("xlsx", "ods"):
+            engine = "openpyxl" if output_format == "xlsx" else "odf"
+            if report:
+                _write_excel_with_report(df, output_path, engine, report)
+            else:
+                df.to_excel(output_path, index=False, engine=engine)
         elif output_format == "xls":
-            _write_xls(df, output_path)
+            _write_xls(df, output_path, report)
     except MergeError:
         raise
     except PermissionError as exc:
         raise MergeError(
-            f"Sin permisos de escritura en '{output_path}'. Cierra el archivo si está abierto "
+            f"Sin permisos de escritura en '{current_path}'. Cierra el archivo si está abierto "
             f"en otro programa o elige otra ubicación.",
             code="output_file_locked",
-            params={"path": output_path},
+            params={"path": current_path},
         ) from exc
     except Exception as exc:
         raise MergeError(
@@ -827,13 +1160,25 @@ def write_output(df, output_path, output_format, csv_separator=","):
     return output_path
 
 
-def _write_xls(df, output_path):
+def _write_xls_cell(sheet, row_index, col_index, value):
+    """Escribe una celda en una hoja de `xlwt`: vacía si es nula, número si es numérica y texto
+    en cualquier otro caso."""
+    if pd.isna(value):
+        sheet.write(row_index, col_index, "")
+    elif isinstance(value, (int, float, bool)):
+        sheet.write(row_index, col_index, value)
+    else:
+        sheet.write(row_index, col_index, str(value))
+
+
+def _write_xls(df, output_path, report=None):
     """Escribe `df` como `.xls` clásico (formato BIFF) con `xlwt`, hoja "Combinado".
 
     A diferencia de `.xlsx`/`.ods` (que usa `DataFrame.to_excel`), `.xls` no tiene un motor de
     escritura compatible con pandas moderno, así que se escribe celda a celda. Lanza
     `MergeError` si el resultado supera `XLS_MAX_ROWS` (límite propio del formato) o si `xlwt`
-    no está disponible.
+    no está disponible. Con `report` (ver `build_report`) se añade una segunda hoja con el
+    informe de la combinación.
     """
     try:
         import xlwt
@@ -852,18 +1197,19 @@ def _write_xls(df, output_path):
         )
 
     workbook = xlwt.Workbook()
-    sheet = workbook.add_sheet("Combinado")
+    sheet = workbook.add_sheet(_XLS_DATA_SHEET_NAME)
 
     for col_index, column_name in enumerate(df.columns):
         sheet.write(0, col_index, str(column_name))
 
     for row_index, row in enumerate(df.itertuples(index=False), start=1):
         for col_index, value in enumerate(row):
-            if pd.isna(value):
-                sheet.write(row_index, col_index, "")
-            elif isinstance(value, (int, float, bool)):
-                sheet.write(row_index, col_index, value)
-            else:
-                sheet.write(row_index, col_index, str(value))
+            _write_xls_cell(sheet, row_index, col_index, value)
+
+    if report:
+        report_sheet = workbook.add_sheet(report_sheet_name(report["sheet_name"], _XLS_DATA_SHEET_NAME))
+        for row_index, row in enumerate(report["rows"]):
+            for col_index, value in enumerate(row):
+                _write_xls_cell(report_sheet, row_index, col_index, value)
 
     workbook.save(output_path)
